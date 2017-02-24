@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.1.0'
+version = '0.1.3'
 
 setup(
     name='SerpScrap',

@@ -11,33 +11,47 @@ class SerpScrap():
 
     args = []
     config = {
-        'use_own_ip': 'False',
+        # 'use_own_ip': True,
         'search_engines': ['google'],
         'num_pages_for_keyword': 2,
         'scrape_method': 'http',  # selenium
         # 'sel_browser': 'chrome', uncomment if scrape_method is selenium
         # 'executable_path': 'path\to\chromedriver' or 'path\to\phantomjs',
-        'do_caching': 'True',
-        'cachedir': '/tmp/.scrapecache/',
-        'database_name': '/tmp/google_scraper',
+        'do_caching': True,
+        'cachedir': '/tmp/.serpscrap/',
+        'database_name': '/tmp/serpscrap',
         'clean_cache_after': 24,
         'output_filename': None,
-        'print_results': 'all',
+        # 'print_results': 'all',
     }
     serp_query = None
 
+    def __init__(self, config=None):
+        if config is not None:
+            self.config = config
+
     def run(self, args=None, config=None):
+        """method to run serpscrap from command line"""
         parser = argparse.ArgumentParser(prog='serpscrap')
         parser.add_argument('-k', '--keyword', help='keyword for scraping', nargs='*')
         self.args = parser.parse_args()
         if len(self.args.keyword) > 0:
-            self.serp_query = [' '.join(self.args.keyword)]
+            self.set_keyword_list(' '.join(self.args.keyword))
 
         if config is not None:
             self.config = config
 
         if self.serp_query is not None:
             return self.scrap_serps()
+
+    def set_keyword_list(self, keywords):
+        """provide a keyword or list of keywords to scrape"""
+        if isinstance(keywords, str):
+            self.serp_query = [keywords]
+        elif isinstance(keywords, list) and len(keywords) > 0:
+            self.serp_query = keywords
+        else:
+            raise ValueError('no keywords given')
 
     def scrap_serps(self):
         search = self.scrap()

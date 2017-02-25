@@ -47,3 +47,12 @@ In this example the searchphrase is "your keywords"
 ```
 python serpscrap\serpscrap.py -k your keywords
 ```
+
+## window user
+
+avoid encode/decode issues by running this command before starting python in your cli
+
+```
+chcp 65001
+set PYTHONIOENCODING=utf-8
+```

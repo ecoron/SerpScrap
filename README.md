@@ -48,7 +48,7 @@ In this example the searchphrase is "your keywords"
 python serpscrap\serpscrap.py -k your keywords
 ```
 
-## window user
+## windows user
 
 avoid encode/decode issues by running this command before starting python in your cli
 

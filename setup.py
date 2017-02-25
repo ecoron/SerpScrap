@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.1.3'
+version = '0.1.4'
 
 setup(
     name='SerpScrap',
@@ -18,6 +18,8 @@ setup(
     ],
     install_requires=[
         'GoogleScraper',
-        'chardet==2.3.0'
+        'chardet==2.3.0',
+        'beautifulsoup4==4.4.1',
+        'html2text==2016.4.2',
     ],
 )

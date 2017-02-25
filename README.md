@@ -1,6 +1,6 @@
 # SerpScrap
-A python module to scrape and extract data, like links, titles, descriptions, ratings, from search engine result pages. 
-It wraps a fork of GoogleScraper
+A python module to scrape and extract data like links, titles, descriptions, ratings, from search engine result pages. 
+It wraps a fork of [GoogleScraper](https://github.com/NikolaiT/GoogleScraper) with several improvements.
 
 ## Usage
 
@@ -9,7 +9,7 @@ SerpScrap in your applications
 ```
 import serpscrap
 
-keyxwords = ['one', 'two', 'tree']
+keywords = ['one', 'two']
 scrap = SerpScrap()
 scrap.set_keyword_list(keywords)
 
@@ -23,8 +23,8 @@ import serpscrap
 
 config = {
     'search_engines': ['google'],
-    'num_pages_for_keyword': 2,
-    'scrape_method': 'http',  # http, selenium
+    'num_pages_for_keyword': 2, # number of searchresult pages
+    'scrape_method': 'http',  # http, selenium
     # 'sel_browser': 'chrome',  # uncomment if scrape_method is selenium
     # 'executable_path': 'path\to\chromedriver', 'path\to\phantomjs',
     'do_caching': True,
@@ -34,7 +34,7 @@ config = {
     'output_filename': None,  # stdout, filename.json, filename.csv
     # 'print_results': 'all', # summarize, all - if output_filename = stdout 
 }
-keywords = ['one', 'two', 'tree']
+keywords = ['one', 'two']
 scrap = SerpScrap(config)
 scrap.set_keyword_list(keywords)
 

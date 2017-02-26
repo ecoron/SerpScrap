@@ -7,11 +7,14 @@ version = '0.1.5'
 setup(
     name='SerpScrap',
     version=version,
-    description='A python module to scrape and extract data like links, titles, descriptions, ratings, from search engine result pages.',
+    description='''A python module to scrape and extract data like links, titles, descriptions, ratings,
+    from search engine result pages 
+    and listed urls.''',
     long_description=open('README.md').read(),
     author='Ronald Schmidt',
     author_email='ronald.schmidt@zu-web.de',
     url='https://github.com/ecoron/SerpScrap',
+    license='MIT',
     packages=find_packages(),
     dependency_links=[
         'git+git://github.com/ecoron/GoogleScraper#egg=GoogleScraper'
@@ -22,4 +25,14 @@ setup(
         'beautifulsoup4==4.4.1',
         'html2text==2016.4.2',
     ],
+    classifiers=[
+        'Development Status :: 1 - Planning',
+        'Intended Audience :: Developers',
+        'Topic :: Internet',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+    ],
+    keywords='serp url scraper',
 )

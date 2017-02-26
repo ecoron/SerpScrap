@@ -34,7 +34,7 @@ class UrlScrape():
         filename = m.hexdigest()
 
         try:
-            with open('/temp/tmpscraped/'+filename+'.json') as json_data:
+            with open('/tmp/tmpscraped/'+filename+'.json') as json_data:
                 result = json.load(json_data)
                 json_data.close()
             return result
@@ -43,42 +43,45 @@ class UrlScrape():
             pass
 
         result = {}
-        with urllib.request.urlopen(url) as response:
-            html = response.read()
+        try:
+            with urllib.request.urlopen(url) as response:
+                html = response.read()
+    
+                encoded = self.adjust_encoding(data=html)
+                html = encoded['data']
+    
+                for sign in ['[', ']', '(', ')']:
+                    html = html.replace(sign, ' ')
+                for sign in ['»']:
+                    html = html.replace(sign, '')
+    
+                result.update({'meta_robots': self.meta_robots_pattern.findall(html)})
+                result.update({'meta_title': self.meta_title_pattern.findall(html)})
+                result.update({'status': response.getcode()})
+                result.update({'url': response.geturl()})
+                result.update({'encoding': encoded['encoding']})
+    
+                headers = dict(response.getheaders())
+                # pprint.pprint(headers)
+                if 'Last-Modified' in headers.keys():
+                    result.update({'last_modified': headers['Last-Modified']})
+                else:
+                    result.update({'last_modified': None})
 
-            encoded = self.adjust_encoding(data=html)
-            html = encoded['data']
-
-            for sign in ['[', ']', '(', ')']:
-                html = html.replace(sign, ' ')
-            for sign in ['»']:
-                html = html.replace(sign, '')
-
-            result.update({'meta_robots': self.meta_robots_pattern.findall(html)})
-            result.update({'meta_title': self.meta_title_pattern.findall(html)})
-            result.update({'status': response.getcode()})
-            result.update({'url': response.geturl()})
-            result.update({'encoding': encoded['encoding']})
-
-            headers = dict(response.getheaders())
-            # pprint.pprint(headers)
-            if 'Last-Modified' in headers.keys():
-                result.update({'last_modified': headers['Last-Modified']})
-            else:
-                result.update({'last_modified': None})
-
-            h = html2text.HTML2Text()
-            h.ignore_links = True
-            h.ignore_images = True
-
-            soup = BeautifulSoup(h.handle(html), 'html.parser')
-            txt = soup.get_text()
-            txt.replace('\t', ' ')
-            txt.replace('\r', ' ')
-            txt.replace('\n', ' ')
-            txt.replace('.', '.\n')
-            result.update({'text_raw': txt})
-
-            with open('/tmp/tmpscraped/'+filename+'.json', 'w') as fp:
-                json.dump(result, fp)
+                h = html2text.HTML2Text()
+                h.ignore_links = True
+                h.ignore_images = True
+    
+                soup = BeautifulSoup(h.handle(html), 'html.parser')
+                txt = soup.get_text()
+                txt.replace('\t', ' ')
+                txt.replace('\r', ' ')
+                txt.replace('\n', ' ')
+                txt.replace('.', '.\n')
+                result.update({'text_raw': txt})
+    
+                with open('/tmp/tmpscraped/'+filename+'.json', 'w') as fp:
+                    json.dump(result, fp)
+        except:
+            pass
         return result

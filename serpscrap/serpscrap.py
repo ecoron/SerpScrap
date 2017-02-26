@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 from GoogleScraper import scrape_with_config, GoogleSearchError
+from urlscrape import UrlScrape
 import argparse
 import chardet
 import traceback
@@ -23,6 +24,7 @@ class SerpScrap():
         'clean_cache_after': 24,
         'output_filename': None,
         # 'print_results': 'all',
+        'scrape_urls': False
     }
     serp_query = None
 
@@ -41,8 +43,15 @@ class SerpScrap():
         if config is not None:
             self.config = config
 
+        results = None
         if self.serp_query is not None:
-            return self.scrap_serps()
+            results = self.scrap_serps()
+        if self.config['scrape_urls']:
+            for result in results:
+                if 'serp_type' in result and 'ads_main' not in result['serp_type'] and 'serp_url' in result:
+                    result_url = self.scrap_url(result['serp_url'])
+                    results.append(result_url)
+        return results
 
     def set_keyword_list(self, keywords):
         """provide a keyword or list of keywords to scrape"""
@@ -86,6 +95,10 @@ class SerpScrap():
             return scrape_with_config(self.config)
         except GoogleSearchError:
             print(traceback.print_exc())
+
+    def scrap_url(self, url):
+        urlscrape = UrlScrape()
+        return urlscrape.scrap_url(url)
 
     def adjust_encoding(self, data):
         """detect and adjust encoding of data return data decoded to utf-8"""

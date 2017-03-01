@@ -25,7 +25,8 @@ class SerpScrap():
         'clean_cache_after': 24,
         'output_filename': None,
         # 'print_results': 'all',
-        'scrape_urls': False
+        'scrape_urls': True,
+        'url_threads': 3
     }
     serp_query = None
 

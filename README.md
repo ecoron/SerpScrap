@@ -7,19 +7,18 @@ It wraps a fork of [GoogleScraper](https://github.com/NikolaiT/GoogleScraper) wi
 SerpScrap in your applications
 
 ```
-from serpscrap.serpscrap import SerpScrap
+import serpscrap
 
 keywords = ['one', 'two']
-scrap = SerpScrap()
-scrap.set_keyword_list(keywords)
-
+scrap = serpscrap.SerpScrap()
+scrap.init(keywords=keywords)
 result = scrap.scrap_serps()
 ```
 
 you can also run serpscrap with an individual GoogleScraper configuartion
 
 ```
-from serpscrap.serpscrap import SerpScrap
+import serpscrap
 
 config = {
     'search_engines': ['google'],
@@ -35,8 +34,9 @@ config = {
     # 'print_results': 'all', # summarize, all - if output_filename = stdout 
 }
 keywords = ['one', 'two']
-scrap = SerpScrap(config)
-scrap.set_keyword_list(keywords)
+
+scrap = serpscrap.SerpScrap()
+scrap.init(config=config, keywords=keywords)
 
 result = scrap.scrap_serps()
 ```

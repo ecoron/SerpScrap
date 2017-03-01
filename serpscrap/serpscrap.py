@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 from GoogleScraper import scrape_with_config, GoogleSearchError
+import serpscrap
 from urlscrape import UrlScrape
 import argparse
 import chardet
@@ -28,33 +29,23 @@ class SerpScrap():
     }
     serp_query = None
 
-    def __init__(self, config=None):
-        if config is not None:
-            self.config = config
-
-    def run(self, args=None, config=None):
-        """method to run serpscrap from command line"""
+    def cli(self, args=None):
+        """method called if executed on command line"""
         parser = argparse.ArgumentParser(prog='serpscrap')
         parser.add_argument('-k', '--keyword', help='keyword for scraping', nargs='*')
         self.args = parser.parse_args()
         if len(self.args.keyword) > 0:
-            self.set_keyword_list(' '.join(self.args.keyword))
+            keywords = ' '.join(self.args.keyword)
 
+        print(keywords)
+        self.init(config=None, keywords=keywords)
+        return self.run()
+
+    def init(self, config=None, keywords=None):
+        """init config and serp_query"""
         if config is not None:
             self.config = config
 
-        results = None
-        if self.serp_query is not None:
-            results = self.scrap_serps()
-        if self.config['scrape_urls']:
-            for result in results:
-                if 'serp_type' in result and 'ads_main' not in result['serp_type'] and 'serp_url' in result:
-                    result_url = self.scrap_url(result['serp_url'])
-                    results.append(result_url)
-        return results
-
-    def set_keyword_list(self, keywords):
-        """provide a keyword or list of keywords to scrape"""
         if isinstance(keywords, str):
             self.serp_query = [keywords]
         elif isinstance(keywords, list) and len(keywords) > 0:
@@ -62,13 +53,30 @@ class SerpScrap():
         else:
             raise ValueError('no keywords given')
 
-    def scrap_serps(self):
-        search = self.scrap()
+    def run(self):
+        """main method to run scrap_serps and scrap_url
+        return list of dicts with all results
+        """
+        results = None
+        if self.serp_query is not None:
+            results = self.scrap_serps()
 
+        if self.config['scrape_urls']:
+            for result in results:
+                if 'serp_type' in result and 'ads_main' not in result['serp_type'] and 'serp_url' in result:
+                    result_url = self.scrap_url(result['serp_url'])
+                    results.append(result_url)
+        return results
+
+    def scrap_serps(self):
+        """call scrap method and append serp results to list
+        return list
+        """
+        search = self.scrap()
         result = []
         for serp in search.serps:
             for link in serp.links:
-                    # link, snippet, title, visible_link, domain, rank, serp, link_type, rating
+                # link, snippet, title, visible_link, domain, rank, serp, link_type, rating
                 # if 'results' in link.link_type:
                 result.append({
                     'query_num_results total': serp.num_results_for_query,
@@ -78,12 +86,12 @@ class SerpScrap():
                     'serp_rank': link.rank,
                     'serp_type': link.link_type,
                     'serp_url': link.link,
-                    'serp_rating': self.adjust_encoding(link.rating)['data'],
-                    'serp_title': self.adjust_encoding(link.title)['data'],
-                    'serp_domain': self.adjust_encoding(link.domain)['data'],
-                    'serp_visible_link': self.adjust_encoding(link.visible_link)['data'],
-                    'serp_snippet': self.adjust_encoding(link.snippet)['data'],
-                    'serp_sitelinks': self.adjust_encoding(link.sitelinks)['data']
+                    'serp_rating': link.rating,
+                    'serp_title': link.title,
+                    'serp_domain': link.domain,
+                    'serp_visible_link': link.visible_link,
+                    'serp_snippet': link.snippet,
+                    'serp_sitelinks': link.sitelinks
                 })
         return result
 
@@ -97,7 +105,7 @@ class SerpScrap():
             print(traceback.print_exc())
 
     def scrap_url(self, url):
-        urlscrape = UrlScrape()
+        urlscrape = UrlScrape(self.config)
         return urlscrape.scrap_url(url)
 
     def adjust_encoding(self, data):
@@ -121,5 +129,5 @@ class SerpScrap():
         return {'encoding': check_encoding['encoding'], 'data': data}
 
 if __name__ == "__main__":
-    res = SerpScrap().run()
+    res = SerpScrap().cli()
     pprint.pprint(res)

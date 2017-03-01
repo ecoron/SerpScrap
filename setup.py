@@ -2,14 +2,13 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.1.5'
+version = '0.2.0'
 
 setup(
     name='SerpScrap',
     version=version,
-    description='''A python module to scrape and extract data like links, titles, descriptions, ratings,
-    from search engine result pages 
-    and listed urls.''',
+    description='''A python module to scrape and extract data like urls, titles, descriptions, ratings from search engine result pages
+    and also the meta informations und raw text content from listed urls.''',
     long_description=open('README.md').read(),
     author='Ronald Schmidt',
     author_email='ronald.schmidt@zu-web.de',

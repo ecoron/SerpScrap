@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.2.1'
+version = '0.2.2'
 
 setup(
     name='SerpScrap',
@@ -23,6 +23,7 @@ setup(
         'chardet==2.3.0',
         'beautifulsoup4==4.4.1',
         'html2text==2016.9.19',
+        'lxml==3.6.0',
     ],
     classifiers=[
         'Development Status :: 1 - Planning',

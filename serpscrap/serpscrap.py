@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 from GoogleScraper import scrape_with_config, GoogleSearchError
-import serpscrap
-from urlscrape import UrlScrape
+from serpscrap.urlscrape import UrlScrape
 import argparse
 import chardet
 import traceback

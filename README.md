@@ -5,10 +5,12 @@ It wraps a [fork](https://github.com/ecoron/GoogleScraper) of [GoogleScraper](ht
 ## Install
 
 ```
-pip install --process-dependency-links SerpScrap
+pip install SerpScrap
 ```
 
-on Windows you might need also "Microsoft Visual C++ Build Tools" installed
+###Windows
+
+on Windows you might need also [Microsoft Visual C++ Build Tools](http://landinghub.visualstudio.com/visual-cpp-build-tools) installed.
 
 ## Usage
 

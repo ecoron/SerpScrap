@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.2.8'
+version = '0.3.0'
 
 setup(
     name='SerpScrap',
@@ -21,6 +21,7 @@ setup(
         'beautifulsoup4==4.4.1',
         'html2text==2016.9.19',
         'lxml==3.6.0',
+        'markovify==0.5.4'
     ],
     dependency_links=[
         'https://github.com/ecoron/GoogleScraper/tarball/master#egg=GoogleScraper-0.2.1'

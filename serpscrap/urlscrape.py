@@ -94,7 +94,9 @@ class UrlScrape():
                 h.ignore_links = True
                 h.ignore_images = True
 
-                txt = BeautifulSoup(h.handle(html), 'html.parser').get_text()
+                txt = BeautifulSoup(h.handle(html), 'html.parser').get_text(strip=True)
+                txt = re.sub(r'[\n\s]+', r'\n', txt, re.MULTILINE)
+                txt = "".join([s for s in txt.splitlines(True) if s.strip("\r\n")])
                 result.update({'text_raw': txt})
 
                 with open(cache_file, 'w') as fp:

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 from GoogleScraper import scrape_with_config, GoogleSearchError
+from serpscrap.config import Config
 from serpscrap.urlscrape import UrlScrape
 import argparse
 import chardet
@@ -11,22 +12,7 @@ import pprint
 class SerpScrap():
 
     args = []
-    config = {
-        # 'use_own_ip': True,
-        'search_engines': ['google'],
-        'num_pages_for_keyword': 2,
-        'scrape_method': 'http',  # selenium
-        # 'sel_browser': 'chrome', uncomment if scrape_method is selenium
-        # 'executable_path': 'path\to\chromedriver' or 'path\to\phantomjs',
-        'do_caching': True,
-        'cachedir': '/tmp/.serpscrap/',
-        'database_name': '/tmp/serpscrap',
-        'clean_cache_after': 24,
-        'output_filename': None,
-        # 'print_results': 'all',
-        'scrape_urls': True,
-        'url_threads': 3
-    }
+
     serp_query = None
 
     def cli(self, args=None):
@@ -37,7 +23,6 @@ class SerpScrap():
         if len(self.args.keyword) > 0:
             keywords = ' '.join(self.args.keyword)
 
-        print(keywords)
         self.init(config=None, keywords=keywords)
         return self.run()
 
@@ -45,6 +30,8 @@ class SerpScrap():
         """init config and serp_query"""
         if config is not None:
             self.config = config
+        else:
+            self.config = Config().get()
 
         if isinstance(keywords, str):
             self.serp_query = [keywords]

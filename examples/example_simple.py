@@ -1,9 +1,16 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 import serpscrap
-import pprint
 
-keywords = ['python tutorials']
+keywords = ['python3 tutorial']
+
+config = serpscrap.Config()
+config.set('scrape_urls', True)
+
 scrap = serpscrap.SerpScrap()
-scrap.init(keywords=keywords)
-result = scrap.scrap_serps()
+scrap.init(config=config.get(), keywords=keywords)
+results = scrap.run()
 
-pprint.pprint(result)
+for result in results:
+    print(result)
+    print()

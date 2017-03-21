@@ -53,7 +53,7 @@ class SerpScrap():
                 if 'serp_type' in result and 'ads_main' not in result['serp_type'] and 'serp_url' in result:
                     result_url = self.scrap_url(result['serp_url'])
                     results.append(result_url)
-        return results
+        return results if isinstance(results, list) else [results]
 
     def scrap_serps(self):
         """call scrap method and append serp results to list

@@ -17,15 +17,15 @@ setup(
     packages=find_packages(),
 
     install_requires=[
-        'GoogleScraper==0.2.1',
+        'GoogleScraper==0.3.0',
         'chardet==2.3.0',
         'beautifulsoup4==4.4.1',
         'html2text==2016.9.19',
         'markovify==0.5.4',
-        'lxml==3.6.0'
+        'lxml'
     ],
     dependency_links=[
-        'https://github.com/ecoron/GoogleScraper/tarball/master#egg=GoogleScraper-0.2.1'
+        'https://github.com/ecoron/GoogleScraper/tarball/master#egg=GoogleScraper-0.3.0'
     ],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

@@ -8,9 +8,11 @@ It wraps a [fork](https://github.com/ecoron/GoogleScraper) of [GoogleScraper](ht
 pip install SerpScrap
 ```
 
-###Windows
+###Requirements Windows
 
 on Windows you might need also [Microsoft Visual C++ Build Tools](http://landinghub.visualstudio.com/visual-cpp-build-tools) installed.
+
+you may also need to install a proper [lxml binary](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
 
 ## Usage
 
@@ -24,32 +26,7 @@ scrap = serpscrap.SerpScrap()
 scrap.init(keywords=keywords)
 result = scrap.scrap_serps()
 ```
-
-you can also run SerpScrap with an individual configuration
-
-```
-import serpscrap
-
-config = {
-    'search_engines': ['google'],
-    'num_pages_for_keyword': 2, # number of searchresult pages
-    'scrape_method': 'http',  # http, selenium
-    # 'sel_browser': 'chrome',  # uncomment if scrape_method is selenium
-    # 'executable_path': 'path\to\chromedriver', 'path\to\phantomjs',
-    'do_caching': True,
-    'cachedir': '/tmp/.serpscrap/',  # path to cache files
-    'database_name': '/tmp/serpscrap',  # path SQLight db where scrape results are temporary stored
-    'clean_cache_after': 48,  # hours - delete older cache entries
-    'output_filename': None,  # stdout, filename.json, filename.csv
-    # 'print_results': 'all', # summarize, all - if output_filename = stdout 
-}
-keywords = ['one', 'two']
-
-scrap = serpscrap.SerpScrap()
-scrap.init(config=config, keywords=keywords)
-
-result = scrap.scrap_serps()
-```
+take also a look into the [examples folder](examples/)
 
 To run SerpScrap via command line provide one or more keywords as searchphrase.
 In this example the searchphrase is "your keywords"

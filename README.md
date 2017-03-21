@@ -1,6 +1,10 @@
 # SerpScrap
-A python module to scrape and extract data like links, titles, descriptions, ratings, from search engine result pages. 
-It wraps a [fork](https://github.com/ecoron/GoogleScraper) of [GoogleScraper](https://github.com/NikolaiT/GoogleScraper) with several improvements.
+A python module to scrape and extract data like links, titles, descriptions, ratings, from search engine result pages.
+It is also possible to scrape the urls of the serp results.
+the raw text data could be used with markovi a sentence text generator.
+
+ 
+SerpScrap wraps a [fork](https://github.com/ecoron/GoogleScraper) of [GoogleScraper](https://github.com/NikolaiT/GoogleScraper) with several improvements.
 
 ## Install
 
@@ -8,7 +12,7 @@ It wraps a [fork](https://github.com/ecoron/GoogleScraper) of [GoogleScraper](ht
 pip install SerpScrap
 ```
 
-###Requirements Windows
+### Requirements Windows
 
 on Windows you might need also [Microsoft Visual C++ Build Tools](http://landinghub.visualstudio.com/visual-cpp-build-tools) installed.
 

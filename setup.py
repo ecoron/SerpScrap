@@ -28,7 +28,7 @@ setup(
         'https://github.com/ecoron/GoogleScraper/tarball/master#egg=GoogleScraper-0.3.0'
     ],
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Topic :: Internet',
         'License :: OSI Approved :: MIT License',

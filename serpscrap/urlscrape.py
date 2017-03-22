@@ -78,8 +78,16 @@ class UrlScrape():
                 for sign in ['»']:
                     html = html.replace(sign, '')
 
-                result.update({'meta_robots': UrlScrape.meta_robots_pattern.findall(html)})
-                result.update({'meta_title': UrlScrape.meta_title_pattern.findall(html)})
+                meta_robots = UrlScrape.meta_robots_pattern.findall(html)
+                meta_title = UrlScrape.meta_title_pattern.findall(html)
+                if len(meta_robots) > 0:
+                    result.update({'meta_robots': meta_robots[0]})
+                else:
+                    result.update({'meta_robots': ''})
+                if len(meta_title) > 0:
+                    result.update({'meta_title': meta_title[0]})
+                else:
+                    result.update({'meta_title': ''})
                 result.update({'status': response.getcode()})
                 result.update({'url': response.geturl()})
                 result.update({'encoding': encoded['encoding']})

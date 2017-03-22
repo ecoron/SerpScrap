@@ -18,7 +18,8 @@ class Config():
         'output_filename': None,
         # 'print_results': 'all',
         'scrape_urls': True,
-        'url_threads': 3
+        'url_threads': 3,
+        'proxy_file': ''
     }
 
     def get(self):

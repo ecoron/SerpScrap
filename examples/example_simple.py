@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import serpscrap
 
-keywords = ['python3 tutorial']
+keywords = ['computer since']
 
 config = serpscrap.Config()
 config.set('scrape_urls', True)

@@ -22,6 +22,9 @@ setup(
         'beautifulsoup4==4.5.3',
         'html2text==2016.9.19',
         'markovify==0.5.4',
+        'numpy==1.12.1+mkl',
+        'scipy==0.19.0',
+        'scikit-learn==0.18.1',
         'lxml'
     ],
     dependency_links=[

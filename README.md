@@ -16,7 +16,10 @@ pip install SerpScrap
 
 on Windows you might need also [Microsoft Visual C++ Build Tools](http://landinghub.visualstudio.com/visual-cpp-build-tools) installed.
 
-you may also need to install a proper [lxml binary](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
+* [lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
+* [numpy](http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy)
+* [scipy](http://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy)
+* [scikit-learn](http://www.lfd.uci.edu/~gohlke/pythonlibs/#scikit-learn)
 
 ## Usage
 

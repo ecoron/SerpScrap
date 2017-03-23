@@ -1,8 +1,8 @@
 # SerpScrap
-A python module to scrape and extract data like links, titles, descriptions, ratings, from search engine result pages.
-It is also possible to scrape the urls of the serp results.
-the raw text data could be used with markovi a sentence text generator.
-
+A python module to scrape, extract, analyze data from search engine result pages and urls.
+Extract data, like url, title, snippet of results or ratings for given keywords.
+Extract the cleaned raw text content from urls.
+Get the tfidf of the text content, or generate with the text generator new sentences.
  
 SerpScrap wraps a [fork](https://github.com/ecoron/GoogleScraper) of [GoogleScraper](https://github.com/NikolaiT/GoogleScraper) with several improvements.
 

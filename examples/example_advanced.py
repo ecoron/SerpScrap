@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import serpscrap
 
-keywords = ['latest news']
+keywords = ['news']
 
 config = serpscrap.Config()
 
@@ -19,16 +19,16 @@ markovi = serpscrap.Markovi(config)
 models = []
 
 for result in results:
-    if 'text_raw' in result and len(result['text_raw']) > 1:
-        model = markovi.get_model(result['text_raw'], 1)
+    if 'serp_title' in result and len(result['serp_title']) > 1:
+        model = markovi.get_model(result['serp_title'], 1)
         if model.state_size > 0:
             models.append(model)
 
 model = markovi.get_combined_model(models)
 
 texts = []
-for _ in range(50):
-    text = model.make_short_sentence(char_limit=150, tries=20, max_overlap_ratio=0.7, max_overlap_total=20)
+for _ in range(len(results)):
+    text = model.make_sentence(char_limit=150, tries=10, max_overlap_ratio=0.7, max_overlap_total=25)
     if isinstance(text, str):
         texts.append(text)
 
@@ -40,6 +40,6 @@ print(tf[0:10])
 
 model = markovi.get_model("\n".join(texts), 1)
 for _ in range(10):
-    text = model.make_sentence(char_limit=120, tries=10, max_overlap_ratio=0.7, max_overlap_total=20)
+    text = model.make_short_sentence(char_limit=80, tries=10, max_overlap_ratio=0.7, max_overlap_total=20)
     if text is not None:
         print(text)

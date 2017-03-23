@@ -51,7 +51,7 @@ class SerpScrap():
         if self.config['scrape_urls']:
             for index, result in enumerate(results):
                 if 'serp_type' in result and 'ads_main' not in result['serp_type'] and 'serp_url' in result:
-                    result_url = self.scrap_url(result['serp_url'])
+                    result_url = self.scrap_url(result['serp_url'])[0]
                     if 'status' in result_url:
                         results[index].update(result_url)
         return results if isinstance(results, list) else [results]

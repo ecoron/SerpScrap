@@ -6,15 +6,16 @@ from serpscrap.urlscrape import UrlScrape
 import pprint
 
 
-url = 'https://de.wikipedia.org/wiki/Geschichte_Berlins'
+url = 'http://gutenberg.spiegel.de/buch/johann-wolfgang-goethe-gedichte-3670/231'
 config = Config().get()
 
 urlscrape = UrlScrape(config)
-content = urlscrape.scrap_url(url)
-
+contents = urlscrape.scrap_url(url)
+    
 markovi = Markovi(config)
 texts = []
-for _ in range(5):
-    texts.append(markovi.generate_short(content.__getitem__('text_raw'), 1, 120))
+for content in contents:
+    for _ in range(5):
+        texts.append(markovi.generate(content.__getitem__('text_raw'), 1))
 
-pprint.pprint(texts)
+pprint.pprint(texts, width=120)

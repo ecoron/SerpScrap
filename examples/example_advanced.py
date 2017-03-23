@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import serpscrap
 
-keywords = ['computer art']
+keywords = ['latest news']
 
 config = serpscrap.Config()
 
@@ -20,7 +20,6 @@ models = []
 
 for result in results:
     if 'text_raw' in result and len(result['text_raw']) > 1:
-        print(result['text_raw'])
         model = markovi.get_model(result['text_raw'], 1)
         if model.state_size > 0:
             models.append(model)

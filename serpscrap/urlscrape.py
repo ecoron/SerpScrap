@@ -53,15 +53,13 @@ class UrlScrape():
             with open(cache_file) as json_data:
                 result = json.load(json_data)
                 json_data.close()
-            return result
+                UrlScrape.results.append(result)
         except:
-            pass
-
-        try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=self.url_threads) as executor:
-                executor.submit(UrlScrape.fetch_url, url, cache_file)
-        except:
-            pass
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=self.url_threads) as executor:
+                    executor.submit(UrlScrape.fetch_url, url, cache_file)
+            except:
+                pass
         return UrlScrape.results
 
     @staticmethod
@@ -82,7 +80,7 @@ class UrlScrape():
                 meta_robots = UrlScrape.meta_robots_pattern.findall(html)
                 meta_title = UrlScrape.meta_title_pattern.findall(html)
                 if len(meta_robots) > 0:
-                    result.update({'meta_robots': meta_robots[0]})
+                    result.update({'meta_robots': meta_robots[0][0:15]})
                 else:
                     result.update({'meta_robots': ''})
                 if len(meta_title) > 0:
@@ -103,13 +101,23 @@ class UrlScrape():
                 h.ignore_links = True
                 h.ignore_images = True
 
-                txt = split_into_sentences(BeautifulSoup(h.handle(html), 'html.parser').get_text())
-                clean_txt = ''
+                txt = split_into_sentences(BeautifulSoup(h.handle(html), 'html.parser').get_text().replace('\n', ' '))
+                row_count = len(txt)
+                word_sum = 0
+                tmp_txt = []
                 for row in txt:
-                    row = row.replace('*', '').replace('#', '').replace('\t', '').replace('   ', ' ').replace('  ', ' ')
-                    for sub_row in row.split('\n'):
-                        if len(sub_row) > 1:
-                            clean_txt += sub_row
+                    row = row.replace('*', '').replace('#', '').replace('_', '').replace('\t', '').replace('   ', ' ').replace('  ', ' ')
+                    row = ' '.join([word for word in row.split(' ') if len(word) > 1])
+                    word_sum += len(row.split(' '))
+                    tmp_txt.append(row)
+                avg_row_length = int(word_sum/row_count)
+                
+                clean_txt = ''
+                for row in tmp_txt:
+                    word_count = len(row.split(' '))
+                    if 2 < word_count < avg_row_length*3:
+                        clean_txt += row+'\n'
+                
                 result.update({'text_raw': clean_txt})
 
                 with open(cache_file, 'w') as fp:
@@ -126,7 +134,7 @@ ascii_uppercase = ascii_lowercase.upper()
 abbr_capped = "|".join([
     "ala|ariz|ark|calif|colo|conn|del|fla|ga|ill|ind|kan|ky|la|md|mass|mich|minn|miss|mo|mont|neb|nev|okla|ore|pa|tenn|vt|va|wash|wis|wyo", # States
     "u.s",
-    "mr|ms|mrs|msr|dr|gov|pres|sen|sens|rep|reps|prof|gen|messrs|col|sr|jf|sgt|mgr|fr|rev|jr|snr|atty|supt", # Titles
+    "mr|ms|mrs|msr|dr|gov|pres|sen|sens|rep|reps|prof|gen|messrs|col|sr|jf|sgt|mgr|fr|rev|jr|snr|atty|supt|hr", # Titles
     "ave|blvd|st|rd|hwy", # Streets
     "jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec", # Months
     "|".join(ascii_lowercase) # Initials
@@ -147,7 +155,7 @@ def is_abbreviation(dotted_word):
 
 def is_sentence_ender(word):
     if word in exceptions: return False
-    if word[-1] in [ "?", "!" ]:
+    if word[-1] in [ "?", "!", " . ", " ." ]:
         return True
     if len(re.sub(r"[^A-Z]", "", word)) > 1:
         return True

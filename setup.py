@@ -13,7 +13,7 @@ setup(
     Extract data, like url, title, snippet
     of results or ratings for given keywords.
     ''',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
     author='Ronald Schmidt',
     author_email='ronald.schmidt@zu-web.de',
     url='https://github.com/ecoron/SerpScrap',
@@ -43,5 +43,5 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
-    keywords='serp url scraper',
+    keywords='serp-scraper url-scraper text-analyzer',
 )

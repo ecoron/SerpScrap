@@ -15,7 +15,6 @@ Extract data, like url, title, snippet of results or ratings for given keywords.
 Extract the cleaned raw text content from urls.
 Get the tfidf of the text content, or generate with the text generator new sentences.
 
-SerpScrap wraps a `fork`_ of `GoogleScraper`_ with several improvements.
 
 See http://serpscrap.readthedocs.io/en/latest/ for documentation.
 
@@ -73,6 +72,8 @@ In this example the searchphrase is "your keywords"
 
 References
 ----------
+
+SerpScrap wraps a `fork`_ of `GoogleScraper`_ with several improvements.
 
 .. target-notes::
 

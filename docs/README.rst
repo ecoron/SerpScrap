@@ -15,52 +15,52 @@ Extract data, like url, title, snippet of results or ratings for given keywords.
 Extract the cleaned raw text content from urls.
 Get the tfidf of the text content, or generate with the text generator new sentences.
 
-SerpScrap wraps a [fork](https://github.com/ecoron/GoogleScraper) of [GoogleScraper](https://github.com/NikolaiT/GoogleScraper) with several improvements.
+SerpScrap wraps a `fork https://github.com/ecoron/GoogleScraper`_ of `GoogleScraper https://github.com/NikolaiT/GoogleScraper`_ with several improvements.
 
-See http://serpscrap.readthedocs.io/en/latest/ for documentation.
+See `serpscrap.readthedocs.io http://serpscrap.readthedocs.io/en/latest/`_ for documentation.
 
-Source is available at https://github.com/ecoron/SerpScrap.
+Source is available at `https://github.com/ecoron/SerpScrap`_.
 
 Install
 =======
 
-  pip install SerpScrap
+.. code-block::
+   pip install SerpScrap
 
 Requirements Windows
-====================
+--------------------
 
-on Windows you might need also [Microsoft Visual C++ Build Tools](http://landinghub.visualstudio.com/visual-cpp-build-tools) installed.
+on Windows you might need also `Microsoft Visual C++ Build Tools http://landinghub.visualstudio.com/visual-cpp-build-tools`_ installed.
 
-* [lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
-* [numpy](http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy)
-* [scipy](http://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy)
-* [scikit-learn](http://www.lfd.uci.edu/~gohlke/pythonlibs/#scikit-learn)
+* `lxml http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml`_
+* `numpy http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy`_
+* `scipy http://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy`_
+* `scikit-learn http://www.lfd.uci.edu/~gohlke/pythonlibs/#scikit-learn`_
+
+avoid encode/decode issues by running this command before starting python in your cli
+
+.. code-block::
+   chcp 65001
+   set PYTHONIOENCODING=utf-8
 
 Usage
 =====
 
 SerpScrap in your applications
 
+.. code-block::
+   import serpscrap
+   
+   keywords = ['one', 'two']
+   scrap = serpscrap.SerpScrap()
+   scrap.init(keywords=keywords)
+   result = scrap.scrap_serps()
 
-  import serpscrap
-  
-  keywords = ['one', 'two']
-  scrap = serpscrap.SerpScrap()
-  scrap.init(keywords=keywords)
-  result = scrap.scrap_serps()
-
-take also a look into the [examples folder](examples/)
+You find more `examples https://github.com/ecoron/SerpScrap/tree/master/examples`_ on the github page.
 
 To run SerpScrap via command line provide one or more keywords as searchphrase.
 In this example the searchphrase is "your keywords"
 
   python serpscrap\serpscrap.py -k your keywords
 
-windows user
-============
-
-avoid encode/decode issues by running this command before starting python in your cli
-
-  chcp 65001
-  set PYTHONIOENCODING=utf-8
 

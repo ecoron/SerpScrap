@@ -11,7 +11,7 @@ config = Config().get()
 
 urlscrape = UrlScrape(config)
 contents = urlscrape.scrap_url(url)
-    
+
 markovi = Markovi(config)
 texts = []
 for content in contents:

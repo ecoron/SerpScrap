@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import serpscrap
 
-url = 'http://www.tagesspiegel.de/berlin/verkehr-in-berlin-umweltbundesamt-fordert-generelles-tempo-30-in-staedten/19564430.html'
+url = 'https://en.wikipedia.org/wiki/Special:Random'
 
 config = serpscrap.Config()
 

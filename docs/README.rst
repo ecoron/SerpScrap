@@ -6,7 +6,7 @@ SerpScrap
     :target: https://pypi.python.org/pypi/SerpScrap
 
 .. image:: https://readthedocs.org/projects/serpscrap/badge/?version=latest
-    :target: https://readthedocs.org/projects/serpscrap/?badge=latest
+    :target: http://serpscrap.readthedocs.io/en/latest/
     :alt: Documentation Status
 
 

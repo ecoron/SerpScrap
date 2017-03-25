@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+"""
+SerpScrap.SerpScrap
+"""
 from GoogleScraper import scrape_with_config, GoogleSearchError
 from serpscrap.config import Config
 from serpscrap.urlscrape import UrlScrape
@@ -10,15 +13,36 @@ import pprint
 
 
 class SerpScrap():
-
+    """main module to execute the serp and url scrape tasks
+    Attributes:
+        args: list for cli args
+        serp_query: list holds the keywords to query the search engine
+        cli (list): for cli attributes
+        init (dict, str|list): init SerpScarp
+        run (): main method
+        scrap_serps (): scrape serps
+        scrap (): calls GoogleScraper
+        scrap_url(string): calls UrlScrape
+        adjust_encoding(string): for encoding
+    """
     args = []
 
     serp_query = None
 
     def cli(self, args=None):
-        """method called if executed on command line"""
+        """method called if executed on command line
+        Args:
+            args (mixed): args via commandline
+        Returns:
+            list: dicts of results
+        """
         parser = argparse.ArgumentParser(prog='serpscrap')
-        parser.add_argument('-k', '--keyword', help='keyword for scraping', nargs='*')
+        parser.add_argument(
+            '-k',
+            '--keyword',
+            help='keyword for scraping',
+            nargs='*'
+        )
         self.args = parser.parse_args()
         if len(self.args.keyword) > 0:
             keywords = ' '.join(self.args.keyword)
@@ -27,7 +51,13 @@ class SerpScrap():
         return self.run()
 
     def init(self, config=None, keywords=None):
-        """init config and serp_query"""
+        """init config and serp_query
+        Args:
+            config (None|dict): override default config
+            keywords (str|list): string or list of strings, keywords to scrape
+        Raises:
+            ValueError:
+        """
         if config is not None:
             self.config = config
         else:
@@ -42,7 +72,8 @@ class SerpScrap():
 
     def run(self):
         """main method to run scrap_serps and scrap_url
-        return list of dicts with all results
+        Returns:
+            list: dicts with all results
         """
         results = None
         if self.serp_query is not None:
@@ -58,14 +89,15 @@ class SerpScrap():
 
     def scrap_serps(self):
         """call scrap method and append serp results to list
-        return list
+        Returns
+            list: dict of scrape results
         """
         search = self.scrap()
         result = []
         for serp in search.serps:
             for link in serp.links:
-                # link, snippet, title, visible_link, domain, rank, serp, link_type, rating
-                # if 'results' in link.link_type:
+                # link, snippet, title, visible_link, domain, rank,
+                # serp, link_type, rating
                 result.append({
                     'query_num_results total': serp.num_results_for_query,
                     'query_num_results_page': serp.num_results,
@@ -84,6 +116,10 @@ class SerpScrap():
         return result
 
     def scrap(self):
+        """scrap, method calls GoogleScraper method
+        Returns:
+            dict: scrape result#
+        """
         # See in the config.cfg file for possible values
         self.config['keywords'] = self.serp_query if isinstance(self.serp_query, list) else [self.serp_query]
 
@@ -93,11 +129,24 @@ class SerpScrap():
             print(traceback.print_exc())
 
     def scrap_url(self, url):
+        """method calls UrlScrape
+        Args:
+            url (string): url to scrape
+        Returns:
+            dict: result of url scrape
+        """
         urlscrape = UrlScrape(self.config)
         return urlscrape.scrap_url(url)
 
     def adjust_encoding(self, data):
-        """detect and adjust encoding of data return data decoded to utf-8"""
+        """detect and adjust encoding of data return data decoded to utf-8
+        TODO:
+            move to tools
+        Args:
+            data (string): data to encode
+        Returns:
+            dict: encoding and data
+        """
         if data is None:
             return {'encoding': None, 'data': data}
 
@@ -117,5 +166,6 @@ class SerpScrap():
         return {'encoding': check_encoding['encoding'], 'data': data}
 
 if __name__ == "__main__":
+    """called on commandline execution"""
     res = SerpScrap().cli()
     pprint.pprint(res)

@@ -12,10 +12,13 @@ class Markovi():
         # Build the model.
         text_model = self.get_model(text, state_size)
         # Print five randomly-generated sentences
-        return text_model.make_sentence(tries=10, max_overlap_ratio=0.7, max_overlap_total=15)
+        return text_model.make_sentence(
+            tries=10,
+            max_overlap_ratio=0.7,
+            max_overlap_total=15
+        )
 
     def generate_short(self, text, state_size=2, chars=140):
-        # Print three randomly-generated sentences of no more than 140 characters
         text_model = self.get_model(text, state_size)
         return text_model.make_short_sentence(chars)
 

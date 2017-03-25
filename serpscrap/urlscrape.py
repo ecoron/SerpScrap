@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+"""SerpScrap.UrlScrape"""
 import chardet
 import concurrent.futures
 import hashlib
@@ -9,13 +10,16 @@ import re
 import urllib.request
 import os
 from bs4 import BeautifulSoup
-from string import whitespace
 
 
 class UrlScrape():
 
-    meta_robots_pattern = re.compile(r'<meta\sname=["\']robots["\']\scontent=["\'](.*?)["\']\s/>')
-    meta_title_pattern = re.compile(r'<title[^>]*>([^<]+)</title>')
+    meta_robots_pattern = re.compile(
+        r'<meta\sname=["\']robots["\']\scontent=["\'](.*?)["\']\s/>'
+    )
+    meta_title_pattern = re.compile(
+        r'<title[^>]*>([^<]+)</title>'
+    )
     results = []
 
     def __init__(self, config=None):
@@ -101,23 +105,25 @@ class UrlScrape():
                 h.ignore_links = True
                 h.ignore_images = True
 
-                txt = split_into_sentences(BeautifulSoup(h.handle(html), 'html.parser').get_text().replace('\n', ' '))
+                txt = split_into_sentences(
+                    BeautifulSoup(h.handle(html), 'html.parser').get_text().replace('\n', ' ')
+                )
                 row_count = len(txt)
                 word_sum = 0
                 tmp_txt = []
                 for row in txt:
                     row = row.replace('*', '').replace('#', '').replace('_', '').replace('\t', '').replace('   ', ' ').replace('  ', ' ')
-                    row = ' '.join([word for word in row.split(' ') if len(word) > 1])
+                    row = ' '.join(
+                        [word for word in row.split(' ') if len(word) > 1]
+                    )
                     word_sum += len(row.split(' '))
                     tmp_txt.append(row)
                 avg_row_length = int(word_sum/row_count)
-                
                 clean_txt = ''
                 for row in tmp_txt:
                     word_count = len(row.split(' '))
                     if 2 < word_count < avg_row_length*3:
                         clean_txt += row+'\n'
-                
                 result.update({'text_raw': clean_txt})
 
                 with open(cache_file, 'w') as fp:
@@ -144,18 +150,25 @@ abbr_lowercase = "etc|v|vs|viz|al|pct"
 
 exceptions = "U.S.|U.N.|E.U.|F.B.I.|C.I.A.".split("|")
 
+
 def is_abbreviation(dotted_word):
     clipped = dotted_word[:-1]
     if clipped[0] in ascii_uppercase:
-        if clipped.lower() in abbr_capped: return True
-        else: return False
+        if clipped.lower() in abbr_capped:
+            return True
+        else:
+            return False
     else:
-        if clipped in abbr_lowercase: return True
-        else: return False
+        if clipped in abbr_lowercase:
+            return True
+        else:
+            return False
+
 
 def is_sentence_ender(word):
-    if word in exceptions: return False
-    if word[-1] in [ "?", "!", " . ", " ." ]:
+    if word in exceptions:
+        return False
+    if word[-1] in ["?", "!", " .", " ."]:
         return True
     if len(re.sub(r"[^A-Z]", "", word)) > 1:
         return True
@@ -163,16 +176,23 @@ def is_sentence_ender(word):
         return True
     return False
 
+
 def split_into_sentences(text):
     potential_end_pat = re.compile(r"".join([
-        r"([\w\.'’&\]\)]+[\.\?!])", # A word that ends with punctuation
-        r"([‘’“”'\"\)\]]*)", # Followed by optional quote/parens/etc
-        r"(\s+(?![a-z\-–—]))", # Followed by whitespace + non-(lowercase or dash)
-        ]), re.U)
+        r"([\w\.'’&\]\)]+[\.\?!])",  # A word that ends with punctuation
+        r"([‘’“”'\"\)\]]*)",  # Followed by optional quote/parens/etc
+        r"(\s+(?![a-z\-–—]))",  # Followed by whitespace + non-(lowercase or dash)
+        ]),
+        re.U
+    )
     dot_iter = re.finditer(potential_end_pat, text)
-    end_indices = [ (x.start() + len(x.group(1)) + len(x.group(2)))
+    end_indices = [
+        (x.start() + len(x.group(1)) + len(x.group(2)))
         for x in dot_iter
-        if is_sentence_ender(x.group(1)) ]
+        if is_sentence_ender(x.group(1))
+    ]
     spans = zip([None] + end_indices, end_indices + [None])
-    sentences = [ text[start:end].strip() for start, end in spans ]
+    sentences = [
+        text[start:end].strip() for start, end in spans
+    ]
     return sentences

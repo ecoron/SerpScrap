@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 from serpscrap.config import Config
 from serpscrap.serpscrap import SerpScrap
 from serpscrap.urlscrape import UrlScrape

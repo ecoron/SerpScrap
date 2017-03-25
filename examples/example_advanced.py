@@ -28,7 +28,12 @@ model = markovi.get_combined_model(models)
 
 texts = []
 for _ in range(len(results)):
-    text = model.make_sentence(char_limit=150, tries=10, max_overlap_ratio=0.7, max_overlap_total=25)
+    text = model.make_sentence(
+        char_limit=150,
+        tries=10,
+        max_overlap_ratio=0.7,
+        max_overlap_total=25
+    )
     if isinstance(text, str):
         texts.append(text)
 
@@ -40,6 +45,11 @@ print(tf[0:10])
 
 model = markovi.get_model("\n".join(texts), 1)
 for _ in range(10):
-    text = model.make_short_sentence(char_limit=80, tries=10, max_overlap_ratio=0.7, max_overlap_total=20)
+    text = model.make_short_sentence(
+        char_limit=80,
+        tries=10,
+        max_overlap_ratio=0.7,
+        max_overlap_total=20
+    )
     if text is not None:
         print(text)

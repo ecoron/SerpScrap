@@ -7,8 +7,12 @@ version = '0.3.5'
 setup(
     name='SerpScrap',
     version=version,
-    description='''A python module to scrape and extract data like urls, titles, descriptions, ratings from search engine result pages
-    and also the meta informations und raw text content from listed urls.''',
+    description='''
+    A python module to scrape, extract, analyze data from
+    search engine result pages and urls.
+    Extract data, like url, title, snippet
+    of results or ratings for given keywords.
+    ''',
     long_description=open('README.md').read(),
     author='Ronald Schmidt',
     author_email='ronald.schmidt@zu-web.de',

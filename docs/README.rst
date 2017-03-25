@@ -5,8 +5,8 @@ SerpScrap
 .. image:: https://img.shields.io/pypi/v/SerpScrap.svg
     :target: https://pypi.python.org/pypi/SerpScrap
 
-.. image:: https://readthedocs.org/projects/SerpScrap/badge/?version=latest
-    :target: https://readthedocs.org/projects/SerpScrap/?badge=latest
+.. image:: https://readthedocs.org/projects/serpscrap/badge/?version=latest
+    :target: https://readthedocs.org/projects/serpscrap/?badge=latest
     :alt: Documentation Status
 
 

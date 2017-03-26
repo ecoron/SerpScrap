@@ -26,7 +26,7 @@ Install
 
 .. code-block:: python
 
-   pip install SerpScrap
+   pip install SerpScrap --process-dependency-links
 
 
 Requirements Windows

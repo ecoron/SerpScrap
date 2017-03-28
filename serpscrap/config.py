@@ -18,7 +18,7 @@ class Config():
     """
 
     config = {
-        # 'use_own_ip': True,
+        'use_own_ip': True,
         'search_engines': ['google'],
         'num_pages_for_keyword': 2,
         'scrape_method': 'http',  # selenium

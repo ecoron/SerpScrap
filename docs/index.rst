@@ -93,5 +93,6 @@ Contents
 .. toctree::
    :maxdepth: 2
    
+   configuration
    examples
    ressources

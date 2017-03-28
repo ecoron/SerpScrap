@@ -6,6 +6,7 @@ python:
   - "3.5"
   - "3.6"
 # command to install dependencies
+install: "pip install -r requirements.txt"
 install: "pip install SerpScrap --process-dependency-links"
 # command to run tests
-script: pytest
+# script: pytest

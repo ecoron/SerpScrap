@@ -66,18 +66,21 @@ Proxy file
 You can provide a list of proxys which should used for scraping the search engines.
 For this you have to create a proxy_file and to set the path to the file in the configuration.
 
-The proxy_file should look like this:
+The proxy_file should look like this
 
 .. code-block:: bash
-      http XX.XXX.XX.XX:80
-      socks4 XX.XXX.XX.XX:80 username:password
-      socks5 XX.XXX.XX.XX:1080 username:password
+
+   http XX.XXX.XX.XX:80
+   socks4 XX.XXX.XX.XX:80 username:password
+   socks5 XX.XXX.XX.XX:1080 username:password
+
 
 In the configuration you need the following settings:
 
 .. code-block:: python
-      config.set('use_own_ip', False)
-      config.set('proxy_file', 'path_to_your_file')
+
+   config.set('use_own_ip', False)
+   config.set('proxy_file', 'path_to_your_file')
 
 
 

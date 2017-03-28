@@ -20,6 +20,15 @@ See http://serpscrap.readthedocs.io/en/latest/ for documentation.
 
 Source is available at https://github.com/ecoron/SerpScrap.
 
+Contents
+--------
+.. toctree::
+   :maxdepth: 2
+   
+   configuration
+   examples
+   ressources
+
 
 Install
 =======
@@ -87,12 +96,3 @@ SerpScrap wraps a `fork`_ of `GoogleScraper`_ with several improvements.
 .. _`scikit-learn`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scikit-learn
 .. _`examples`: https://github.com/ecoron/SerpScrap/tree/master/examples
 
-
-Contents
---------
-.. toctree::
-   :maxdepth: 2
-   
-   configuration
-   examples
-   ressources

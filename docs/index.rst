@@ -26,6 +26,7 @@ Contents
    :maxdepth: 2
    
    configuration
+   docker
    examples
    ressources
 

@@ -87,3 +87,5 @@ ENV/
 .project
 .pydevproject
 .settings
+
+make.bat

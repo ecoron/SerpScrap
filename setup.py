@@ -4,6 +4,8 @@ from setuptools import setup, find_packages
 
 version = '0.3.8'
 
+requirements = [r for r in open('requirements.txt', 'r').read().split('\n') if r]
+
 setup(
     name='SerpScrap',
     version=version,
@@ -38,9 +40,9 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Internet',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
     keywords='serp-scraper url-scraper text-analyzer',
 )

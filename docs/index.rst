@@ -9,6 +9,9 @@ SerpScrap
     :target: http://serpscrap.readthedocs.io/en/latest/
     :alt: Documentation Status
 
+.. image:: https://travis-ci.org/ecoron/SerpScrap.svg?branch=master
+    :target: https://travis-ci.org/ecoron/SerpScrap
+
 
 A python module to scrape, extract, analyze data from search engine result pages and urls.
 Extract data, like url, title, snippet of results or ratings for given keywords.

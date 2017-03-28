@@ -9,6 +9,9 @@ SerpScrap
     :target: http://serpscrap.readthedocs.io/en/latest/
     :alt: Documentation Status
 
+.. image:: https://travis-ci.org/ecoron/SerpScrap.svg?branch=master
+    :target: https://travis-ci.org/ecoron/SerpScrap
+
 
 A python module to scrape, extract, analyze data from search engine result pages and urls.
 Extract data, like url, title, snippet of results or ratings for given keywords.
@@ -23,9 +26,18 @@ Source is available at https://github.com/ecoron/SerpScrap.
 Install
 =======
 
+The easiest way to do
+
 .. code-block:: python
 
    pip install SerpScrap --process-dependency-links
+
+
+In some cases it is required to install python-scipy first
+
+.. code-block:: bash
+
+   sudo apt-get build-dep python-scipy
 
 
 Requirements Windows

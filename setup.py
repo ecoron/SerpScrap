@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.3.8'
+version = '0.3.9'
 
 requirements = [r for r in open('requirements.txt', 'r').read().split('\n') if r]
 

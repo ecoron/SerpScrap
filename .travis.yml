@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.2"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.6"
+# command to install dependencies
+install: "pip install SerpScrap --process-dependency-links"
+# command to run tests
+script: pytest

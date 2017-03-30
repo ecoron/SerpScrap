@@ -27,12 +27,27 @@ class Config():
         'do_caching': True,
         'cachedir': '/tmp/.serpscrap/',
         'database_name': '/tmp/serpscrap',
+        'minimize_caching_files': True,
         'clean_cache_after': 24,
         'output_filename': None,
         # 'print_results': 'all',
         'scrape_urls': True,
         'url_threads': 3,
-        'proxy_file': ''
+        'log_level': 'INFO',
+        'num_workers': 4,
+        'num_results_per_page': 10,
+        'search_type': 'normal',
+        'google_search_url': 'https://www.google.com/search?',
+        'bing_search_url': 'http://www.bing.com/search?',
+        'headers': {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4',
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Connection': 'keep-alive',
+        },
+        'proxy_file': '',
+        'proxy_check_url': 'http://canihazip.com/s',
+        'proxy_info_url': 'http://ipinfo.io/json'
     }
 
     def get(self):

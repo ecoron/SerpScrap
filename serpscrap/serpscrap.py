@@ -3,13 +3,15 @@
 """
 SerpScrap.SerpScrap
 """
-from GoogleScraper import scrape_with_config, GoogleSearchError
+import argparse
+import pprint
+import traceback
+
+import chardet
 from serpscrap.config import Config
 from serpscrap.urlscrape import UrlScrape
-import argparse
-import chardet
-import traceback
-import pprint
+
+from scrapcore.core import Core
 
 
 class SerpScrap():
@@ -124,8 +126,8 @@ class SerpScrap():
         self.config['keywords'] = self.serp_query if isinstance(self.serp_query, list) else [self.serp_query]
 
         try:
-            return scrape_with_config(self.config)
-        except GoogleSearchError:
+            return Core().scrape_with_config(self.config)
+        except:
             print(traceback.print_exc())
 
     def scrap_url(self, url):

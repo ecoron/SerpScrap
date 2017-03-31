@@ -2,14 +2,12 @@
 import abc
 import datetime
 import logging
-import os
 import random
 import time
 
 from scrapcore.database import db_Proxy
 from scrapcore.parsing import Parsing
 from scrapcore.result_writer import ResultWriter
-from scrapcore.scraper.scrape_worker_factory import ScrapeWorkerFactory
 from scrapcore.tools import Proxies
 
 logger = logging.getLogger(__name__)

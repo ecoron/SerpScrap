@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
 import datetime
 import queue
 import threading
@@ -10,7 +9,7 @@ from scrapcore.database import ScraperSearch
 from scrapcore.database import get_session, fixtures
 from scrapcore.logger import Logger
 from scrapcore.result_writer import ResultWriter
-from scrapcore.scraping import ScrapeWorkerFactory
+from scrapcore.scraper.scrape_worker_factory import ScrapeWorkerFactory
 from scrapcore.tools import Error
 from scrapcore.tools import Proxies
 from scrapcore.tools import ScrapeJobGenerator

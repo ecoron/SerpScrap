@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
+import logging
 import pprint
 import re
 
 from cssselect import HTMLTranslator
 import lxml.html
 from lxml.html.clean import Cleaner
+
+
+logger = logging.getLogger(__name__)
 
 
 class Parser():
@@ -16,18 +20,8 @@ class Parser():
     page_number_selectors = []
     search_types = []
 
-    def __init__(self, config={}, html='', query='', logger=None):
-        """Create new Parser instance and parse all information.
-
-        Args:
-            html: The raw html from the search engine search. If not provided, you can parse
-                    the data later by calling parse(html) directly.
-            searchtype: The search type. By default "normal"
-
-        Raises:
-            Assertion error if the subclassed
-            specific parser cannot handle the the settings.
-        """
+    def __init__(self, config={}, html='', query=''):
+        """Create new Parser instance and parse all information."""
         self.config = config
         self.searchtype = self.config.get('search_type', 'normal')
         assert self.searchtype in self.search_types, 'search type "{}" is not supported in {}'.format(
@@ -50,8 +44,6 @@ class Parser():
 
         # short alias because we use it so extensively
         self.css_to_xpath = HTMLTranslator().css_to_xpath
-
-        self.logger = logger
 
         if self.html:
             self.parse()
@@ -82,12 +74,12 @@ class Parser():
             self.dom.resolve_base_href()
         except Exception as e:
             # maybe wrong encoding
-            self.logger.error(e)
+            logger.error(e)
 
     def _parse(self, cleaner=None):
         """Internal parse the dom according to the provided css selectors.
-
-        Raises: InvalidSearchTypeException if no css selectors for the searchtype could be found.
+        Raises: InvalidSearchTypeException
+        if no css selectors for the searchtype could be found.
         """
         self.num_results = 0
         self._parse_lxml(cleaner)
@@ -97,32 +89,49 @@ class Parser():
         selector_dict = getattr(self, attr_name, None)
 
         # get the appropriate css selectors for the num_results for the keyword
-        num_results_selector = getattr(self, 'num_results_search_selectors', None)
+        num_results_selector = getattr(
+            self,
+            'num_results_search_selectors',
+            None
+        )
 
-        self.num_results_for_query = self.first_match(num_results_selector, self.dom)
+        self.num_results_for_query = self.first_match(
+            num_results_selector,
+            self.dom
+        )
         if not self.num_results_for_query:
-            self.logger.debug('{}: Cannot parse num_results from serp page with selectors {}'.format(self.__class__.__name__, num_results_selector))
+            logger.debug(''''{}: Cannot parse num_results from serp page
+            with selectors {}
+            '''.format(self.__class__.__name__, num_results_selector))
 
-        # get the current page we are at. Sometimes we search engines don't show this.
+        # get the current page we are at.
         try:
             self.page_number = int(self.first_match(self.page_number_selectors, self.dom))
         except ValueError:
             self.page_number = -1
 
         # let's see if the search query was shitty (no results for that query)
-        self.effective_query = self.first_match(self.effective_query_selector, self.dom)
+        self.effective_query = self.first_match(
+            self.effective_query_selector,
+            self.dom
+        )
         if self.effective_query:
-            self.logger.debug('{}: There was no search hit for the search query. Search engine used {} instead.'.format(
-                self.__class__.__name__, self.effective_query))
+            logger.debug('''{}: There was no search hit for the search query.
+            Search engine used {} instead.
+            '''.format(self.__class__.__name__, self.effective_query))
         else:
             self.effective_query = ''
 
         # the element that notifies the user about no results.
-        self.no_results_text = self.first_match(self.no_results_selector, self.dom)
+        self.no_results_text = self.first_match(
+            self.no_results_selector,
+            self.dom
+        )
 
         # get the stuff that is of interest in SERP pages.
         if not selector_dict and not isinstance(selector_dict, dict):
-            raise Exception('There is no such attribute: {}. No selectors found'.format(attr_name))
+            raise Exception('''There is no such attribute: {}. No selectors found
+            '''.format(attr_name))
 
         for result_type, selector_class in selector_dict.items():
 

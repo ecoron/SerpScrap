@@ -1,12 +1,25 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+import random
+
 from serpscrap.config import Config
 from serpscrap.serpscrap import SerpScrap
 
 
 class TestClass:
+
     def test_simple(self):
-        keywords = ['computer since']
+
+        keyword_list = [
+            'computer news',
+            'since topics',
+            'python tutorial',
+            'pythons',
+            'machine learning',
+            'artificial intelligence',
+        ]
+        keywords = random.choice(keyword_list)
+
         config = Config()
         config.set('scrape_urls', False)
         scrap = SerpScrap()

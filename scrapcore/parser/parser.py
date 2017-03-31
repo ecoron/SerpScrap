@@ -55,7 +55,7 @@ class Parser():
             html: The raw html data to extract the SERP entries from.
         """
         if html:
-            self.html = html
+            self.html = html.encode('utf-8').decode('utf-8')
 
         # lets do the actual parsing
         self._parse()

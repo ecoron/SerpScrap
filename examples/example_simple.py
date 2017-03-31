@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import serpscrap
 
-keywords = ['garten sichtschutz versandkostenfrei']
+keywords = ['trending topics']
 
 config = serpscrap.Config()
 config.set('scrape_urls', False)

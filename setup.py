@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.4.0'
+version = '0.4.1'
 
-requirements = [r for r in open('requirements.txt', 'r').read().split('\n') if r]
 
 setup(
     name='SerpScrap',

@@ -30,7 +30,7 @@ The easiest way to do
 
 .. code-block:: python
 
-   pip install SerpScrap --process-dependency-links
+   pip install SerpScrap
 
 
 In some cases it is required to install python-scipy first
@@ -84,11 +84,10 @@ In this example the searchphrase is "your keywords"
 References
 ----------
 
-SerpScrap wraps a `fork`_ of `GoogleScraper`_ with several improvements.
+The scrapcore is based on `GoogleScraper`_ with several improvements.
 
 .. target-notes::
 
-.. _`fork`: https://github.com/ecoron/GoogleScraper
 .. _`GoogleScraper`: https://github.com/NikolaiT/GoogleScraper
 .. _`serpscrap.readthedocs.io`: http://serpscrap.readthedocs.io/en/latest/
 .. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools

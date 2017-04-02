@@ -12,13 +12,17 @@ Default configuration
 * clean_cache_after: 24           - clean cached files older then x hours
 * database_name: '/tmp/serpscrap' - path and name sqlite db (stores scrape results)
 * do_caching: True                - enable / disable caching
+* headers:                        - dict to customize request header, see below
 * num_pages_for_keyword: 2        - number of result pages to scrape
+* num_results_per_page: 10        - number results per searchengine page
+* num_workers: 4                  - threads searchengine scraping
 * output_filename: None           - store output in filename.csv or filename.json
 * proxy_file: ''                  - path to proxy file
 * scrape_urls: True               - scrape urls of search results
-* search_engines: ['google']      - search engines (google,bing,baidu,yahoo,yandex)
+* search_engines: ['google']      - search engines (google, bing)
 * url_threads: 3                  - number of threads if scrape_urls is true
 * use_own_ip: True                - by using proxies set to False
+
 
 Custom configuration
 --------------------
@@ -59,6 +63,27 @@ Using your own configuration
    scrap = serpscrap.SerpScrap()
    scrap.init(config=config.get(), keywords=keywords)
    # scrap.init(config=config_new, keywords=keywords)
+
+
+Headers
+-------
+
+You can customize your searchengine request headers
+by providing a dict in your configuration. If you
+don't customize this setting, the default is used.
+
+.. code-block:: python
+
+   config = {
+     ...
+     'headers': {
+         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+         'Accept-Language': 'de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4',
+         'Accept-Encoding': 'gzip, deflate, sdch',
+         'Connection': 'keep-alive',
+     },
+     ...
+
 
 Proxy file
 ----------

@@ -7,24 +7,26 @@ import threading
 from urllib.parse import urlencode
 
 from scrapcore.parsing import Parsing
-from scrapcore.scraping import SearchEngineScrape, get_base_search_url_by_search_engine
+from scrapcore.scraping import SearchEngineScrape
+from scrapcore.scraping import get_base_search_url_by_search_engine
 from scrapcore.user_agent import random_user_agent
 import socks
 
 logger = logging.getLogger(__name__)
 
 
-def get_GET_params_for_search_engine(query, search_engine, page_number=1, num_results_per_page=10,
+def get_GET_params_for_search_engine(query,
+                                     search_engine,
+                                     page_number=1,
+                                     num_results_per_page=10,
                                      search_type='normal'):
     """Returns the params of the url for the search engine and the search mode.
-
     Args:
         search_engine: The search engine. Example: 'google'
         search_mode: The search mode. Example: 'image' or 'normal'
         query: The search query
         page_number: Which SERP page.
         num_results_per_page: How many entries per page.
-
     Returns:
         The params for the GET url.
     """
@@ -73,10 +75,6 @@ def get_GET_params_for_search_engine(query, search_engine, page_number=1, num_re
         if page_number > 1:
             search_params['p'] = str(page_number - 1)
 
-        # @todo: what was this for?
-        # if search_type == 'image':
-        #     base_search_url = 'http://yandex.ru/images/search?'
-
     elif search_engine == 'bing':
         search_params['q'] = query
         # bing doesn't support variable number of results (As far as I know).
@@ -111,15 +109,10 @@ def get_GET_params_for_search_engine(query, search_engine, page_number=1, num_re
 
 class HttpScrape(SearchEngineScrape, threading.Timer):
     """Offers a fast way to query any search engine using raw HTTP requests.
-
     Overrides the run() method of the superclass threading.Timer.
     Each thread represents a crawl for one Search Engine SERP page. Inheriting
-    from threading.Timer allows the deriving class to delay execution of the run()
-    method.
-
-    This is a base class, Any supported search engine needs to subclass HttpScrape to
-    implement this specific scrape type.
-
+    from threading.Timer allows the deriving class to delay execution
+    of the run() method.
     Attributes:
         results: Returns the found results.
     """
@@ -140,16 +133,16 @@ class HttpScrape(SearchEngineScrape, threading.Timer):
         # initialize the GET parameters for the search request
         self.search_params = {}
 
-        # initialize the HTTP headers of the search request
-        # to some base values that mozilla uses with requests.
-        # the Host and User-Agent field need to be set additionally.
+        # Host and User-Agent field need to be set additionally.
         self.headers = config.get('headers')
 
-        # the mode
         self.scrape_method = 'http'
 
-        # get the base search url based on the search engine.
-        self.base_search_url = get_base_search_url_by_search_engine(self.config, self.search_engine_name, self.scrape_method)
+        self.base_search_url = get_base_search_url_by_search_engine(
+            self.config,
+            self.search_engine_name,
+            self.scrape_method
+        )
 
         super().instance_creation_info(self.__class__.__name__)
 
@@ -184,7 +177,7 @@ class HttpScrape(SearchEngineScrape, threading.Timer):
         super().switch_proxy()
 
     def proxy_check(self, proxy):
-        assert self.proxy and self.requests, 'ScraperWorker needs valid proxy instance and requests library to make ' \
+        assert self.proxy and self.requests, 'Worker needs valid proxy instance and requests library to make ' \
                                              'the proxy check.'
 
         online = False

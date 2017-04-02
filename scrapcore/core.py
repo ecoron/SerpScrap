@@ -14,16 +14,17 @@ from scrapcore.tools import Error
 from scrapcore.tools import Proxies
 from scrapcore.tools import ScrapeJobGenerator
 from scrapcore.tools import ShowProgressQueue
+from scrapcore.validator_config import ValidatorConfig
 
 
 class Core():
 
     logger = None
 
-    def scrape_with_config(self, config):
+    def run(self, config):
         """run with the dict in config."""
-        if not isinstance(config, dict):
-            raise ValueError('config  has wrong type: {}'.format(type(config)))
+        validator = ValidatorConfig()
+        validator.validate(config)
 
         return self.main(return_results=True, config=config)
 
@@ -56,9 +57,6 @@ class Core():
         scrape_method = config.get('scrape_method')
         pages = int(config.get('num_pages_for_keyword', 1))
         method = config.get('scrape_method', 'http')
-
-        if config.get('num_results_per_page') > 100:
-            raise Error('Not more that 100 results per page available for searches.')
 
         result_writer = ResultWriter()
         result_writer.init_outfile(config, force_reload=True)
@@ -95,11 +93,7 @@ class Core():
             proxies = Proxies().parse_proxy_file(proxy_file)
 
         if not proxies:
-            raise Exception('No proxies available and using own IP is prohibited by configuration. Turning down.')
-
-        valid_search_types = ('normal', 'video', 'news', 'image')
-        if config.get('search_type') not in valid_search_types:
-            raise Error('Invalid search type! Select one of {}'.format(repr(valid_search_types)))
+            raise Exception('''No proxies available. Turning down.''')
 
         # get a scoped sqlalchemy session
         session_cls = get_session(config, scoped=False)
@@ -162,74 +156,64 @@ class Core():
 
             progress_thread = None
 
-            # Let the games begin
-            if method in ('selenium', 'http'):
+            # Show the progress of the scraping
+            q = queue.Queue()
+            progress_thread = ShowProgressQueue(config, q, len(scrape_jobs))
+            progress_thread.start()
 
-                # Show the progress of the scraping
-                q = queue.Queue()
-                progress_thread = ShowProgressQueue(config, q, len(scrape_jobs))
-                progress_thread.start()
+            workers = queue.Queue()
+            num_worker = 0
+            for search_engine in search_engines:
 
-                workers = queue.Queue()
-                num_worker = 0
-                for search_engine in search_engines:
+                for proxy in proxies:
 
-                    for proxy in proxies:
-
-                        for worker in range(num_workers):
-                            num_worker += 1
-                            workers.put(
-                                ScrapeWorkerFactory(
-                                    config,
-                                    cache_manager=cache_manager,
-                                    mode=method,
-                                    proxy=proxy,
-                                    search_engine=search_engine,
-                                    session=session,
-                                    db_lock=db_lock,
-                                    cache_lock=cache_lock,
-                                    scraper_search=scraper_search,
-                                    captcha_lock=captcha_lock,
-                                    progress_queue=q,
-                                    browser_num=num_worker
-                                )
+                    for worker in range(num_workers):
+                        num_worker += 1
+                        workers.put(
+                            ScrapeWorkerFactory(
+                                config,
+                                cache_manager=cache_manager,
+                                mode=method,
+                                proxy=proxy,
+                                search_engine=search_engine,
+                                session=session,
+                                db_lock=db_lock,
+                                cache_lock=cache_lock,
+                                scraper_search=scraper_search,
+                                captcha_lock=captcha_lock,
+                                progress_queue=q,
+                                browser_num=num_worker
                             )
+                        )
 
-                # here we look for suitable workers
-                # for all jobs created.
-                for job in scrape_jobs:
-                    while True:
-                        worker = workers.get()
-                        workers.put(worker)
-                        if worker.is_suitabe(job):
-                            worker.add_job(job)
-                            break
-
-                threads = []
-
-                while not workers.empty():
+            # here we look for suitable workers
+            # for all jobs created.
+            for job in scrape_jobs:
+                while True:
                     worker = workers.get()
-                    thread = worker.get_worker()
-                    if thread:
-                        threads.append(thread)
+                    workers.put(worker)
+                    if worker.is_suitabe(job):
+                        worker.add_job(job)
+                        break
 
-                for t in threads:
-                    t.start()
+            threads = []
 
-                for t in threads:
-                    t.join()
+            while not workers.empty():
+                worker = workers.get()
+                thread = worker.get_worker()
+                if thread:
+                    threads.append(thread)
 
-                # after threads are done, stop the progress queue.
-                q.put('done')
-                progress_thread.join()
+            for t in threads:
+                t.start()
 
-#             elif method == 'http-async':
-#                 scheduler = AsyncScrapeScheduler(config, scrape_jobs, cache_manager=cache_manager, session=session, scraper_search=scraper_search,
-#                                                  db_lock=db_lock)
-#                 scheduler.run()
+            for t in threads:
+                t.join()
 
-            else:
-                raise Exception('No such scrape_method {}'.format(config.get('scrape_method')))
+            # after threads are done, stop the progress queue.
+            q.put('done')
+            progress_thread.join()
+
 
         result_writer.close_outfile()
 

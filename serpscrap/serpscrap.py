@@ -8,10 +8,9 @@ import pprint
 import traceback
 
 import chardet
+from scrapcore.core import Core
 from serpscrap.config import Config
 from serpscrap.urlscrape import UrlScrape
-
-from scrapcore.core import Core
 
 
 class SerpScrap():
@@ -126,7 +125,7 @@ class SerpScrap():
         self.config['keywords'] = self.serp_query if isinstance(self.serp_query, list) else [self.serp_query]
 
         try:
-            return Core().scrape_with_config(self.config)
+            return Core().run(self.config)
         except:
             print(traceback.print_exc())
 

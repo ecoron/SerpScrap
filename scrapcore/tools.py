@@ -183,3 +183,8 @@ class ShowProgressQueue(threading.Thread):
 
 class Error(Exception):
     pass
+
+
+class ConfigurationError(Exception):
+    pass
+

@@ -78,7 +78,7 @@ class Parser():
 
     def _parse(self, cleaner=None):
         """Internal parse the dom according to the provided css selectors.
-        Raises: InvalidSearchTypeException
+        Raises: Exception
         if no css selectors for the searchtype could be found.
         """
         self.num_results = 0

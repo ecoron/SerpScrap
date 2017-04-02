@@ -1,4 +1,3 @@
-
 =====================
 Additional Ressources
 =====================
@@ -10,6 +9,15 @@ Documentation
 -------------
 
 For documentation we follow the sphinxs documentation `Style Guide`_.
+
+Tests
+-----
+
+We use pytest for this project.
+
+TFIDF
+-----
+http://www.bogotobogo.com/python/NLTK/tf_idf_with_scikit-learn_NLTK.php
 
 References
 

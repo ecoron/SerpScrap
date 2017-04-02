@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 import serpscrap
 
-keywords = ['computer since']
+keywords = ['trending topics']
 
 config = serpscrap.Config()
-config.set('scrape_urls', True)
+config.set('scrape_urls', False)
 
 scrap = serpscrap.SerpScrap()
 scrap.init(config=config.get(), keywords=keywords)

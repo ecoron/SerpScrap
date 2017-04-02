@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.3.9'
+version = '0.4.0'
 
 requirements = [r for r in open('requirements.txt', 'r').read().split('\n') if r]
 
@@ -21,11 +21,8 @@ setup(
     url='https://github.com/ecoron/SerpScrap',
     license='MIT',
     packages=find_packages(),
-    dependency_links=[
-        'git+https://github.com/ecoron/GoogleScraper.git#egg=GoogleScraper-0.3.1'
-    ],
     install_requires=[
-        'GoogleScraper==0.3.1',
+        'PySocks==1.6.7',
         'chardet==2.3.0',
         'beautifulsoup4==4.5.3',
         'html2text==2016.9.19',
@@ -33,7 +30,12 @@ setup(
         'numpy==1.12.1',
         'scipy==0.19.0',
         'scikit-learn==0.18.1',
-        'lxml'
+        'lxml',
+        'sqlalchemy==1.0.12',
+        'selenium==3.0.2',
+        'cssselect==0.9.1',
+        'requests==2.13.0',
+        'aiohttp==0.21.5',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

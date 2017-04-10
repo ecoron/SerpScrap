@@ -32,7 +32,7 @@ class Config():
         'output_filename': None,
         # 'print_results': 'all',
         'scrape_urls': True,
-        'url_threads': 3,
+        'url_threads': 6,
         'log_level': 'INFO',
         'num_workers': 4,
         'num_results_per_page': 10,

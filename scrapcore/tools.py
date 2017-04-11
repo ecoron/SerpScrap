@@ -98,12 +98,12 @@ class Proxies():
                         try:
                             proto = tokens[0]
                             host, port = tokens[1].split(':')
-                        except:
+                        except Exception:
                             raise Exception('''
                                 Invalid proxy file.
                                 Should have the following format: {}
                                 '''.format(self.parse_proxy_file.__doc__)
-                                )
+                            )
                         if len(tokens) == 3:
                             username, password = tokens[2].split(':')
                             proxies.append(
@@ -188,3 +188,6 @@ class Error(Exception):
 class ConfigurationError(Exception):
     pass
 
+
+class BlockedSearchException(Exception):
+    pass

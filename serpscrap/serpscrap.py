@@ -95,26 +95,29 @@ class SerpScrap():
         """
         search = self.scrap()
         result = []
-        for serp in search.serps:
-            for link in serp.links:
-                # link, snippet, title, visible_link, domain, rank,
-                # serp, link_type, rating
-                result.append({
-                    'query_num_results total': serp.num_results_for_query,
-                    'query_num_results_page': serp.num_results,
-                    'query_page_number': serp.page_number,
-                    'query': serp.query,
-                    'serp_rank': link.rank,
-                    'serp_type': link.link_type,
-                    'serp_url': link.link,
-                    'serp_rating': link.rating,
-                    'serp_title': link.title,
-                    'serp_domain': link.domain,
-                    'serp_visible_link': link.visible_link,
-                    'serp_snippet': link.snippet,
-                    'serp_sitelinks': link.sitelinks
-                })
-        return result
+        if search is not None:
+            for serp in search.serps:
+                for link in serp.links:
+                    # link, snippet, title, visible_link, domain, rank,
+                    # serp, link_type, rating
+                    result.append({
+                        'query_num_results total': serp.num_results_for_query,
+                        'query_num_results_page': serp.num_results,
+                        'query_page_number': serp.page_number,
+                        'query': serp.query,
+                        'serp_rank': link.rank,
+                        'serp_type': link.link_type,
+                        'serp_url': link.link,
+                        'serp_rating': link.rating,
+                        'serp_title': link.title,
+                        'serp_domain': link.domain,
+                        'serp_visible_link': link.visible_link,
+                        'serp_snippet': link.snippet,
+                        'serp_sitelinks': link.sitelinks
+                    })
+            return result
+        else:
+            raise Exception('No Results')
 
     def scrap(self):
         """scrap, method calls GoogleScraper method
@@ -126,7 +129,7 @@ class SerpScrap():
 
         try:
             return Core().run(self.config)
-        except:
+        except Exception:
             print(traceback.print_exc())
 
     def scrap_url(self, url):

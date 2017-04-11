@@ -260,6 +260,11 @@ class HttpScrape(SearchEngineScrape, threading.Timer):
                 headers=self.headers,
                 params=self.search_params))
 
+            needles = self.malicious_request_needles[self.search_engine_name]
+            if needles and needles['inhtml'] in self.html:
+                success = False
+                raise Exception('search temporary is blocked')
+
         except self.requests.ConnectionError as ce:
             self.status = 'Network problem occurred {}'.format(ce)
             success = False

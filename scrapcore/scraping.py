@@ -149,8 +149,8 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
         # How long to sleep (in seconds) after every n-th request
         # self.config.get(self.config.get('sleeping_ranges'))
         self.sleeping_ranges = {
-            1: (2, 4),
-            5: (4, 6),
+            1: (2, 5),
+            5: (5, 10),
             30: (10, 20),
             127: (30, 50),
         }

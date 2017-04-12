@@ -22,8 +22,8 @@ class Config():
         'search_engines': ['google'],
         'num_pages_for_keyword': 2,
         'scrape_method': 'http',  # selenium
-        # 'sel_browser': 'chrome', uncomment if scrape_method is selenium
-        # 'executable_path': 'path\to\chromedriver' or 'path\to\phantomjs',
+        'sel_browser': 'phantomjs',
+        'executable_path': 'phantomjs/phantomjs.exe',
         'do_caching': True,
         'cachedir': '/tmp/.serpscrap/',
         'database_name': '/tmp/serpscrap',

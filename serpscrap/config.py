@@ -48,7 +48,8 @@ class Config():
         },
         'proxy_file': '',
         'proxy_check_url': 'http://canihazip.com/s',
-        'proxy_info_url': 'http://ipinfo.io/json'
+        'proxy_info_url': 'http://ipinfo.io/json',
+        'stop_on_detection': True,
     }
 
     def get(self):

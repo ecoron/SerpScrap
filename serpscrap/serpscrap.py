@@ -10,6 +10,7 @@ import traceback
 import chardet
 from scrapcore.core import Core
 from serpscrap.config import Config
+from serpscrap.csv_writer import CsvWriter
 from serpscrap.urlscrape import UrlScrape
 
 
@@ -87,6 +88,13 @@ class SerpScrap():
                     if 'status' in result_url:
                         results[index].update(result_url)
         return results if isinstance(results, list) else [results]
+
+    def as_csv(self, file_path):
+        writer = CsvWriter()
+        index = 0
+        result = self.run()
+        writer.write(file_path + '0' + str(index) + '.csv', result)
+
 
     def scrap_serps(self):
         """call scrap method and append serp results to list

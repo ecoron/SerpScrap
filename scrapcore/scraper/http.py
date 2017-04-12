@@ -10,6 +10,7 @@ from scrapcore.parsing import Parsing
 from scrapcore.scraping import SearchEngineScrape
 from scrapcore.scraping import get_base_search_url_by_search_engine
 from scrapcore.user_agent import random_user_agent
+from scrapcore.tools import BlockedSearchException
 import socks
 
 logger = logging.getLogger(__name__)
@@ -259,6 +260,11 @@ class HttpScrape(SearchEngineScrape, threading.Timer):
                 url=request.url,
                 headers=self.headers,
                 params=self.search_params))
+
+            needles = self.malicious_request_needles[self.search_engine_name]
+            if needles and needles['inhtml'] in self.html:
+                success = False
+                raise BlockedSearchException('Search temporary is blocked, slow down and try again later')
 
         except self.requests.ConnectionError as ce:
             self.status = 'Network problem occurred {}'.format(ce)

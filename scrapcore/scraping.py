@@ -189,6 +189,7 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
         assert self.session, 'No database session.'
 
         if self.html:
+            # @todo check issue parser in selenium mode
             self.parser.parse(self.html)
         else:
             self.parser = None

@@ -214,7 +214,6 @@ class Core():
             q.put('done')
             progress_thread.join()
 
-
         result_writer.close_outfile()
 
         scraper_search.stopped_searching = datetime.datetime.utcnow()

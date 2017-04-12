@@ -105,7 +105,7 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
         # The parser that should be used to parse the search engine results
         self.parser = Parsing().get_parser_by_search_engine(
             self.search_engine_name
-        )
+        )(config=self.config)
         # The number of results per page
         self.num_results_per_page = int(self.config.get('num_results_per_page', 10))
 
@@ -189,6 +189,7 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
         assert self.session, 'No database session.'
 
         if self.html:
+            # @todo check issue parser in selenium mode
             self.parser.parse(self.html)
         else:
             self.parser = None

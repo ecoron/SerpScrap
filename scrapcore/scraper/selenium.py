@@ -270,7 +270,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     )
 
             dcap = dict(DesiredCapabilities.PHANTOMJS)
-            dcap["phantomjs.page.settings.userAgent"] = random_user_agent(only_desktop=True)
+            dcap["phantomjs.page.settings.userAgent"] = random_user_agent(mobile=False)
             self.webdriver = webdriver.PhantomJS(executable_path=self.config['executable_path'], service_args=service_args, desired_capabilities=dcap)
             return True
         except WebDriverException as e:

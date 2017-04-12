@@ -1,6 +1,13 @@
+.. class:: center
+
+.. image:: https://raw.githubusercontent.com/ecoron/SerpScrap/master/docs/logo.png
+    :target: https://github.com/ecoron/SerpScrap
+
 =========
 SerpScrap
 =========
+
+.. class:: left
 
 .. image:: https://img.shields.io/pypi/v/SerpScrap.svg
     :target: https://pypi.python.org/pypi/SerpScrap
@@ -21,43 +28,18 @@ Get the tfidf of the text content, or generate with the text generator new sente
 
 See http://serpscrap.readthedocs.io/en/latest/ for documentation.
 
-Source is available at https://github.com/ecoron/SerpScrap.
+Source is available at https://github.com/ecoron/SerpScrap
 
 Contents
 --------
 .. toctree::
    :maxdepth: 2
    
+   install
    configuration
    docker
    examples
    ressources
-
-
-Install
-=======
-
-.. code-block:: python
-
-   pip install SerpScrap
-
-
-Requirements Windows
---------------------
-
-on Windows you might need also `Microsoft Visual C++ Build Tools`_ installed.
-
-* `lxml`_
-* `numpy`_
-* `scipy`_
-* `scikit-learn`_
-
-avoid encode/decode issues by running this command before starting python in your cli
-
-.. code-block:: bash
-
-   chcp 65001
-   set PYTHONIOENCODING=utf-8
 
 Usage
 =====

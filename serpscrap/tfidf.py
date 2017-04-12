@@ -18,7 +18,7 @@ class TfIdf:
         fit_tfidf (string): create and return a vectorizer
         learn_tfidf (vectorizer, string, list): generate the word, tfidf values
     """
-    stopwords = []
+    stopwords = 'english'
     # https://solariz.de/de/downloads/6/german-enhanced-stopwords.htm
 
     def get_tfidf(self, text_list, keywords=[]):

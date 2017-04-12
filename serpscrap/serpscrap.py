@@ -95,7 +95,6 @@ class SerpScrap():
         result = self.run()
         writer.write(file_path + '0' + str(index) + '.csv', result)
 
-
     def scrap_serps(self):
         """call scrap method and append serp results to list
         Returns
@@ -135,10 +134,7 @@ class SerpScrap():
         # See in the config.cfg file for possible values
         self.config['keywords'] = self.serp_query if isinstance(self.serp_query, list) else [self.serp_query]
 
-        try:
-            return Core().run(self.config)
-        except Exception:
-            print(traceback.print_exc())
+        return Core().run(self.config)
 
     def scrap_url(self, url):
         """method calls UrlScrape

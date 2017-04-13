@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import datetime
 import json
 import logging
@@ -11,24 +10,20 @@ import tempfile
 import threading
 import time
 from urllib.parse import quote
-
 from scrapcore.scraping import SearchEngineScrape, SeleniumSearchError, get_base_search_url_by_search_engine, MaliciousRequestDetected
 from scrapcore.user_agent import random_user_agent
-
-
 try:
     from selenium import webdriver
     from selenium.common.exceptions import TimeoutException, WebDriverException
-    from selenium.common.exceptions import ElementNotVisibleException
+    from selenium.common.exceptions import ElementNotVisibleException, NoSuchElementException
     from selenium.webdriver.common.keys import Keys
     from selenium.webdriver.common.by import By
-    from selenium.webdriver.support.ui import WebDriverWait  # available since 2.4.0
-    from selenium.webdriver.support import expected_conditions as EC  # available since 2.26.0
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 except ImportError as ie:
     print(ie)
     sys.exit('You can install missing modules with `pip3 install [modulename]`')
-
 
 
 logger = logging.getLogger(__name__)
@@ -187,7 +182,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         out what went wrong.
         """
         tempdir = tempfile.gettempdir()
-        location = os.path.join(tempdir, '{}_{}_debug_screenshot.png'.format(self.search_engine_name, self.browser_type))
+        location = os.path.join(tempdir, 'serpscrap_{}_{}_{}_debug_screenshot.png'.format(self.search_engine_name, self.browser_type, str(time.time())))
         self.webdriver.get_screenshot_as_file(location)
 
     def _set_xvfb_display(self):
@@ -495,12 +490,18 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             else:
 
                 try:
-                    WebDriverWait(self.webdriver, 5).\
-                        until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, selector), str(self.page_number)))
+                    WebDriverWait(self.webdriver, 5).until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, selector), str(self.page_number)))
                 except TimeoutException:
                     self._save_debug_screenshot()
-                    content = self.webdriver.find_element_by_css_selector(selector).text
-                    raise Exception('Pagenumber={} did not appear in navigation. Got "{}" instead'.format(self.page_number), content)
+                    try:
+                        content = self.webdriver.find_element_by_css_selector(selector).text
+                    except NoSuchElementException:
+                        time.sleep(60*5)
+                        logger.error('SLEEPING FOR{} sec'.format(str(60*5)))
+                        # raise SeleniumSearchError('Stop Scraping, seems we are blocked')
+                    else:
+                        logger.error('Pagenumber={} did not appear in navigation. Got "{}" instead'.format(self.page_number, content))
+                        pass
 
         elif self.search_type == 'image':
             self.wait_until_title_contains_keyword()
@@ -524,6 +525,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         for self.query, self.pages_per_keyword in self.jobs.items():
 
             self.search_input = self._wait_until_search_input_field_appears()
+            time.sleep(.25)
 
             if self.search_input is False and self.config.get('stop_on_detection'):
                 self.status = 'Malicious request detected'

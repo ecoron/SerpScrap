@@ -30,7 +30,8 @@ The easiest way to do
 
 .. code-block:: python
 
-   pip install SerpScrap
+   pip uninstall SerpScrap -y
+   pip install SerpScrap --upgrade
 
 
 In some cases it is required to install python-scipy first
@@ -80,14 +81,18 @@ In this example the searchphrase is "your keywords"
 
   python serpscrap\serpscrap.py -k your keywords
 
+.. image:: https://raw.githubusercontent.com/ecoron/SerpScrap/master/docs/logo.png
+    :target: https://github.com/ecoron/SerpScrap
 
 References
 ----------
 
+SerpScrap is using `PhantomJs`_ a scriptable headless WebKit, which is installed automaticly on the first run (Linux, Windows).
 The scrapcore is based on `GoogleScraper`_ with several improvements.
 
 .. target-notes::
 
+.. _`PhantomJs`: https://github.com/ariya/phantomjs
 .. _`GoogleScraper`: https://github.com/NikolaiT/GoogleScraper
 .. _`serpscrap.readthedocs.io`: http://serpscrap.readthedocs.io/en/latest/
 .. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools
@@ -96,4 +101,3 @@ The scrapcore is based on `GoogleScraper`_ with several improvements.
 .. _`scipy`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy
 .. _`scikit-learn`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scikit-learn
 .. _`examples`: https://github.com/ecoron/SerpScrap/tree/master/examples
-

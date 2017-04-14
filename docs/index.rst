@@ -65,10 +65,12 @@ In this example the searchphrase is "your keywords"
 References
 ----------
 
+SerpScrap is using `PhantomJs`_ a scriptable headless WebKit, which is installed automaticly on the first run (Linux, Windows)
 The scrapcore is based on `GoogleScraper`_ with several improvements.
 
 .. target-notes::
 
+.. _`PhantomJs`: https://github.com/ariya/phantomjs
 .. _`GoogleScraper`: https://github.com/NikolaiT/GoogleScraper
 .. _`serpscrap.readthedocs.io`: http://serpscrap.readthedocs.io/en/latest/
 .. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools

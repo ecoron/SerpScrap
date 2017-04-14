@@ -496,8 +496,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     try:
                         content = self.webdriver.find_element_by_css_selector(selector).text
                     except NoSuchElementException:
-                        time.sleep(60*5)
-                        logger.error('SLEEPING FOR{} sec'.format(str(60*5)))
+                        time.sleep(60 * 5)
+                        logger.error('SLEEPING FOR{} sec'.format(str(60 * 5)))
                         # raise SeleniumSearchError('Stop Scraping, seems we are blocked')
                     else:
                         logger.error('Pagenumber={} did not appear in navigation. Got "{}" instead'.format(self.page_number, content))
@@ -536,7 +536,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 self.search_input = self.handle_request_denied()
 
             if self.search_input:
-                self.search_input.clear()
+                try:
+                    self.search_input.clear()
+                except Exception:
+                    logger.error('Possible blocked search, sleep 300 sec')
+                    time.sleep(300)
+                    return
                 time.sleep(.25)
 
                 self.search_param_fields = self._get_search_param_fields()

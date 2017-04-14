@@ -133,8 +133,6 @@ class SerpScrap():
                         'rank': related_keyword.rank
                     })
                 for link in serp.links:
-                    # link, snippet, title, visible_link, domain, rank,
-                    # serp, link_type, rating
                     result.append({
                         'query_num_results total': serp.num_results_for_query,
                         'query_num_results_page': serp.num_results,

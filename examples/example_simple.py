@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+import pprint
 import serpscrap
 
 keywords = ['seo trends']
@@ -12,5 +13,5 @@ scrap.init(config=config.get(), keywords=keywords)
 results = scrap.run()
 
 for result in results:
-    print(result)
+    pprint.pprint(result)
     print()

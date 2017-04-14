@@ -11,7 +11,9 @@ class GoogleParser(Parser):
 
     search_types = ['normal', 'image']
 
-    effective_query_selector = ['#topstuff .med > b::text', '.med > a > b::text']
+    effective_query_selector = [
+        '#topstuff .med > b::text', '.med > a > b::text'
+    ]
 
     no_results_selector = []
 
@@ -75,6 +77,13 @@ class GoogleParser(Parser):
         },
         'ads_aside': {
 
+        },
+        'related_keywords': {
+            'de_ip': {
+                'container': 'div.card-section',
+                'result_container': 'p._e4b',
+                'keyword': 'a::text'
+            }
         }
     }
 
@@ -115,7 +124,8 @@ class GoogleParser(Parser):
             elif self.num_results <= 0:
                 self.no_results = True
 
-            if 'No results found for' in self.html or 'did not match any documents' in self.html:
+            if 'No results found for' in \
+               self.html or 'did not match any documents' in self.html:
                 self.no_results = True
 
             # finally try in the snippets
@@ -123,7 +133,8 @@ class GoogleParser(Parser):
                 for key, i in self.iter_serp_items():
 
                     if 'snippet' in self.search_results[key][i] and self.query:
-                        if self.query.replace('"', '') in self.search_results[key][i]['snippet']:
+                        if self.query.replace('"', '') in \
+                           self.search_results[key][i]['snippet']:
                             self.no_results = False
 
         clean_regexes = {
@@ -137,4 +148,6 @@ class GoogleParser(Parser):
                 self.search_results[key][i]['link']
             )
             if result:
-                self.search_results[key][i]['link'] = unquote(result.group('url'))
+                self.search_results[key][i]['link'] = unquote(
+                    result.group('url')
+                )

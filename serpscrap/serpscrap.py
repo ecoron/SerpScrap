@@ -126,6 +126,12 @@ class SerpScrap():
         result = []
         if search is not None:
             for serp in search.serps:
+                related = []
+                for related_keyword in serp.related_keywords:
+                    related.append({
+                        'keyword': related_keyword.keyword,
+                        'rank': related_keyword.rank
+                    })
                 for link in serp.links:
                     # link, snippet, title, visible_link, domain, rank,
                     # serp, link_type, rating
@@ -142,7 +148,8 @@ class SerpScrap():
                         'serp_domain': link.domain,
                         'serp_visible_link': link.visible_link,
                         'serp_snippet': link.snippet,
-                        'serp_sitelinks': link.sitelinks
+                        'serp_sitelinks': link.sitelinks,
+                        'related_keywords': related
                     })
             return result
         else:

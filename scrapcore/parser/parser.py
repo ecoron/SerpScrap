@@ -38,6 +38,7 @@ class Parser():
         self.effective_query = ''
         self.page_number = -1
         self.no_results = False
+        self.related_keywords = {}
 
         # to be set by the implementing sub classes
         self.search_engine = ''
@@ -106,7 +107,9 @@ class Parser():
 
         # get the current page we are at.
         try:
-            self.page_number = int(self.first_match(self.page_number_selectors, self.dom))
+            self.page_number = int(
+                self.first_match(self.page_number_selectors, self.dom)
+            )
         except ValueError:
             self.page_number = -1
 
@@ -136,6 +139,7 @@ class Parser():
         for result_type, selector_class in selector_dict.items():
 
             self.search_results[result_type] = []
+            self.related_keywords[result_type] = []
 
             for _, selectors in selector_class.items():
 
@@ -153,13 +157,6 @@ class Parser():
 
                 for index, result in enumerate(results):
                     # Let's add primitive support for CSS3 pseudo selectors
-                    # We just need two of them
-                    # ::text
-                    # ::attr(attribute)
-
-                    # You say we should use xpath expressions instead?
-                    # Maybe you're right, but they are complicated when it comes to classes,
-                    # have a look here: http://doc.scrapy.org/en/latest/topics/selectors.html
                     serp_result = {}
                     # key are for example 'link', 'snippet', 'visible-url', ...
                     # selector is the selector to grab these items
@@ -170,11 +167,15 @@ class Parser():
 
                     # only add items that have not None links.
                     # Avoid duplicates. Detect them by the link.
-                    # If statement below: Lazy evaluation. The more probable case first.
+                    # If statement below: Lazy evaluation.
+                    # The more probable case first.
                     if 'link' in serp_result and serp_result['link'] and \
-                            not [e for e in self.search_results[result_type] if e['link'] == serp_result['link']]:
+                            not [e for e in self.search_results[result_type]
+                                 if e['link'] == serp_result['link']]:
                         self.search_results[result_type].append(serp_result)
                         self.num_results += 1
+                    if 'keyword' in serp_result and serp_result['keyword']:
+                        self.related_keywords[result_type].append(serp_result)
 
     def advanced_css(self, selector, element):
         """Evaluate the :text and ::attr(attr-name) additionally.

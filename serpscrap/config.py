@@ -21,9 +21,9 @@ class Config():
         'use_own_ip': True,
         'search_engines': ['google'],
         'num_pages_for_keyword': 2,
-        'scrape_method': 'http',  # selenium
+        'scrape_method': 'selenium',  # http
         'sel_browser': 'phantomjs',
-        'executable_path': 'phantomjs/phantomjs.exe',
+        'executable_path': '',
         'do_caching': True,
         'cachedir': '/tmp/.serpscrap/',
         'database_name': '/tmp/serpscrap',

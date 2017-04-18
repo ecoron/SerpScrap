@@ -544,7 +544,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             elif self.search_engine_name == 'ask':
                 selector = '#paging .pgcsel .pg'
 
-            # content = None
+            content = None
             try:
                 time.sleep(0.5)
                 WebDriverWait(self.webdriver, 5).until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, selector), str(self.page_number)))

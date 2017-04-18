@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import os
+from random import randint
 import re
 import tempfile
 import threading
@@ -313,10 +314,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                         )
                     )
 
-            dcap = dict(DesiredCapabilities.PHANTOMJS)
-            dcap["phantomjs.page.settings.userAgent"] = random_user_agent(
+            useragent = random_user_agent(
                 mobile=False
             )
+            logger.info('useragent: {}'.format(useragent))
+            dcap = dict(DesiredCapabilities.PHANTOMJS)
+            dcap["phantomjs.page.settings.userAgent"] = useragent
             self.webdriver = webdriver.PhantomJS(
                 executable_path=self.config['executable_path'],
                 service_args=service_args,
@@ -501,8 +504,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             except (WebDriverException, TimeoutException):
                 self._save_debug_screenshot()
                 # raise Exception('{}: Cannot locate next page element: {}'.format(self.name, str(e)))
-
-            return self.webdriver.find_element_by_css_selector(selector)
+            try:
+                return self.webdriver.find_element_by_css_selector(selector)
+            except Exception:
+                logger.error('failed find_element_by_css_selector, sleep 30 sec')
+                time.sleep(30)
+                pass
 
         elif self.search_type == 'image':
             self.page_down()
@@ -537,6 +544,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             elif self.search_engine_name == 'ask':
                 selector = '#paging .pgcsel .pg'
 
+            # content = None
             try:
                 time.sleep(0.5)
                 WebDriverWait(self.webdriver, 5).until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, selector), str(self.page_number)))
@@ -621,6 +629,10 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 except ElementNotVisibleException:
                     time.sleep(2)
                     self.search_input.send_keys(self.query + Keys.ENTER)
+                except Exception:
+                    logger.error('send keys not possible')
+                    time.sleep(60)
+                    pass
 
                 self.requested_at = datetime.datetime.utcnow()
             else:
@@ -670,10 +682,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             raise Exception('{}: Aborting due to no available selenium webdriver.'.format(self.name))
 
         try:
-            self.webdriver.set_window_size(400, 400)
-            self.webdriver.set_window_position(400 * (self.browser_num % 4), 400 * (math.floor(self.browser_num // 4)))
+            x = randint(800, 1024)
+            y = randint(600, 900)
+            self.webdriver.set_window_size(x, y)
+            self.webdriver.set_window_position(x * (self.browser_num % 4), y * (math.floor(self.browser_num // 4)))
         except WebDriverException as e:
-            logger.debug('Cannot set window size: {}'.format(e))
+            logger.error('Cannot set window size: {}'.format(e))
 
         super().before_search()
 

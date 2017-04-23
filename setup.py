@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.4.4'
+version = '0.5.0'
 
 
 setup(
     name='SerpScrap',
     version=version,
     description='''
-    A python module to scrape, extract, analyze data from
+    A python scraper to extract and analyze data from
     search engine result pages and urls.
     Extract data, like url, title, snippet
     of results or ratings for given keywords.

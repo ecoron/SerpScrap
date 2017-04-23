@@ -33,7 +33,6 @@ keywords = ['planet earth']
 
 related = keywords
 related = get_related(scrape(config, keywords), related)
-related = get_related(scrape(config, related), related)
 
 scrape_to_csv(config, related)
 

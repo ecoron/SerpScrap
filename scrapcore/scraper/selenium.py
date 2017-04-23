@@ -556,8 +556,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     # logger.error('SLEEPING FOR {} sec'.format(str(60 * 5)))
                     # time.sleep(60 * 5)
                     logger.error('Skipp it, no such element - SeleniumSearchError')
-                    pass
-                    # raise SeleniumSearchError('Stop Scraping, seems we are blocked')
+                    raise SeleniumSearchError('Stop Scraping, seems we are blocked')
             except Exception:
                 logger.error('Pagenumber={} did not appear in navigation. Got "{}" instead'.format(self.page_number, content))
                 pass

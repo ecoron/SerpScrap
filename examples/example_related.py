@@ -13,7 +13,7 @@ def scrape(config, keywords):
 def scrape_to_csv(config, keywords):
     scrap = serpscrap.SerpScrap()
     scrap.init(config=config.get(), keywords=keywords)
-    return scrap.as_csv('/tmp/output')
+    return scrap.as_csv('/tmp/planet-earth')
 
 
 def get_related(results, related):
@@ -27,11 +27,14 @@ def get_related(results, related):
 
 config = serpscrap.Config()
 config.set('scrape_urls', False)
-keywords = ['new york']
-related = []
+config.set('num_workers', 1)
+
+keywords = ['planet earth']
+
+related = keywords
 related = get_related(scrape(config, keywords), related)
 related = get_related(scrape(config, related), related)
-# related = get_related(scrape(config, related), related)
+
 scrape_to_csv(config, related)
 
 pprint.pprint('********************')

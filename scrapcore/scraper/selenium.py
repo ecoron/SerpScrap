@@ -553,8 +553,9 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 try:
                     content = self.webdriver.find_element_by_css_selector(selector).text
                 except NoSuchElementException:
-                    time.sleep(60 * 5)
-                    logger.error('SLEEPING FOR{} sec'.format(str(60 * 5)))
+                    # logger.error('SLEEPING FOR {} sec'.format(str(60 * 5)))
+                    # time.sleep(60 * 5)
+                    logger.error('Skipp it, no such element - SeleniumSearchError')
                     pass
                     # raise SeleniumSearchError('Stop Scraping, seems we are blocked')
             except Exception:

@@ -224,14 +224,14 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
             {thread_name} {ip} - Keyword: "{keyword}" with {num_pages} pages,
             slept {delay} seconds before scraping. {done}/{all} already scraped
             '''.format(
-                thread_name=self.name,
-                ip=self.requested_by,
-                keyword=self.query,
-                num_pages=self.pages_per_keyword,
-                delay=self.current_delay,
-                done=self.search_number,
-                all=self.num_keywords
-            ))
+                    thread_name=self.name,
+                    ip=self.requested_by,
+                    keyword=self.query,
+                    num_pages=self.pages_per_keyword,
+                    delay=self.current_delay,
+                    done=self.search_number,
+                    all=self.num_keywords
+                    ))
 
     def instance_creation_info(self, scraper_name):
         """Debug message whenever a scraping worker is created"""
@@ -298,7 +298,7 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
         """before entering the search loop."""
         # check proxies first before anything
         if self.config.get('check_proxies', True) and self.proxy:
-            if not self.proxy_check():
+            if not self.proxy_check(proxy=self.proxy):
                 self.startable = False
 
     def update_proxy_status(self, status, ipinfo=None, online=True):

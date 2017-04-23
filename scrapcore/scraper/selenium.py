@@ -597,8 +597,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 try:
                     self.search_input.clear()
                 except Exception:
-                    logger.error('Possible blocked search, sleep 120 sec')
-                    time.sleep(120)
+                    logger.error('Possible blocked search, sleep 30 sec')
+                    time.sleep(30)
                     # return
                 time.sleep(.25)
 
@@ -631,7 +631,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     self.search_input.send_keys(self.query + Keys.ENTER)
                 except Exception:
                     logger.error('send keys not possible')
-                    time.sleep(60)
+                    # time.sleep(60)
                     pass
 
                 self.requested_at = datetime.datetime.utcnow()

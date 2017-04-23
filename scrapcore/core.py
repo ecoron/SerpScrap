@@ -10,7 +10,6 @@ from scrapcore.database import get_session, fixtures
 from scrapcore.logger import Logger
 from scrapcore.result_writer import ResultWriter
 from scrapcore.scraper.scrape_worker_factory import ScrapeWorkerFactory
-from scrapcore.tools import Error
 from scrapcore.tools import Proxies
 from scrapcore.tools import ScrapeJobGenerator
 from scrapcore.tools import ShowProgressQueue
@@ -81,7 +80,12 @@ class Core():
 #                     keywords = set([line.strip() for line in open(kwfile, 'r').read().split('\n') if line.strip()])
 
         if not scrape_jobs:
-            scrape_jobs = ScrapeJobGenerator().get(keywords, search_engines, scrape_method, pages)
+            scrape_jobs = ScrapeJobGenerator().get(
+                keywords,
+                search_engines,
+                scrape_method,
+                pages
+            )
 
         scrape_jobs = list(scrape_jobs)
 
@@ -134,25 +138,35 @@ class Core():
                 used_search_engines=','.join(search_engines)
             )
 
-        # First of all, lets see how many requests remain to issue after searching the cache.
+        # First of all, lets see how many requests remain
+        # to issue after searching the cache.
         if config.get('do_caching'):
-            scrape_jobs = cache_manager.filter_scrape_jobs(scrape_jobs, session, scraper_search)
+            scrape_jobs = cache_manager.filter_scrape_jobs(
+                scrape_jobs,
+                session,
+                scraper_search
+            )
 
         if scrape_jobs:
 
-            # Create a lock to synchronize database access in the sqlalchemy session
+            # Create a lock to synchronize database
+            # access in the sqlalchemy session
             db_lock = threading.Lock()
 
             # create a lock to cache results
             cache_lock = threading.Lock()
 
-            # A lock to prevent multiple threads from solving captcha, used in selenium instances.
+            # A lock to prevent multiple threads from solving captcha,
+            # used in selenium instances.
             captcha_lock = threading.Lock()
 
-            self.logger.info('Going to scrape {num_keywords} keywords with {num_proxies} proxies by using {num_threads} threads.'.format(
-                num_keywords=len(list(scrape_jobs)),
-                num_proxies=len(proxies),
-                num_threads=num_search_engines))
+            self.logger.info('''
+                Going to scrape {num_keywords} keywords with {num_proxies}
+                proxies by using {num_threads} threads.'''.format(
+                    num_keywords=len(list(scrape_jobs)),
+                    num_proxies=len(proxies),
+                    num_threads=num_search_engines)
+                )
 
             progress_thread = None
 

@@ -1,13 +1,9 @@
-.. class:: center
-
 .. image:: https://raw.githubusercontent.com/ecoron/SerpScrap/master/docs/logo.png
     :target: https://github.com/ecoron/SerpScrap
 
 =========
 SerpScrap
 =========
-
-.. class:: left
 
 .. image:: https://img.shields.io/pypi/v/SerpScrap.svg
     :target: https://pypi.python.org/pypi/SerpScrap
@@ -20,7 +16,7 @@ SerpScrap
     :target: https://travis-ci.org/ecoron/SerpScrap
 
 
-A python module to scrape, extract, analyze data from search engine result pages and urls.
+A python scraper to extract, analyze data from search engine result pages and urls.
 Extract data, like url, title, snippet of results or ratings for given keywords.
 Extract the cleaned raw text content from urls.
 Get the tfidf of the text content, or generate with the text generator new sentences.
@@ -55,7 +51,8 @@ SerpScrap in your applications
    scrap.init(keywords=keywords)
    result = scrap.scrap_serps()
 
-You find more `examples`_ on the github page.
+More detailed informations in the examples section of this documentation.
+Source code is also available in the `examples`_ on the github page.
 
 To run SerpScrap via command line provide one or more keywords as searchphrase.
 In this example the searchphrase is "your keywords"
@@ -68,10 +65,12 @@ In this example the searchphrase is "your keywords"
 References
 ----------
 
+SerpScrap is using `PhantomJs`_ a scriptable headless WebKit, which is installed automaticly on the first run (Linux, Windows)
 The scrapcore is based on `GoogleScraper`_ with several improvements.
 
 .. target-notes::
 
+.. _`PhantomJs`: https://github.com/ariya/phantomjs
 .. _`GoogleScraper`: https://github.com/NikolaiT/GoogleScraper
 .. _`serpscrap.readthedocs.io`: http://serpscrap.readthedocs.io/en/latest/
 .. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools

@@ -5,13 +5,19 @@ SerpScrap.SerpScrap
 """
 import argparse
 import pprint
-import traceback
 
 import chardet
 from scrapcore.core import Core
+from scrapcore.logger import Logger
 from serpscrap.config import Config
 from serpscrap.csv_writer import CsvWriter
+from serpscrap.phantom_install import PhantomInstall
 from serpscrap.urlscrape import UrlScrape
+
+
+logger = Logger()
+logger.setup_logger()
+logger = logger.get_logger()
 
 
 class SerpScrap():
@@ -65,6 +71,21 @@ class SerpScrap():
         else:
             self.config = Config().get()
 
+        if 'selenium' in self.config['scrape_method'] and \
+           self.config['executable_path'] == '':
+            logger.info('preparing phantomjs')
+            firstrun = PhantomInstall()
+            phantomjs = firstrun.detect_phantomjs()
+            if phantomjs is False:
+                firstrun.download()
+                phantomjs = firstrun.detect_phantomjs()
+                if phantomjs is False:
+                    raise Exception('''
+                        phantomjs binary not found,
+                        provide custom path in config''')
+            self.config.__setitem__('executable_path', phantomjs)
+            logger.info('using ' + phantomjs)
+
         if isinstance(keywords, str):
             self.serp_query = [keywords]
         elif isinstance(keywords, list) and len(keywords) > 0:
@@ -83,7 +104,9 @@ class SerpScrap():
 
         if self.config['scrape_urls']:
             for index, result in enumerate(results):
-                if 'serp_type' in result and 'ads_main' not in result['serp_type'] and 'serp_url' in result:
+                if 'serp_type' in result and \
+                   'ads_main' not in result['serp_type'] and \
+                   'serp_url' in result:
                     result_url = self.scrap_url(result['serp_url'])[0]
                     if 'status' in result_url:
                         results[index].update(result_url)
@@ -91,9 +114,8 @@ class SerpScrap():
 
     def as_csv(self, file_path):
         writer = CsvWriter()
-        index = 0
         result = self.run()
-        writer.write(file_path + '0' + str(index) + '.csv', result)
+        writer.write(file_path + '.csv', result)
 
     def scrap_serps(self):
         """call scrap method and append serp results to list
@@ -104,9 +126,13 @@ class SerpScrap():
         result = []
         if search is not None:
             for serp in search.serps:
+                related = []
+                for related_keyword in serp.related_keywords:
+                    related.append({
+                        'keyword': related_keyword.keyword,
+                        'rank': related_keyword.rank
+                    })
                 for link in serp.links:
-                    # link, snippet, title, visible_link, domain, rank,
-                    # serp, link_type, rating
                     result.append({
                         'query_num_results total': serp.num_results_for_query,
                         'query_num_results_page': serp.num_results,
@@ -120,7 +146,8 @@ class SerpScrap():
                         'serp_domain': link.domain,
                         'serp_visible_link': link.visible_link,
                         'serp_snippet': link.snippet,
-                        'serp_sitelinks': link.sitelinks
+                        'serp_sitelinks': link.sitelinks,
+                        'related_keywords': related
                     })
             return result
         else:
@@ -132,7 +159,8 @@ class SerpScrap():
             dict: scrape result#
         """
         # See in the config.cfg file for possible values
-        self.config['keywords'] = self.serp_query if isinstance(self.serp_query, list) else [self.serp_query]
+        self.config['keywords'] = self.serp_query \
+            if isinstance(self.serp_query, list) else [self.serp_query]
 
         return Core().run(self.config)
 
@@ -161,17 +189,19 @@ class SerpScrap():
         data = data.encode('utf-8')
         check_encoding = chardet.detect(data)
 
-        if check_encoding['encoding'] is not None and 'utf-8' not in check_encoding['encoding']:
+        if check_encoding['encoding'] is not None \
+           and 'utf-8' not in check_encoding['encoding']:
             try:
                 data = data.decode(check_encoding['encoding']).encode('utf-8')
-            except:
+            except Exception:
                 pass
         try:
             data = data.decode('utf-8')
-        except:
+        except Exception:
             data = data.decode('utf-8', 'ignore')
 
         return {'encoding': check_encoding['encoding'], 'data': data}
+
 
 if __name__ == "__main__":
     """called on commandline execution"""

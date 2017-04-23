@@ -89,3 +89,4 @@ ENV/
 .settings
 
 make.bat
+phantomjs/

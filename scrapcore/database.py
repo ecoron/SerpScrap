@@ -113,7 +113,13 @@ class SearchEngineResultsPage(Base):
                     parsed = urlparse(link['link'])
 
                     # fill with nones to prevent key errors
-                    [link.update({key: None}) for key in ('snippet', 'title', 'visible_link', 'rating', 'sitelinks') if key not in link]
+                    [link.update({key: None}) for key in (
+                         'snippet',
+                         'title',
+                         'visible_link',
+                         'rating',
+                         'sitelinks'
+                      ) if key not in link]
 
                     Link(
                         link=link['link'],
@@ -126,6 +132,17 @@ class SearchEngineResultsPage(Base):
                         link_type=key,
                         rating=link['rating'],
                         sitelinks=link['sitelinks']
+                    )
+        for key, value in parser.related_keywords.items():
+            if isinstance(value, list) and len(value) > 0:
+                for keyword in value:
+                    [keyword.update({key: None}) for key in (
+                         'keyword',
+                      ) if key not in keyword]
+                    RelatedKeyword(
+                        keyword=keyword['keyword'],
+                        rank=keyword['rank'],
+                        serp=self,
                     )
 
     def set_values_from_scraper(self, scraper):
@@ -179,6 +196,28 @@ class Link(Base):
 
     def __str__(self):
         return '<Link at rank {rank} has url: {link}>'.format(**self.__dict__)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class RelatedKeyword(Base):
+    __tablename__ = 'related_keywords'
+
+    id = Column(Integer, primary_key=True)
+    keyword = Column(String)
+    rank = Column(Integer)
+
+    serp_id = Column(Integer, ForeignKey('serp.id'))
+    serp = relationship(
+        SearchEngineResultsPage,
+        backref=backref('related_keywords', uselist=True)
+    )
+
+    def __str__(self):
+        return '''
+            <related keyword at rank {rank} : {keyword}>
+            '''.format(**self.__dict__)
 
     def __repr__(self):
         return self.__str__()
@@ -278,7 +317,9 @@ def fixtures(config, session):
     """Add some base data."""
     for se in config.get('supported_search_engines', []):
         if se:
-            search_engine = session.query(SearchEngine).filter(SearchEngine.name == se).first()
+            search_engine = session.query(SearchEngine).filter(
+                SearchEngine.name == se
+            ).first()
             if not search_engine:
                 session.add(SearchEngine(name=se))
 

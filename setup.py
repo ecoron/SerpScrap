@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.4.3'
+version = '0.4.4'
 
 
 setup(
@@ -31,7 +31,7 @@ setup(
         'scikit-learn==0.18.1',
         'lxml',
         'sqlalchemy==1.0.12',
-        'selenium==3.0.2',
+        'selenium==3.3.3',
         'cssselect==0.9.1',
         'requests==2.13.0',
         'aiohttp==0.21.5',

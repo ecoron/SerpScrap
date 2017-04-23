@@ -7,7 +7,7 @@ class CsvWriter():
 
     def write(self, file_name, my_dict):
         try:
-            with open(file_name, 'w', encoding='utf-8') as f:
+            with open(file_name, 'w', encoding='utf-8', newline='') as f:
                 w = csv.DictWriter(f, my_dict[0].keys(), dialect='excel')
                 w.writeheader()
                 for row in my_dict[1:]:

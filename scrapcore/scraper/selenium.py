@@ -1,34 +1,29 @@
 # -*- coding: utf-8 -*-
-
 import datetime
 import json
 import logging
 import math
 import os
+from random import randint
 import re
-import sys
 import tempfile
 import threading
 import time
 from urllib.parse import quote
 
-from scrapcore.scraping import SearchEngineScrape, SeleniumSearchError, get_base_search_url_by_search_engine, MaliciousRequestDetected
+from scrapcore.scraping import MaliciousRequestDetected
+from scrapcore.scraping import SearchEngineScrape, SeleniumSearchError
+from scrapcore.scraping import get_base_search_url_by_search_engine
 from scrapcore.user_agent import random_user_agent
-
-
-try:
-    from selenium import webdriver
-    from selenium.common.exceptions import TimeoutException, WebDriverException
-    from selenium.common.exceptions import ElementNotVisibleException
-    from selenium.webdriver.common.keys import Keys
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.support.ui import WebDriverWait  # available since 2.4.0
-    from selenium.webdriver.support import expected_conditions as EC  # available since 2.26.0
-    from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-except ImportError as ie:
-    print(ie)
-    sys.exit('You can install missing modules with `pip3 install [modulename]`')
-
+from selenium import webdriver
+from selenium.common.exceptions import ElementNotVisibleException
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 logger = logging.getLogger(__name__)
@@ -40,9 +35,10 @@ def get_selenium_scraper_by_search_engine_name(config, search_engine_name, *args
     Args:
         search_engine_name: The search engine name.
         args: The arguments for the target search engine instance creation.
-        kwargs: The keyword arguments for the target search engine instance creation.
+        kwargs: The keyword arguments for the target search engine instance.
     Returns;
-        Either a concrete SelScrape instance specific for the given search engine or the abstract SelScrape object.
+        Either a concrete SelScrape instance specific for the given
+        search engine or the abstract SelScrape object.
     """
     class_name = search_engine_name[0].upper() + search_engine_name[1:].lower() + 'SelScrape'
     ns = globals()
@@ -53,7 +49,9 @@ def get_selenium_scraper_by_search_engine_name(config, search_engine_name, *args
 
 
 class SelScrape(SearchEngineScrape, threading.Thread):
-    """Instances of this class make use of selenium browser objects to query the search engines on a high level.
+    """
+    Instances of this class make use of selenium browser objects
+    to query the search engines on a high level.
     """
 
     next_page_selectors = {
@@ -144,7 +142,11 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         self.search_param_values = self._get_search_param_values()
 
         # get the base search url based on the search engine.
-        self.base_search_url = get_base_search_url_by_search_engine(self.config, self.search_engine_name, self.scrape_method)
+        self.base_search_url = get_base_search_url_by_search_engine(
+            self.config,
+            self.search_engine_name,
+            self.scrape_method
+        )
         super().instance_creation_info(self.__class__.__name__)
 
     def set_proxy(self):
@@ -154,16 +156,25 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         """Switch the proxy on the communication channel."""
 
     def proxy_check(self, proxy):
-        assert self.proxy and self.webdriver, 'Scraper instance needs valid webdriver and proxy instance to make the proxy check'
+        assert self.proxy and self.webdriver, '''Scraper instance needs valid
+        webdriver and proxy instance to make the proxy check'''
 
         online = False
-        status = 'Proxy check failed: {host}:{port} is not used while requesting'.format(host=self.proxy.host, port=self.proxy.port)
+        status = '''Proxy check failed: {host}:{port}
+        is not used while requesting'''.format(
+            host=self.proxy.host,
+            port=self.proxy.port
+        )
         ipinfo = {}
 
         try:
             self.webdriver.get(self.config.get('proxy_info_url'))
             try:
-                text = re.search(r'(\{.*?\})', self.webdriver.page_source, flags=re.DOTALL).group(0)
+                text = re.search(
+                    r'(\{.*?\})',
+                    self.webdriver.page_source,
+                    flags=re.DOTALL
+                ).group(0)
                 ipinfo = json.loads(text)
             except ValueError as v:
                 logger.critical(v)
@@ -187,7 +198,13 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         out what went wrong.
         """
         tempdir = tempfile.gettempdir()
-        location = os.path.join(tempdir, '{}_{}_debug_screenshot.png'.format(self.search_engine_name, self.browser_type))
+        location = os.path.join(
+            tempdir, 'serpscrap_{}_{}_{}_debug_screenshot.png'.format(
+                self.search_engine_name,
+                self.browser_type,
+                str(time.time())
+            )
+        )
         self.webdriver.get_screenshot_as_file(location)
 
     def _set_xvfb_display(self):
@@ -196,13 +213,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             os.environ['DISPLAY'] = self.xvfb_display
 
     def _get_webdriver(self):
-        """Return a webdriver instance and set it up with the according profile/ proxies.
-
+        """Return a webdriver instance and set it up
+        with the according profile/ proxies.
         Chrome is quite fast, but not as stealthy as PhantomJS.
-
         Returns:
-            The appropriate webdriver mode according to self.browser_type. If no webdriver mode
-            could be found, return False.
+            The appropriate webdriver mode according to self.browser_type.
+            If no webdriver mode could be found, return False.
         """
         if self.browser_type == 'chrome':
             return self._get_Chrome()
@@ -218,13 +234,22 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             if self.proxy:
                 chrome_ops = webdriver.ChromeOptions()
                 chrome_ops.add_argument(
-                    '--proxy-server={}://{}:{}'.format(self.proxy.proto, self.proxy.host, self.proxy.port))
-                self.webdriver = webdriver.Chrome(executable_path=self.config['executebale_path'], chrome_options=chrome_ops)
+                    '--proxy-server={}://{}:{}'.format(
+                        self.proxy.proto,
+                        self.proxy.host,
+                        self.proxy.port
+                    )
+                )
+                self.webdriver = webdriver.Chrome(
+                    executable_path=self.config['executebale_path'],
+                    chrome_options=chrome_ops
+                )
             else:
-                self.webdriver = webdriver.Chrome(executable_path=self.config['executable_path'])  # service_log_path='/tmp/chromedriver_log.log')
+                self.webdriver = webdriver.Chrome(
+                    executable_path=self.config['executable_path']
+                )
             return True
         except WebDriverException:
-            # we don't have a chrome executable or a chrome webdriver installed
             raise
         return False
 
@@ -232,16 +257,33 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         try:
             if self.proxy:
                 profile = webdriver.FirefoxProfile()
-                profile.set_preference("network.proxy.type",
-                                       1)  # this means that the proxy is user set, regardless of the type
+                profile.set_preference(
+                    "network.proxy.type",
+                    1
+                )  # this means that the proxy is user set
                 if self.proxy.proto.lower().startswith('socks'):
-                    profile.set_preference("network.proxy.socks", self.proxy.host)
-                    profile.set_preference("network.proxy.socks_port", self.proxy.port)
-                    profile.set_preference("network.proxy.socks_version", 5 if self.proxy.proto[-1] == '5' else 4)
+                    profile.set_preference(
+                        "network.proxy.socks",
+                        self.proxy.host
+                    )
+                    profile.set_preference(
+                        "network.proxy.socks_port",
+                        self.proxy.port
+                    )
+                    profile.set_preference(
+                        "network.proxy.socks_version",
+                        5 if self.proxy.proto[-1] == '5' else 4
+                    )
                     profile.update_preferences()
                 elif self.proxy.proto == 'http':
-                    profile.set_preference("network.proxy.http", self.proxy.host)
-                    profile.set_preference("network.proxy.http_port", self.proxy.port)
+                    profile.set_preference(
+                        "network.proxy.http",
+                        self.proxy.host
+                    )
+                    profile.set_preference(
+                        "network.proxy.http_port",
+                        self.proxy.port
+                    )
                 else:
                     raise ValueError('Invalid protocol given in proxyfile.')
                 profile.update_preferences()
@@ -250,7 +292,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 self.webdriver = webdriver.Firefox()
             return True
         except WebDriverException as e:
-            # reaching here is bad, since we have no available webdriver instance.
+            # no available webdriver instance.
             logger.error(e)
         return False
 
@@ -266,12 +308,23 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
                 if self.proxy.username and self.proxy.password:
                     service_args.append(
-                        '--proxy-auth={}:{}'.format(self.proxy.username, self.proxy.password)
+                        '--proxy-auth={}:{}'.format(
+                            self.proxy.username,
+                            self.proxy.password
+                        )
                     )
 
+            useragent = random_user_agent(
+                mobile=False
+            )
+            logger.info('useragent: {}'.format(useragent))
             dcap = dict(DesiredCapabilities.PHANTOMJS)
-            dcap["phantomjs.page.settings.userAgent"] = random_user_agent(mobile=False)
-            self.webdriver = webdriver.PhantomJS(executable_path=self.config['executable_path'], service_args=service_args, desired_capabilities=dcap)
+            dcap["phantomjs.page.settings.userAgent"] = useragent
+            self.webdriver = webdriver.PhantomJS(
+                executable_path=self.config['executable_path'],
+                service_args=service_args,
+                desired_capabilities=dcap
+            )
             return True
         except WebDriverException as e:
             logger.error(e)
@@ -279,16 +332,13 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
     def handle_request_denied(self, status_code):
         """Checks whether Google detected a potentially harmful request.
-
         Whenever such potential abuse is detected, Google shows an captcha.
         This method just blocks as long as someone entered the captcha in the browser window.
         When the window is not visible (For example when using PhantomJS), this method
         makes a png from the html code and shows it to the user, which should enter it in a command
         line.
-
         Returns:
             The search input field.
-
         Raises:
             MaliciousRequestDetected when there was not way to stp Google From denying our requests.
         """
@@ -454,8 +504,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             except (WebDriverException, TimeoutException):
                 self._save_debug_screenshot()
                 # raise Exception('{}: Cannot locate next page element: {}'.format(self.name, str(e)))
-
-            return self.webdriver.find_element_by_css_selector(selector)
+            try:
+                return self.webdriver.find_element_by_css_selector(selector)
+            except Exception:
+                logger.error('failed find_element_by_css_selector, sleep 30 sec')
+                time.sleep(30)
+                pass
 
         elif self.search_type == 'image':
             self.page_down()
@@ -490,17 +544,23 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             elif self.search_engine_name == 'ask':
                 selector = '#paging .pgcsel .pg'
 
-            if self.search_engine_name == 'duckduckgo':
-                time.sleep(1.5)
-            else:
-
+            content = None
+            try:
+                time.sleep(0.5)
+                WebDriverWait(self.webdriver, 5).until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, selector), str(self.page_number)))
+            except TimeoutException:
+                self._save_debug_screenshot()
                 try:
-                    WebDriverWait(self.webdriver, 5).\
-                        until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, selector), str(self.page_number)))
-                except TimeoutException:
-                    self._save_debug_screenshot()
                     content = self.webdriver.find_element_by_css_selector(selector).text
-                    raise Exception('Pagenumber={} did not appear in navigation. Got "{}" instead'.format(self.page_number), content)
+                except NoSuchElementException:
+                    # logger.error('SLEEPING FOR {} sec'.format(str(60 * 5)))
+                    # time.sleep(60 * 5)
+                    logger.error('Skipp it, no such element - SeleniumSearchError')
+                    pass
+                    # raise SeleniumSearchError('Stop Scraping, seems we are blocked')
+            except Exception:
+                logger.error('Pagenumber={} did not appear in navigation. Got "{}" instead'.format(self.page_number, content))
+                pass
 
         elif self.search_type == 'image':
             self.wait_until_title_contains_keyword()
@@ -524,6 +584,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         for self.query, self.pages_per_keyword in self.jobs.items():
 
             self.search_input = self._wait_until_search_input_field_appears()
+            time.sleep(.25)
 
             if self.search_input is False and self.config.get('stop_on_detection'):
                 self.status = 'Malicious request detected'
@@ -534,7 +595,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 self.search_input = self.handle_request_denied()
 
             if self.search_input:
-                self.search_input.clear()
+                try:
+                    self.search_input.clear()
+                except Exception:
+                    logger.error('Possible blocked search, sleep 30 sec')
+                    time.sleep(30)
+                    # return
                 time.sleep(.25)
 
                 self.search_param_fields = self._get_search_param_fields()
@@ -564,6 +630,10 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 except ElementNotVisibleException:
                     time.sleep(2)
                     self.search_input.send_keys(self.query + Keys.ENTER)
+                except Exception:
+                    logger.error('send keys not possible')
+                    # time.sleep(60)
+                    pass
 
                 self.requested_at = datetime.datetime.utcnow()
             else:
@@ -613,10 +683,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             raise Exception('{}: Aborting due to no available selenium webdriver.'.format(self.name))
 
         try:
-            self.webdriver.set_window_size(400, 400)
-            self.webdriver.set_window_position(400 * (self.browser_num % 4), 400 * (math.floor(self.browser_num // 4)))
+            x = randint(800, 1024)
+            y = randint(600, 900)
+            self.webdriver.set_window_size(x, y)
+            self.webdriver.set_window_position(x * (self.browser_num % 4), y * (math.floor(self.browser_num // 4)))
         except WebDriverException as e:
-            logger.debug('Cannot set window size: {}'.format(e))
+            logger.error('Cannot set window size: {}'.format(e))
 
         super().before_search()
 

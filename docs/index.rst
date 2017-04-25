@@ -17,9 +17,12 @@ SerpScrap
 
 
 A python scraper to extract, analyze data from search engine result pages and urls.
-Extract data, like url, title, snippet of results or ratings for given keywords.
-Extract the cleaned raw text content from urls.
-Get the tfidf of the text content, or generate with the text generator new sentences.
+Extract position, url, title, description, related keywords and other details of searchresults
+for the given keywords.
+You can also provide a list of proxies which should used for scraping.
+By enabling the property in the config, also the origin url of the searchresult will be scraped
+and the cleaned raw text content from this url would be extracted.
+There are also some tools like tfidf analyzer or a markovy a text generator to generate new sentences.
 
 
 See http://serpscrap.readthedocs.io/en/latest/ for documentation.

@@ -7,6 +7,8 @@ Install
    pip uninstall SerpScrap -y
    pip install SerpScrap --upgrade
 
+On the first run SerpScrap will try to install the required PhantomJS binary on Windows and Linux instances.
+But you can also configure the path to the binary.
 
 Requirements Windows
 --------------------

@@ -44,10 +44,11 @@ You can disable url scraping by setting the config value scrape_urls to False.
    for result in results:
        print(result)
 
-Simple Selenium Example
------------------------
+Simple Example - custom phantomjs path
+--------------------------------------
 
-we recommend to use the selenium mode and phantomjs.
+If phantomjs could not installed, configure your
+custom path to the binary.
 
 .. code-block:: python
 
@@ -56,10 +57,8 @@ we recommend to use the selenium mode and phantomjs.
    keywords = ['seo trends', 'seo news', 'seo tools']
    
    config = serpscrap.Config()
-   config.set('scrape_method', 'selenium')
-   config.set('sel_browser', 'phantomjs'),
-   # change the path to your phantomjs binary, in this example we use the windows binary
-   config.set('executable_path', '../phantomjs/phantomjs.exe'),
+   # only required if phantomjs binary could not detected
+   config.set('executable_path', '../phantomjs/phantomjs.exe')
    config.set('num_workers', 1)
    config.set('scrape_urls', False)
    

@@ -13,10 +13,14 @@ SerpScrap
     :target: https://travis-ci.org/ecoron/SerpScrap
 
 
-A python module to scrape, extract, analyze data from search engine result pages and urls.
-Extract data, like url, title, snippet of results or ratings for given keywords.
-Extract the cleaned raw text content from urls.
-Get the tfidf of the text content, or generate with the text generator new sentences.
+A python scraper to extract, analyze data from search engine result pages and urls. It might be usefull
+for SEO and research tasks. Also some text processing tools are available.
+
+* Extract position, url, title, description, related keywords and other details of searchresults for the given keywords.
+* use a list of proxies for scraping.
+* scrape also the origin url of the searchresult, the cleaned raw text content from this url would be extracted.
+* write results as csv for future analytics
+* use some text processing tools like tfidf analyzer or a markovy a text generator to generate new sentences.
 
 See http://serpscrap.readthedocs.io/en/latest/ for documentation.
 

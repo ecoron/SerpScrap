@@ -3,7 +3,7 @@
 import pprint
 import serpscrap
 
-keywords = ['seo trends']
+keywords = ['example']
 
 config = serpscrap.Config()
 config.set('scrape_urls', False)

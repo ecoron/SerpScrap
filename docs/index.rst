@@ -36,6 +36,7 @@ Contents
    :maxdepth: 2
    
    install
+   results
    configuration
    docker
    examples

@@ -13,15 +13,13 @@ Default configuration
 * database_name: '/tmp/serpscrap' - path and name sqlite db (stores scrape results)
 * do_caching: True                - enable / disable caching
 * headers:                        - dict to customize request header, see below
-* num_pages_for_keyword: 1        - number of result pages to scrape
+* num_pages_for_keyword: 2        - number of result pages to scrape
 * num_results_per_page: 10        - number results per searchengine page
-* num_workers: 4                  - threads searchengine scraping
-* output_filename: None           - store output in filename.csv or filename.json
-* proxy_file: ''                  - path to proxy file
+* proxy_file: ''                  - path to proxy file, see below
 * scrape_urls: False              - scrape urls of search results
-* search_engines: ['google']      - search engines (google, bing)
+* search_engines: ['google']      - search engines (google)
 * url_threads: 3                  - number of threads if scrape_urls is true
-* use_own_ip: True                - by using proxies set to False
+* use_own_ip: True                - if using proxies set to False
 
 
 Custom configuration
@@ -52,7 +50,6 @@ Using your own configuration
       'database_name': '/tmp/serpscrap',
       'do_caching': True,
       'num_pages_for_keyword': 2,
-      'output_filename': None,
       'proxy_file': '',
       'scrape_urls': True,
       'search_engines': ['google'],

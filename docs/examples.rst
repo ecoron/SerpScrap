@@ -1,20 +1,9 @@
-=====================
-How to use - examples
-=====================
+=============
+Example Usage
+=============
 
 Here we show you how to use SerpScrap. You can use it from command line
 or as module in your application
-
-
-Command Line
-------------
-
-.. code-block:: bash
-
-  python serpscrap\serpscrap.py -k your keywords
-
-As arguments provide one or more space separeted keywords.
-the result is printed into your console.
 
 
 Simple Example
@@ -95,6 +84,17 @@ In this example we scrape only an url, without crawling any searchengine.
        print()
 
 
+Command Line
+------------
+
+.. code-block:: bash
+
+  python serpscrap\serpscrap.py -k your keywords
+
+As arguments provide one or more space separeted keywords.
+the result is printed into your console.
+
+
 Text Generator Example
 ----------------------
 
@@ -128,6 +128,32 @@ generate 5 sentences.
            texts.append(markovi.generate(content.__getitem__('text_raw'), 1))
    
    pprint.pprint(texts, width=120)
+
+Example as_csv()
+----------------
+
+save the results for later seo analytics by using the
+as_csv() method. this method needs as argument the path
+to the file.
+
+.. code-block:: python
+
+   import serpscrap
+   
+   keywords = ['seo tools', 'seo news']
+   
+   config = serpscrap.Config()
+   config.set('scrape_urls', False)
+   
+   scrap = serpscrap.SerpScrap()
+   scrap.init(config=config.get(), keywords=keywords)
+   results = scrap.as_csv('/tmp/seo-research')
+
+Example related
+---------------
+If you are interessted in related keywords
+for additional research tasks take a look
+into `examples`_ example_related.py on github.
 
 
 Example advanced

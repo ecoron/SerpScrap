@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.5.0'
+version = '0.5.1'
 
 
 setup(
@@ -37,7 +37,7 @@ setup(
         'aiohttp==0.21.5',
     ],
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Topic :: Internet',
         'License :: OSI Approved :: MIT License',

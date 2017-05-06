@@ -67,12 +67,12 @@ class GoogleParser(Parser):
             'de_ip': {
                 'container': '#center_col',
                 'result_container': '.ads-ad',
-                'link': 'h3 > a:first-child::attr(href)',
+                'link': 'h3 > a:nth-child(2)::attr(href)',
                 'snippet': '.ads-creative::text',
-                'title': 'h3 > a:first-child::text',
+                'title': 'h3 > a:nth-child(2)::text',
                 'visible_link': '.ads-visurl cite::text',
                 'rating': 'div._Ond _Bu span::text',
-                'sitelinks': 'div.osl::text'
+                'sitelinks': 'ul._wEo::text'
             }
         },
         'ads_aside': {

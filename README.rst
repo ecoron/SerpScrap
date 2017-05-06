@@ -18,8 +18,8 @@ for SEO and research tasks. Also some text processing tools are available.
 
 * Extract position, url, title, description, related keywords and other details of searchresults for the given keywords.
 * use a list of proxies for scraping.
-* scrape also the origin url of the searchresult, the cleaned raw text content from this url would be extracted.
-* write results as csv for future analytics
+* scrape also the origin url of the searchresult, the cleaned raw text content from this url is extracted.
+* save results as csv for future analytics
 * use some text processing tools like tfidf analyzer or a markovy a text generator to generate new sentences.
 
 See http://serpscrap.readthedocs.io/en/latest/ for documentation.
@@ -30,7 +30,7 @@ Source is available at https://github.com/ecoron/SerpScrap.
 Install
 =======
 
-The easiest way to do
+The easy way to do:
 
 .. code-block:: python
 
@@ -44,23 +44,7 @@ In some cases it is required to install python-scipy first
 
    sudo apt-get build-dep python-scipy
 
-
-Requirements Windows
---------------------
-
-on Windows you might need also `Microsoft Visual C++ Build Tools`_ installed.
-
-* `lxml`_
-* `numpy`_
-* `scipy`_
-* `scikit-learn`_
-
-avoid encode/decode issues by running this command before starting python in your cli
-
-.. code-block:: bash
-
-   chcp 65001
-   set PYTHONIOENCODING=utf-8
+More details in the `install`_ section of the documentation.
 
 Usage
 =====
@@ -76,14 +60,15 @@ SerpScrap in your applications
    scrap.init(keywords=keywords)
    result = scrap.scrap_serps()
 
-You find more `examples`_ on the github page.
+More detailes in the `examples`_ section of the documentation.
 
-To run SerpScrap via command line provide one or more keywords as searchphrase.
-In this example the searchphrase is "your keywords"
+To avoid encode/decode issues use this command before you start using SerpScrap in your cli.
 
 .. code-block:: bash
 
-  python serpscrap\serpscrap.py -k your keywords
+   chcp 65001
+   set PYTHONIOENCODING=utf-8
+
 
 .. image:: https://raw.githubusercontent.com/ecoron/SerpScrap/master/docs/logo.png
     :target: https://github.com/ecoron/SerpScrap
@@ -96,12 +81,8 @@ The scrapcore is based on `GoogleScraper`_ with several improvements.
 
 .. target-notes::
 
+.. _`install`: http://serpscrap.readthedocs.io/en/latest/install.html
+.. _`examples`: http://serpscrap.readthedocs.io/en/latest/examples.html
 .. _`PhantomJs`: https://github.com/ariya/phantomjs
 .. _`GoogleScraper`: https://github.com/NikolaiT/GoogleScraper
-.. _`serpscrap.readthedocs.io`: http://serpscrap.readthedocs.io/en/latest/
-.. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools
-.. _`lxml`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml
-.. _`numpy`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy
-.. _`scipy`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy
-.. _`scikit-learn`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scikit-learn
-.. _`examples`: https://github.com/ecoron/SerpScrap/tree/master/examples
+

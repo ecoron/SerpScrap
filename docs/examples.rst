@@ -2,8 +2,9 @@
 Example Usage
 =============
 
-Here we show you how to use SerpScrap. You can use it from command line
-or as module in your application
+Here we show how you can use SerpScrap for your SEO and research tasks.
+You can use it from command line or as module in your application.
+Take also a look into the `examples`_ on github.
 
 
 Simple Example
@@ -13,7 +14,7 @@ Simple Example
 
    python examples\example_simple.py
 
-In this example we scrape results for the keyword "computer since".
+In this example (`example_simple.py`_) we scrape results for the keyword "computer since".
 Also the serp result pages are crawled to scrape the raw text content of it.
 You can disable url scraping by setting the config value scrape_urls to False.
 
@@ -151,12 +152,22 @@ to the file.
 
 Example related
 ---------------
-If you are interessted in related keywords
+If you are interested in related keywords
 for additional research tasks take a look
-into `examples`_ example_related.py on github.
+into `example_related.py`_ on github.
 
 
 Example advanced
 ----------------
+`example_advanced.py`_ is a more advanced and complex example.
+You can find it also on github.
 
-TODO
+References
+
+.. target-notes::
+
+.. _`examples`: https://github.com/ecoron/SerpScrap/tree/master/examples
+.. _`example_simple.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_simple.py
+.. _`example_related.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_related.py
+.. _`example_related.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_advanced.py
+

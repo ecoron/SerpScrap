@@ -22,7 +22,7 @@ for SEO and research tasks. Also some text processing tools are available.
 * Extract position, url, title, description, related keywords and other details of searchresults for the given keywords.
 * use a list of proxies for scraping.
 * scrape also the origin url of the searchresult, the cleaned raw text content from this url would be extracted.
-* write results as csv for future analytics
+* save results as csv for future analytics
 * use some text processing tools like tfidf analyzer or a markovy a text generator to generate new sentences.
 
 
@@ -56,15 +56,7 @@ SerpScrap in your applications
    scrap.init(keywords=keywords)
    result = scrap.scrap_serps()
 
-More detailed informations in the examples section of this documentation.
-Source code is also available in the `examples`_ on the github page.
-
-To run SerpScrap via command line provide one or more keywords as searchphrase.
-In this example the searchphrase is "your keywords"
-
-.. code-block:: bash
-
-  python serpscrap\serpscrap.py -k your keywords
+More detailes in the `examples`_ section of the documentation.
 
 
 References
@@ -77,11 +69,5 @@ The scrapcore is based on `GoogleScraper`_ with several improvements.
 
 .. _`PhantomJs`: https://github.com/ariya/phantomjs
 .. _`GoogleScraper`: https://github.com/NikolaiT/GoogleScraper
-.. _`serpscrap.readthedocs.io`: http://serpscrap.readthedocs.io/en/latest/
-.. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools
-.. _`lxml`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml
-.. _`numpy`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy
-.. _`scipy`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy
-.. _`scikit-learn`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scikit-learn
-.. _`examples`: https://github.com/ecoron/SerpScrap/tree/master/examples
+.. _`examples`: http://serpscrap.readthedocs.io/en/latest/examples.html
 

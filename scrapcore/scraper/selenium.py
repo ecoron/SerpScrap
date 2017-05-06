@@ -11,10 +11,6 @@ import threading
 import time
 from urllib.parse import quote
 
-from scrapcore.scraping import MaliciousRequestDetected
-from scrapcore.scraping import SearchEngineScrape, SeleniumSearchError
-from scrapcore.scraping import get_base_search_url_by_search_engine
-from scrapcore.user_agent import random_user_agent
 from selenium import webdriver
 from selenium.common.exceptions import ElementNotVisibleException
 from selenium.common.exceptions import NoSuchElementException
@@ -24,6 +20,11 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+from scrapcore.scraping import MaliciousRequestDetected
+from scrapcore.scraping import SearchEngineScrape, SeleniumSearchError
+from scrapcore.scraping import get_base_search_url_by_search_engine
+from scrapcore.user_agent import random_user_agent
 
 
 logger = logging.getLogger(__name__)

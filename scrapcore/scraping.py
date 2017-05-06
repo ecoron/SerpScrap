@@ -146,14 +146,11 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
         self.requested_at = None
         # The name of the scraper
         self.name = '[{}]'.format(self.search_engine_name) + self.__class__.__name__
-        # How long to sleep (in seconds) after every n-th request
-        # self.config.get(self.config.get('sleeping_ranges'))
-        self.sleeping_ranges = {
-            1: (2, 5),
-            5: (5, 10),
-            30: (10, 20),
-            127: (30, 50),
-        }
+
+        # How long to sleep (in seconds) after every request
+        self.sleeping_min = self.config.get('sleeping_min')
+        self.sleeping_max = self.config.get('sleeping_max')
+
         # the default timeout
         self.timeout = 5
         # the status of the thread after finishing or failing
@@ -258,22 +255,12 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
             db_lock=self.db_lock
         )
 
-    def _largest_sleep_range(self, search_number):
-        """Sleep a given amount of time
-        dependent on the number of searches done."""
-
-        assert search_number >= 0
-        if search_number != 0:
-            s = sorted(self.sleeping_ranges.keys(), reverse=True)
-            for n in s:
-                if search_number % n == 0:
-                    return self.sleeping_ranges[n]
-        # sleep one second
-        return 1, 2
-
     def detection_prevention_sleep(self):
-        # match the largest sleep range
-        self.current_delay = random.randrange(*self._largest_sleep_range(self.search_number))
+        # randomly delay from sleep range
+        self.current_delay = random.randrange(
+            self.sleeping_min,
+            self.sleeping_max
+        )
         time.sleep(self.current_delay)
 
     def after_search(self):

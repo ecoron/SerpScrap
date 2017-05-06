@@ -49,7 +49,7 @@ user_agents_computer = [
     'Mozilla/5.0 (Macintosh, Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30',
     'Mozilla/5.0 (Windows NT 6.1, rv:52.0) Gecko/20100101 Firefox/52.0',
     'Mozilla/5.0 (Windows NT 6.1, WOW64, rv:45.0) Gecko/20100101 Firefox/45.0',
-    'Mozilla/5.0 (Windows NT 10.0, WOW64, Trident/7.0, rv:11.0) like Gecko',
+    # 'Mozilla/5.0 (Windows NT 10.0, WOW64, Trident/7.0, rv:11.0) like Gecko',
     'Mozilla/5.0 (Windows NT 6.3, WOW64, Trident/7.0, rv:11.0) like Gecko',
     'Mozilla/5.0 (Macintosh, Intel Mac OS X 10_12_3) AppleWebKit/602.4.8 (KHTML, like Gecko) Version/10.0.3 Safari/602.4.8',
     'Mozilla/5.0 (Windows NT 10.0, Win64, x64, rv:52.0) Gecko/20100101 Firefox/52.0',

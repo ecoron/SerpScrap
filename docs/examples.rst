@@ -169,5 +169,5 @@ References
 .. _`examples`: https://github.com/ecoron/SerpScrap/tree/master/examples
 .. _`example_simple.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_simple.py
 .. _`example_related.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_related.py
-.. _`example_related.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_advanced.py
+.. _`example_advanced.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_advanced.py
 

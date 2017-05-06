@@ -42,6 +42,7 @@ To avoid encode/decode issues use this command before you start using SerpScrap 
 
 
 References
+
 .. target-notes::
 
 .. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools

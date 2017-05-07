@@ -25,7 +25,7 @@ setup(
         'chardet==2.3.0',
         'beautifulsoup4==4.5.3',
         'html2text==2016.9.19',
-        'markovify==0.5.4',
+        'markovify==0.6.0',
         'numpy==1.12.1',
         'scipy==0.19.0',
         'scikit-learn==0.18.1',

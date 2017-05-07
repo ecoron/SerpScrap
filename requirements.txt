@@ -5,7 +5,7 @@ lxml
 chardet==2.3.0
 beautifulsoup4==4.5.3
 html2text==2016.9.19
-markovify==0.5.4
+markovify==0.6.0
 PySocks==1.6.7
 sqlalchemy==1.0.12
 selenium==3.3.3

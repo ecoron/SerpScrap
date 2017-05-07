@@ -73,9 +73,9 @@ class Proxies():
     def parse_proxy_file(self, fname):
         """Parses a proxy file
         The format should be like the following:
-            socks5 23.212.45.13:1080 username:password
-            socks4 23.212.45.13:80 username:password
-            http 23.212.45.13:80
+            socks5 XX.XXX.XX.XX:1080 username:password
+            socks4 XX.XXX.XX.XX:80 username:password
+            http XX.XXX.XX.XX:80
             If username and password aren't provided, we assumes
             that the proxy doesn't need auth credentials.
         Args:

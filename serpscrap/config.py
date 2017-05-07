@@ -21,7 +21,7 @@ class Config():
         'use_own_ip': True,
         'search_engines': ['google'],
         'num_pages_for_keyword': 2,
-        'scrape_method': 'selenium',  # http
+        'scrape_method': 'selenium',
         'sel_browser': 'phantomjs',
         'executable_path': '',
         'do_caching': True,

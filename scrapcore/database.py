@@ -149,11 +149,7 @@ class SearchEngineResultsPage(Base):
         """Populate itself from a scraper object.
 
         A scraper may be any object of type:
-
             - SelScrape
-            - HttpScrape
-            - AsyncHttpScrape
-
         Args:
             A scraper object.
         """

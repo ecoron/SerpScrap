@@ -11,7 +11,7 @@ from scrapcore.result_writer import ResultWriter
 from scrapcore.tools import Proxies
 
 logger = logging.getLogger(__name__)
-SEARCH_MODES = ('http', 'selenium')
+SEARCH_MODES = ('selenium')
 
 
 class GoogleSearchError(Exception):

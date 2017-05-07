@@ -19,5 +19,5 @@ class ValidatorConfig():
         if config.get('use_own_ip') != True and len(config.get('proxy_file')) == 0:
             raise Error('No proxy_file provided and using own IP is disabled.')
 
-        if config.get('scrape_method') not in ('http', 'selenium'):
+        if config.get('scrape_method') not in ('selenium'):
             raise Error('No such scrape_method {}'.format(config.get('scrape_method')))

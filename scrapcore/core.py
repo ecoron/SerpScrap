@@ -55,7 +55,7 @@ class Core():
         num_workers = int(config.get('num_workers'))
         scrape_method = config.get('scrape_method')
         pages = int(config.get('num_pages_for_keyword', 1))
-        method = config.get('scrape_method', 'http')
+        method = config.get('scrape_method', 'selenium')
 
         result_writer = ResultWriter()
         result_writer.init_outfile(config, force_reload=True)

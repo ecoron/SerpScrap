@@ -20,7 +20,8 @@ Default configuration
 * search_engines: ['google']      - search engines (google)
 * url_threads: 3                  - number of threads if scrape_urls is true
 * use_own_ip: True                - if using proxies set to False
-
+* sleeping_min: 5                 - min seconds to sleep between scrapes
+* sleeping_max: 15                - max seconds to sleep between scrapes
 
 Custom configuration
 --------------------

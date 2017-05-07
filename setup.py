@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.5.1'
+version = '0.6.0'
 
 
 setup(
@@ -17,22 +17,23 @@ setup(
     long_description=open('README.rst').read(),
     author='Ronald Schmidt',
     author_email='ronald.schmidt@zu-web.de',
+    doc_url='http://serpscrap.readthedocs.io/en/latest/',
     url='https://github.com/ecoron/SerpScrap',
     license='MIT',
     packages=find_packages(),
     install_requires=[
         'PySocks==1.6.7',
-        'chardet==2.3.0',
-        'beautifulsoup4==4.5.3',
+        'chardet==3.0.2',
+        'beautifulsoup4==4.6.0',
         'html2text==2016.9.19',
-        'markovify==0.5.4',
+        'markovify==0.6.0',
         'numpy==1.12.1',
         'scipy==0.19.0',
         'scikit-learn==0.18.1',
         'lxml',
         'sqlalchemy==1.0.12',
-        'selenium==3.3.3',
-        'cssselect==0.9.1',
+        'selenium==3.4.1',
+        'cssselect==1.0.1',
         'requests==2.13.0',
         'aiohttp==0.21.5',
     ],

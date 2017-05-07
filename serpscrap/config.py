@@ -21,7 +21,7 @@ class Config():
         'use_own_ip': True,
         'search_engines': ['google'],
         'num_pages_for_keyword': 2,
-        'scrape_method': 'selenium',  # http
+        'scrape_method': 'selenium',
         'sel_browser': 'phantomjs',
         'executable_path': '',
         'do_caching': True,
@@ -36,6 +36,8 @@ class Config():
         'log_level': 'INFO',
         'num_workers': 1,
         'num_results_per_page': 10,
+        'sleeping_min': 5,
+        'sleeping_max': 15,
         'search_type': 'normal',
         'google_search_url': 'https://www.google.com/search?',
         'bing_search_url': 'http://www.bing.com/search?',

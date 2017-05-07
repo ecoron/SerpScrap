@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-from serpscrap.markovi import Markovi
-from serpscrap.config import Config
-from serpscrap.urlscrape import UrlScrape
 import pprint
+
+from serpscrap.config import Config
+from serpscrap.markovi import Markovi
+from serpscrap.urlscrape import UrlScrape
 
 
 url = 'http://gutenberg.spiegel.de/buch/johann-wolfgang-goethe-gedichte-3670/231'
@@ -18,4 +19,5 @@ for content in contents:
     for _ in range(5):
         texts.append(markovi.generate(content.__getitem__('text_raw'), 1))
 
-pprint.pprint(texts, width=120)
+for text in texts:
+    pprint.pprint(text, width=120)

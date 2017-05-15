@@ -26,6 +26,6 @@ class TestClass:
         scrap.init(config=config.get(), keywords=keywords)
         results = scrap.run()
 
-        assert len(config.get()) == 28
+        assert len(config.get()) == 29
         assert len(results) > 0
         assert len(results[0]) > 0

@@ -26,6 +26,7 @@ class Config():
         'executable_path': '',
         'do_caching': True,
         'cachedir': '/tmp/.serpscrap/',
+        'dir_screenshot': '/tmp/screenshots/',
         'database_name': '/tmp/serpscrap',
         'minimize_caching_files': True,
         'clean_cache_after': 24,

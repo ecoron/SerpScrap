@@ -31,11 +31,9 @@ setup(
         'scipy==0.19.0',
         'scikit-learn==0.18.1',
         'lxml',
-        'sqlalchemy==1.0.12',
+        'sqlalchemy==1.1.9',
         'selenium==3.4.1',
         'cssselect==1.0.1',
-        'requests==2.13.0',
-        'aiohttp==0.21.5',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

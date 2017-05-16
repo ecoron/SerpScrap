@@ -197,13 +197,19 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         Saves a debug screenshot of the browser window to figure
         out what went wrong.
         """
-        screendir = self.config['dir_screenshot']
+        screendir = '{}/{}'.format(
+            self.config['dir_screenshot'],
+            datetime.datetime.strftime(
+                datetime.datetime.utcnow(),
+                '%Y-%m-%d'
+            )
+        )
+
+        if not os.path.exists(screendir):
+            os.makedirs(screendir)
+
         location = os.path.join(
-            screendir, '{}-{}_{}-p{}.png'.format(
-                datetime.datetime.strftime(
-                    datetime.datetime.utcnow(),
-                    '%Y-%m-%d'
-                ),
+            screendir, '{}_{}-p{}.png'.format(
                 self.search_engine_name,
                 self.query,
                 str(self.page_number),

@@ -26,13 +26,14 @@ class Config():
         'executable_path': '',
         'do_caching': True,
         'cachedir': '/tmp/.serpscrap/',
-        'dir_screenshot': '/tmp/screenshots/',
+        'screenshot': True,
+        'dir_screenshot': '/tmp/screenshots',
         'database_name': '/tmp/serpscrap',
         'minimize_caching_files': True,
         'clean_cache_after': 24,
         'output_filename': None,
         # 'print_results': 'all',
-        'scrape_urls': True,
+        'scrape_urls': False,
         'url_threads': 6,
         'log_level': 'INFO',
         'num_workers': 1,
@@ -54,6 +55,14 @@ class Config():
         'proxy_info_url': 'http://ipinfo.io/json',
         'stop_on_detection': True,
     }
+
+    def __init__(self):
+        for k, v in self.config.items():
+            setattr(self, k, v)
+        return None
+
+    def __dict__(self):
+        return self.config
 
     def get(self):
         """get the config dictionary

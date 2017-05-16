@@ -656,8 +656,9 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             self.wait_until_serp_loaded()
 
             try:
-                self._save_debug_screenshot()
-                time.sleep(.5)
+                if self.config.get('screenshot') is True:
+                    self._save_debug_screenshot()
+                    time.sleep(.5)
                 self.html = self.webdriver.execute_script('return document.body.innerHTML;')
             except WebDriverException:
                 self.html = self.webdriver.page_source
@@ -699,7 +700,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 x = randint(800, 1024)
                 y = randint(600, 900)
                 self.webdriver.set_window_size(x, y)
-                self.webdriver.set_window_position(x * (self.browser_num % 4), y * (math.floor(self.browser_num // 4)))
+                # self.webdriver.set_window_position(x * (self.browser_num % 4), y * (math.floor(self.browser_num // 4)))
+                self.webdriver.set_window_position(x * (self.browser_num % 4), randint(1, 10))
             except WebDriverException as e:
                 logger.error('Cannot set window size: {}'.format(e))
 

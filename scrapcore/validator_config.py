@@ -21,3 +21,8 @@ class ValidatorConfig():
 
         if config.get('scrape_method') not in ('selenium'):
             raise Error('No such scrape_method {}'.format(config.get('scrape_method')))
+
+        if config.get('screenshot') is True and \
+            (config.get('dir_screenshot') is None or
+             len(config.get('dir_screenshot')) < 1):
+            raise Error('No config dir_screenshot found')

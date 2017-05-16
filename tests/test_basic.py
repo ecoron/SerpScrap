@@ -21,10 +21,16 @@ class TestClass:
 
     def test_config_default(self):
         config = Config()
-        assert len(config.get()) == 29
+        assert len(config.get()) == 30
         assert config.use_own_ip is True
         assert config.screenshot is True
         assert config.scrape_urls is False
+
+        today = datetime.datetime.strftime(
+            datetime.datetime.utcnow(),
+            '%Y-%m-%d'
+        )
+        assert config.today == today
 
     def test_simple(self):
 
@@ -48,10 +54,7 @@ class TestClass:
 
         screendir = '{}/{}'.format(
             config.get()['dir_screenshot'],
-            datetime.datetime.strftime(
-                datetime.datetime.utcnow(),
-                '%Y-%m-%d'
-            )
+            config.today
         )
 
         assert config.get()['screenshot'] is True

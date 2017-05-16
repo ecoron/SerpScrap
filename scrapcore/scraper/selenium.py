@@ -2,7 +2,6 @@
 import datetime
 import json
 import logging
-import math
 import os
 from random import randint
 import re
@@ -199,10 +198,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         """
         screendir = '{}/{}'.format(
             self.config['dir_screenshot'],
-            datetime.datetime.strftime(
-                datetime.datetime.utcnow(),
-                '%Y-%m-%d'
-            )
+            self.config['today']
         )
 
         if not os.path.exists(screendir):

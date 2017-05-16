@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+import datetime
 """
 SerpScrap.Config
 """
@@ -54,6 +55,10 @@ class Config():
         'proxy_check_url': 'http://canihazip.com/s',
         'proxy_info_url': 'http://ipinfo.io/json',
         'stop_on_detection': True,
+        'today': datetime.datetime.strftime(
+            datetime.datetime.utcnow(),
+            '%Y-%m-%d'
+        )
     }
 
     def __init__(self):

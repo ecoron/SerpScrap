@@ -4,9 +4,9 @@
 SerpScrap.SerpScrap
 """
 import argparse
+import os
 import pprint
 
-import chardet
 from scrapcore.core import Core
 from scrapcore.logger import Logger
 from serpscrap.config import Config
@@ -31,11 +31,15 @@ class SerpScrap():
         scrap_serps (): scrape serps
         scrap (): calls GoogleScraper
         scrap_url(string): calls UrlScrape
-        adjust_encoding(string): for encoding
+        as_csv(string): scrape serps save as csv
     """
     args = []
 
     serp_query = None
+
+    results = []
+
+    related = []
 
     def cli(self, args=None):
         """method called if executed on command line
@@ -97,24 +101,24 @@ class SerpScrap():
         Returns:
             list: dicts with all results
         """
-        results = None
+        self.results = []
         if self.serp_query is not None:
-            results = self.scrap_serps()
+            self.results = self.scrap_serps()
 
         if self.config['scrape_urls']:
-            for index, result in enumerate(results):
+            for index, result in enumerate(self.results):
                 if 'serp_type' in result and \
                    'ads_main' not in result['serp_type'] and \
                    'serp_url' in result:
                     result_url = self.scrap_url(result['serp_url'])[0]
                     if 'status' in result_url:
-                        results[index].update(result_url)
-        return results if isinstance(results, list) else [results]
+                        self.results[index].update(result_url)
+        return self.results if isinstance(self.results, list) else [self.results]
 
     def as_csv(self, file_path):
         writer = CsvWriter()
-        result = self.run()
-        writer.write(file_path + '.csv', result)
+        self.results = self.run()
+        writer.write(file_path + '.csv', self.results)
 
     def scrap_serps(self):
         """call scrap method and append serp results to list
@@ -122,17 +126,17 @@ class SerpScrap():
             list: dict of scrape results
         """
         search = self.scrap()
-        result = []
+        self.results = []
         if search is not None:
             for serp in search.serps:
-                related = []
+                self.related = []
                 for related_keyword in serp.related_keywords:
-                    related.append({
+                    self.related.append({
                         'keyword': related_keyword.keyword,
                         'rank': related_keyword.rank
                     })
                 for link in serp.links:
-                    result.append({
+                    self.results.append({
                         'query_num_results total': serp.num_results_for_query,
                         'query_num_results_page': serp.num_results,
                         'query_page_number': serp.page_number,
@@ -146,9 +150,15 @@ class SerpScrap():
                         'serp_visible_link': link.visible_link,
                         'serp_snippet': link.snippet,
                         'serp_sitelinks': link.sitelinks,
-                        'related_keywords': related
+                        'screenshot': os.path.join('{}/{}/{}_{}-p{}.png'.format(
+                            self.config['dir_screenshot'],
+                            self.config['today'],
+                            'google',
+                            serp.query,
+                            str(serp.page_number),
+                        ))
                     })
-            return result
+            return self.results
         else:
             raise Exception('No Results')
 
@@ -173,33 +183,8 @@ class SerpScrap():
         urlscrape = UrlScrape(self.config)
         return urlscrape.scrap_url(url)
 
-    def adjust_encoding(self, data):
-        """detect and adjust encoding of data return data decoded to utf-8
-        TODO:
-            move to tools
-        Args:
-            data (string): data to encode
-        Returns:
-            dict: encoding and data
-        """
-        if data is None:
-            return {'encoding': None, 'data': data}
-
-        data = data.encode('utf-8')
-        check_encoding = chardet.detect(data)
-
-        if check_encoding['encoding'] is not None \
-           and 'utf-8' not in check_encoding['encoding']:
-            try:
-                data = data.decode(check_encoding['encoding']).encode('utf-8')
-            except Exception:
-                pass
-        try:
-            data = data.decode('utf-8')
-        except Exception:
-            data = data.decode('utf-8', 'ignore')
-
-        return {'encoding': check_encoding['encoding'], 'data': data}
+    def get_related(self):
+        return self.related
 
 
 if __name__ == "__main__":

@@ -14,10 +14,6 @@ If you prefer to save the results use the as_csv() method.
                                'Sekunden)\xa0',
     'query_num_results_page': 10,
     'query_page_number': 1,
-    'related_keywords': [{'keyword': 'example deutsch', 'rank': 1},
-                         {'keyword': 'example email', 'rank': 2},
-                         {'keyword': 'example definition', 'rank': 3},
-                         {'keyword': 'example rapper', 'rank': 4},
     'serp_domain': 'dictionary.cambridge.org',
     'serp_rank': 4,
     'serp_rating': None,
@@ -27,5 +23,20 @@ If you prefer to save the results use the as_csv() method.
     'serp_title': 'example Bedeutung im Cambridge Englisch Wörterbuch',
     'serp_type': 'results',
     'serp_url': 'http://dictionary.cambridge.org/de/worterbuch/englisch/example',
-    'serp_visible_link': 'dictionary.cambridge.org/de/worterbuch/englisch/example'
+    'serp_visible_link': 'dictionary.cambridge.org/de/worterbuch/englisch/example',
+    'screenshot': '/tmp/screenshots/2017-05-21/google_example-p1.png'
    }
+
+Related keywords
+----------------
+
+To fetch related keywords for your given keyword you can use the method get_related()
+which returns a list of dicts
+
+.. code-block:: python
+
+    [{'keyword': 'example deutsch', 'rank': 1},
+    {'keyword': 'example email', 'rank': 2},
+    {'keyword': 'example definition', 'rank': 3},
+    {'keyword': 'example rapper', 'rank': 4}]
+

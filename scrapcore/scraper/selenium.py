@@ -2,7 +2,6 @@
 import datetime
 import json
 import logging
-import math
 import os
 from random import randint
 import re
@@ -11,6 +10,10 @@ import threading
 import time
 from urllib.parse import quote
 
+from scrapcore.scraping import MaliciousRequestDetected
+from scrapcore.scraping import SearchEngineScrape, SeleniumSearchError
+from scrapcore.scraping import get_base_search_url_by_search_engine
+from scrapcore.user_agent import random_user_agent
 from selenium import webdriver
 from selenium.common.exceptions import ElementNotVisibleException
 from selenium.common.exceptions import NoSuchElementException
@@ -20,11 +23,6 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
-from scrapcore.scraping import MaliciousRequestDetected
-from scrapcore.scraping import SearchEngineScrape, SeleniumSearchError
-from scrapcore.scraping import get_base_search_url_by_search_engine
-from scrapcore.user_agent import random_user_agent
 
 
 logger = logging.getLogger(__name__)
@@ -198,11 +196,19 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         Saves a debug screenshot of the browser window to figure
         out what went wrong.
         """
-        tempdir = tempfile.gettempdir()
+        screendir = '{}/{}'.format(
+            self.config['dir_screenshot'],
+            self.config['today']
+        )
+
+        if not os.path.exists(screendir):
+            os.makedirs(screendir)
+
         location = os.path.join(
-            tempdir, 'serpscrap_{}_{}debug_screenshot.png'.format(
+            screendir, '{}_{}-p{}.png'.format(
                 self.search_engine_name,
-                self.query
+                self.query,
+                str(self.page_number),
             )
         )
         self.webdriver.get_screenshot_as_file(location)
@@ -646,6 +652,9 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             self.wait_until_serp_loaded()
 
             try:
+                if self.config.get('screenshot') is True:
+                    self._save_debug_screenshot()
+                    time.sleep(.5)
                 self.html = self.webdriver.execute_script('return document.body.innerHTML;')
             except WebDriverException:
                 self.html = self.webdriver.page_source
@@ -687,7 +696,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 x = randint(800, 1024)
                 y = randint(600, 900)
                 self.webdriver.set_window_size(x, y)
-                self.webdriver.set_window_position(x * (self.browser_num % 4), y * (math.floor(self.browser_num // 4)))
+                # self.webdriver.set_window_position(x * (self.browser_num % 4), y * (math.floor(self.browser_num // 4)))
+                self.webdriver.set_window_position(x * (self.browser_num % 4), randint(1, 10))
             except WebDriverException as e:
                 logger.error('Cannot set window size: {}'.format(e))
 

@@ -71,7 +71,6 @@ class PhantomInstall():
 
     def unpack(self, file_path, archive):
         logger.info('unpacking phantomjs')
-        print(self.home_dir)
         if os.path.isdir(self.home_dir) is False:
             os.mkdir(self.home_dir)
         if 'tar.bz2' in archive:

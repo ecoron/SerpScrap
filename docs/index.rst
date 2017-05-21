@@ -20,6 +20,7 @@ A python scraper to extract, analyze data from search engine result pages and ur
 for SEO and research tasks. Also some text processing tools are available.
 
 * Extract position, url, title, description, related keywords and other details of searchresults for the given keywords.
+* get screenshots of each resultpage.
 * use a list of proxies for scraping.
 * scrape also the origin url of the searchresult, the cleaned raw text content from this url would be extracted.
 * save results as csv for future analytics

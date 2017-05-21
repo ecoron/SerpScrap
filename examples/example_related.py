@@ -4,24 +4,20 @@ import pprint
 import serpscrap
 
 
-def scrape(config, keywords):
-    scrap = serpscrap.SerpScrap()
-    scrap.init(config=config.get(), keywords=keywords)
-    return scrap.run()
-
-
 def scrape_to_csv(config, keywords):
     scrap = serpscrap.SerpScrap()
     scrap.init(config=config.get(), keywords=keywords)
     return scrap.as_csv('/tmp/planet-earth')
 
 
-def get_related(results, related):
-    for result in results:
-        if 'related_keywords' in result.keys():
-            for keyword in result['related_keywords']:
-                if keyword['keyword'] not in related:
-                    related.append(keyword['keyword'])
+def get_related(config, keywords, related):
+    scrap = serpscrap.SerpScrap()
+    scrap.init(config=config.get(), keywords=keywords)
+    scrap.run()
+    results = scrap.get_related()
+    for keyword in results:
+        if keyword['keyword'] not in related:
+            related.append(keyword['keyword'])
     return related
 
 
@@ -32,7 +28,7 @@ config.set('num_workers', 1)
 keywords = ['planet earth']
 
 related = keywords
-related = get_related(scrape(config, keywords), related)
+related = get_related(config, keywords, related)
 
 scrape_to_csv(config, related)
 

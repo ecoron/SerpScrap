@@ -17,10 +17,16 @@ A python scraper to extract, analyze data from search engine result pages and ur
 for SEO and research tasks. Also some text processing tools are available.
 
 * Extract position, url, title, description, related keywords and other details of searchresults for the given keywords.
+* get screenshots of each resultpage.
 * use a list of proxies for scraping.
-* scrape also the origin url of the searchresult, the cleaned raw text content from this url is extracted.
+* scrape also the origin url of the searchresult, the cleaned raw text content from this url would be extracted.
 * save results as csv for future analytics
-* use some text processing tools like tfidf analyzer or a markovy a text generator to generate new sentences.
+* use some text processing tools like tfidf analyzer or a markovy a text generator to generate new sentences.(<=0.7.0)
+
+Upcomming changes
+=================
+in version 0.8.0 the text processing tools will be moved into a new project. This changes helps to
+reduce the requirements and to make it more easy to setup and run SerpScrap.
 
 See http://serpscrap.readthedocs.io/en/latest/ for documentation.
 

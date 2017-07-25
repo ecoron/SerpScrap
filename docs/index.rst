@@ -26,8 +26,8 @@ for SEO and research tasks. Also some text processing tools are available.
 * save results as csv for future analytics
 * use some text processing tools like tfidf analyzer or a markovy a text generator to generate new sentences.(<=0.7.0)
 
-Upcomming changes
-=================
+Changes
+=======
 in version 0.8.0 the text processing tools will be moved into a new project. This changes helps to
 reduce the requirements and to make it more easy to setup and run SerpScrap.
 

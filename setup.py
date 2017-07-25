@@ -23,12 +23,12 @@ setup(
     packages=find_packages(),
     install_requires=[
         'PySocks==1.6.7',
-        'chardet==3.0.2',
+        'chardet==3.0.4',
         'beautifulsoup4==4.6.0',
         'html2text==2016.9.19',
         'lxml',
-        'sqlalchemy==1.1.9',
-        'selenium==3.4.1',
+        'sqlalchemy==1.1.12',
+        'selenium==3.4.3',
         'cssselect==1.0.1',
     ],
     classifiers=[

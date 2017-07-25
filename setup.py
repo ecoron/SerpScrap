@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.7.0'
+version = '0.8.0'
 
 
 setup(
@@ -23,16 +23,12 @@ setup(
     packages=find_packages(),
     install_requires=[
         'PySocks==1.6.7',
-        'chardet==3.0.2',
+        'chardet==3.0.4',
         'beautifulsoup4==4.6.0',
         'html2text==2016.9.19',
-        'markovify==0.6.0',
-        'numpy==1.12.1',
-        'scipy==0.19.0',
-        'scikit-learn==0.18.1',
         'lxml',
-        'sqlalchemy==1.1.9',
-        'selenium==3.4.1',
+        'sqlalchemy==1.1.12',
+        'selenium==3.4.3',
         'cssselect==1.0.1',
     ],
     classifiers=[
@@ -44,5 +40,5 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    keywords='serp-scraper url-scraper text-analyzer',
+    keywords='serp-scraper url-scraper ad-detection',
 )

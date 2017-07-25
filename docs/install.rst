@@ -10,12 +10,6 @@ Install
 On the first run SerpScrap will try to install the required PhantomJS binary on Windows and Linux instances.
 If self install doesnt work you can configure your custom path to the phantomjs binary.
 
-In some cases it is required to install python-scipy first
-
-.. code-block:: bash
-
-   sudo apt-get build-dep python-scipy
-
 Requirements Windows
 --------------------
 
@@ -24,9 +18,6 @@ you can find them under: http://www.lfd.uci.edu/~gohlke/pythonlibs/
 For your convenience here are the direct links:
 
 * `lxml`_
-* `numpy`_
-* `scipy`_
-* `scikit-learn`_
 
 maybe you need also `Microsoft Visual C++ Build Tools`_ installed.
 
@@ -47,6 +38,3 @@ References
 
 .. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools
 .. _`lxml`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml
-.. _`numpy`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy
-.. _`scipy`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy
-.. _`scikit-learn`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scikit-learn

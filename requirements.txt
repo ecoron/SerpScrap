@@ -1,12 +1,8 @@
-numpy==1.12.1
-scipy==0.19.0
-scikit-learn==0.18.1
 lxml
-chardet==3.0.2
+chardet==3.0.4
 beautifulsoup4==4.6.0
 html2text==2016.9.19
-markovify==0.6.0
 PySocks==1.6.7
-sqlalchemy==1.1.9
-selenium==3.4.1
+sqlalchemy==1.1.12
+selenium==3.4.3
 cssselect==1.0.1

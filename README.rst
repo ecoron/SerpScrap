@@ -21,10 +21,9 @@ for SEO and research tasks. Also some text processing tools are available.
 * use a list of proxies for scraping.
 * scrape also the origin url of the searchresult, the cleaned raw text content from this url would be extracted.
 * save results as csv for future analytics
-* use some text processing tools like tfidf analyzer or a markovy a text generator to generate new sentences.(<=0.7.0)
 
-Upcomming changes
-=================
+Changes
+=======
 in version 0.8.0 the text processing tools will be moved into a new project. This changes helps to
 reduce the requirements and to make it more easy to setup and run SerpScrap.
 
@@ -43,12 +42,6 @@ The easy way to do:
    pip uninstall SerpScrap -y
    pip install SerpScrap --upgrade
 
-
-In some cases it is required to install python-scipy first
-
-.. code-block:: bash
-
-   sudo apt-get build-dep python-scipy
 
 More details in the `install`_ section of the documentation.
 

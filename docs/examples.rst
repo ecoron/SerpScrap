@@ -96,40 +96,6 @@ As arguments provide one or more space separeted keywords.
 the result is printed into your console.
 
 
-Text Generator Example
-----------------------
-
-For generating text we use markov chains, which are implemented in the Markovi modul.
-
-.. code-block:: bash
-
-   python examples\example_markovi.py
-
-In this example we scrape a single url and use the text_raw of the result, to
-generate 5 sentences.
-
-.. code-block:: python
-   
-   from serpscrap.markovi import Markovi
-   from serpscrap.config import Config
-   from serpscrap.urlscrape import UrlScrape
-   import pprint
-   
-   
-   url = 'http://gutenberg.spiegel.de/buch/johann-wolfgang-goethe-gedichte-3670/231'
-   config = Config().get()
-   
-   urlscrape = UrlScrape(config)
-   contents = urlscrape.scrap_url(url)
-   
-   markovi = Markovi(config)
-   texts = []
-   for content in contents:
-       for _ in range(5):
-           texts.append(markovi.generate(content.__getitem__('text_raw'), 1))
-   
-   pprint.pprint(texts, width=120)
-
 Example as_csv()
 ----------------
 
@@ -157,11 +123,6 @@ for additional research tasks take a look
 into `example_related.py`_ on github.
 
 
-Example advanced
-----------------
-`example_advanced.py`_ is a more advanced and complex example.
-You can find it also on github.
-
 References
 
 .. target-notes::
@@ -169,5 +130,3 @@ References
 .. _`examples`: https://github.com/ecoron/SerpScrap/tree/master/examples
 .. _`example_simple.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_simple.py
 .. _`example_related.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_related.py
-.. _`example_advanced.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_advanced.py
-

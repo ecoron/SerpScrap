@@ -24,9 +24,6 @@ you can find them under: http://www.lfd.uci.edu/~gohlke/pythonlibs/
 For your convenience here are the direct links:
 
 * `lxml`_
-* `numpy`_
-* `scipy`_
-* `scikit-learn`_
 
 maybe you need also `Microsoft Visual C++ Build Tools`_ installed.
 
@@ -47,6 +44,3 @@ References
 
 .. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools
 .. _`lxml`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml
-.. _`numpy`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy
-.. _`scipy`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy
-.. _`scikit-learn`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#scikit-learn

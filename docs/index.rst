@@ -24,7 +24,6 @@ for SEO and research tasks. Also some text processing tools are available.
 * use a list of proxies for scraping.
 * scrape also the origin url of the searchresult, the cleaned raw text content from this url would be extracted.
 * save results as csv for future analytics
-* use some text processing tools like tfidf analyzer or a markovy a text generator to generate new sentences.(<=0.7.0)
 
 Changes
 =======

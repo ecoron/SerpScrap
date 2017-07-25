@@ -10,12 +10,6 @@ Install
 On the first run SerpScrap will try to install the required PhantomJS binary on Windows and Linux instances.
 If self install doesnt work you can configure your custom path to the phantomjs binary.
 
-In some cases it is required to install python-scipy first
-
-.. code-block:: bash
-
-   sudo apt-get build-dep python-scipy
-
 Requirements Windows
 --------------------
 

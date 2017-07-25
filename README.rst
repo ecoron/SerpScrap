@@ -43,12 +43,6 @@ The easy way to do:
    pip install SerpScrap --upgrade
 
 
-In some cases it is required to install python-scipy first
-
-.. code-block:: bash
-
-   sudo apt-get build-dep python-scipy
-
 More details in the `install`_ section of the documentation.
 
 Usage

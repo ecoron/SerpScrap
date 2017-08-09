@@ -6,6 +6,7 @@ SerpScrap.SerpScrap
 import argparse
 import os
 import pprint
+import shutil
 
 from scrapcore.core import Core
 from scrapcore.logger import Logger
@@ -88,6 +89,18 @@ class SerpScrap():
                         provide custom path in config''')
             self.config.__setitem__('executable_path', phantomjs)
             logger.info('using ' + phantomjs)
+
+        # cleanup screenshot dir on init
+        if os.path.exists(self.config['dir_screenshot']):
+            shutil.rmtree(self.config['dir_screenshot'], ignore_errors=True)
+        # create screenshot dir current date
+        screendir = '{}/{}'.format(
+            self.config['dir_screenshot'],
+            self.config['today']
+        )
+
+        if not os.path.exists(screendir):
+            os.makedirs(screendir)
 
         if isinstance(keywords, str):
             self.serp_query = [keywords]

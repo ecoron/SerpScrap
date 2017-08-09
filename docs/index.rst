@@ -27,7 +27,7 @@ for SEO and research tasks. Also some text processing tools are available.
 
 Changes
 =======
-in version 0.8.0 the text processing tools will be moved into a new project. This changes helps to
+in version 0.8.0 the text processing tools was removed. this will be part of a new project. This changes helps to
 reduce the requirements and to make it more easy to setup and run SerpScrap.
 
 See http://serpscrap.readthedocs.io/en/latest/ for documentation.

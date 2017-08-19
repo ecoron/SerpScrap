@@ -5,6 +5,13 @@ Configuration
 Here we describe how you can configure SerpScrap to fit your needs.
 But it is also possible to run SerpScrap with the default settings.
 
+Permissions
+-----------
+
+By default all needed or generated files are written into the local /tmp/ folder.
+The location can changed by configuration.
+Ensure the executing user has read/write permissions for this folder.
+
 Default configuration
 ---------------------
 

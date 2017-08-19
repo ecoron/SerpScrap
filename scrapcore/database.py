@@ -286,13 +286,13 @@ def get_engine(config, path=None):
         engine = create_engine(
             'sqlite:///' + db_path,
             echo=echo,
-            connect_args={'check_same_thread': True}
+            connect_args={'check_same_thread': False}
         )
     else:
         engine = create_engine(
             'sqlite://',
             echo=echo,
-            connect_args={'check_same_thread': True}
+            connect_args={'check_same_thread': False}
         )
     Base.metadata.create_all(engine)
 

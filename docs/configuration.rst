@@ -18,6 +18,7 @@ Default configuration
 * cachedir: '/tmp/.serpscrap/'        - path cachefiles
 * clean_cache_after: 24               - clean cached files older then x hours
 * database_name: '/tmp/serpscrap'     - path and name sqlite db (stores scrape results)
+* database_inmemory: False            - if true sqlite is used in memory
 * do_caching: True                    - enable / disable caching
 * headers:                            - dict to customize request header, see below
 * num_pages_for_keyword: 2            - number of result pages to scrape
@@ -31,7 +32,8 @@ Default configuration
 * sleeping_max: 15                    - max seconds to sleep between scrapes
 * screenshot: True                    - enable screenshots for each query
 * dir_screenshot: '/tmp/screenshots'  - basedir for saved screenshots
-        
+
+
 Custom configuration
 --------------------
 

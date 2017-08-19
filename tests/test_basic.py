@@ -44,6 +44,19 @@ class TestClass:
         assert len(results) > 0
         assert len(results[0]) > 0
 
+    def test_db_inmemory(self):
+
+        keywords = random.choice(self.keyword_list)
+
+        config = Config()
+        config.set('database_inmemory', True)
+        scrap = SerpScrap()
+        scrap.init(config=config.get(), keywords=keywords)
+        results = scrap.run()
+
+        assert len(results) > 0
+        assert len(results[0]) > 0
+
     def test_screenshot(self):
         keywords = random.choice(self.keyword_list)
         config = Config()

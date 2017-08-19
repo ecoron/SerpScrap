@@ -193,8 +193,11 @@ class Core():
         result_writer.close_outfile()
 
         scraper_search.stopped_searching = datetime.datetime.utcnow()
-        session.add(scraper_search)
-        session.commit()
+        try:
+            session.add(scraper_search)
+            session.commit()
+        except Exception:
+            pass
 
         if return_results:
             return scraper_search

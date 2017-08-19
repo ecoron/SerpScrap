@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.8.1'
+version = '0.8.2'
 
 
 setup(
@@ -27,8 +27,8 @@ setup(
         'beautifulsoup4==4.6.0',
         'html2text==2016.9.19',
         'lxml',
-        'sqlalchemy==1.1.12',
-        'selenium==3.4.3',
+        'sqlalchemy==1.1.13',
+        'selenium==3.5.0',
         'cssselect==1.0.1',
     ],
     classifiers=[

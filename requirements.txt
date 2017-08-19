@@ -3,6 +3,6 @@ chardet==3.0.4
 beautifulsoup4==4.6.0
 html2text==2016.9.19
 PySocks==1.6.7
-sqlalchemy==1.1.12
-selenium==3.4.3
+sqlalchemy==1.1.13
+selenium==3.5.0
 cssselect==1.0.1

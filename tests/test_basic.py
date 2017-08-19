@@ -21,7 +21,7 @@ class TestClass:
 
     def test_config_default(self):
         config = Config()
-        assert len(config.get()) == 30
+        assert len(config.get()) == 31
         assert config.use_own_ip is True
         assert config.screenshot is True
         assert config.scrape_urls is False

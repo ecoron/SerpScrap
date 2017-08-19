@@ -34,9 +34,6 @@ class Core():
         logger.setup_logger(level=config.get('log_level').upper())
         self.logger = logger.get_logger()
 
-#         kwfile = config.get('keyword_file', '')
-#         if kwfile:
-#             kwfile = os.path.abspath(kwfile)
         kwfile = None
 
         keywords = set(config.get('keywords', []))
@@ -63,21 +60,6 @@ class Core():
         cache_manager = CacheManager(config, self.logger, result_writer)
 
         scrape_jobs = {}
-#         if kwfile:
-#             if not os.path.exists(kwfile):
-#                 raise WrongConfigurationError('The keyword file {} does not exist.'.format(kwfile))
-#             else:
-#                 if kwfile.endswith('.py'):
-#                     # we need to import the variable "scrape_jobs" from the module.
-#                     sys.path.append(os.path.dirname(kwfile))
-#                     try:
-#                         modname = os.path.split(kwfile)[-1].rstrip('.py')
-#                         scrape_jobs = getattr(__import__(modname, fromlist=['scrape_jobs']), 'scrape_jobs')
-#                     except ImportError as e:
-#                         logger.warning(e)
-#                 else:
-#                     # Clean the keywords of duplicates right in the beginning
-#                     keywords = set([line.strip() for line in open(kwfile, 'r').read().split('\n') if line.strip()])
 
         if not scrape_jobs:
             scrape_jobs = ScrapeJobGenerator().get(
@@ -100,7 +82,7 @@ class Core():
             raise Exception('''No proxies available. Turning down.''')
 
         # get a scoped sqlalchemy session
-        session_cls = get_session(config, scoped=False)
+        session_cls = get_session(config, scoped=True)
         session = session_cls()
 
         # add fixtures
@@ -109,34 +91,14 @@ class Core():
         # add proxies to the database
         Proxies().add_proxies_to_db(proxies, session)
 
-        # ask the user to continue the last scrape. We detect a continuation of a
-        # previously established scrape, if the keyword-file is the same and unmodified since
-        # the beginning of the last scrape.
-        scraper_search = None
-#         if kwfile and config.get('continue_last_scrape', False):
-#             searches = session.query(ScraperSearch). \
-#                 filter(ScraperSearch.keyword_file == kwfile). \
-#                 order_by(ScraperSearch.started_searching). \
-#                 all()
-#
-#             if searches:
-#                 last_search = searches[-1]
-#                 last_modified = datetime.datetime.utcfromtimestamp(os.path.getmtime(last_search.keyword_file))
-#
-#                 # if the last modification is older then the starting of the search
-#                 if last_modified < last_search.started_searching:
-#                     scraper_search = last_search
-#                     logger.info('Continuing last scrape.')
-
-        if not scraper_search:
-            scraper_search = ScraperSearch(
-                keyword_file=kwfile,
-                number_search_engines_used=num_search_engines,
-                number_proxies_used=len(proxies),
-                number_search_queries=len(keywords),
-                started_searching=datetime.datetime.utcnow(),
-                used_search_engines=','.join(search_engines)
-            )
+        scraper_search = ScraperSearch(
+            keyword_file=kwfile,
+            number_search_engines_used=num_search_engines,
+            number_proxies_used=len(proxies),
+            number_search_queries=len(keywords),
+            started_searching=datetime.datetime.utcnow(),
+            used_search_engines=','.join(search_engines)
+        )
 
         # First of all, lets see how many requests remain
         # to issue after searching the cache.

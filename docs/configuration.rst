@@ -31,7 +31,8 @@ Default configuration
 * sleeping_max: 15                    - max seconds to sleep between scrapes
 * screenshot: True                    - enable screenshots for each query
 * dir_screenshot: '/tmp/screenshots'  - basedir for saved screenshots
-        
+
+
 Custom configuration
 --------------------
 

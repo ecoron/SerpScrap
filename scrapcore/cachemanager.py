@@ -181,13 +181,16 @@ class CacheManager():
             job = mapping.get(file_name, None)
 
             if job:
-                serp = self.get_serp_from_database(
-                    session,
-                    job['query'],
-                    job['search_engine'],
-                    job['scrape_method'],
-                    job['page_number']
-                )
+                try:
+                    serp = self.get_serp_from_database(
+                        session,
+                        job['query'],
+                        job['search_engine'],
+                        job['scrape_method'],
+                        job['page_number']
+                    )
+                except Exception:
+                    pass
 
                 if not serp:
                     serp = self.parse_again(
@@ -249,5 +252,5 @@ class CacheManager():
                 SearchEngineResultsPage.scrape_method == scrape_method,
                 SearchEngineResultsPage.page_number == page_number).first()
             return serp
-        except:
+        except Exception:
             return False

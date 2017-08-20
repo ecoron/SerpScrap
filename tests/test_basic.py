@@ -21,7 +21,7 @@ class TestClass:
 
     def test_config_default(self):
         config = Config()
-        assert len(config.get()) == 31
+        assert len(config.get()) == 30
         assert config.use_own_ip is True
         assert config.screenshot is True
         assert config.scrape_urls is False
@@ -37,19 +37,6 @@ class TestClass:
         keywords = random.choice(self.keyword_list)
 
         config = Config()
-        scrap = SerpScrap()
-        scrap.init(config=config.get(), keywords=keywords)
-        results = scrap.run()
-
-        assert len(results) > 0
-        assert len(results[0]) > 0
-
-    def test_db_inmemory(self):
-
-        keywords = random.choice(self.keyword_list)
-
-        config = Config()
-        config.set('database_inmemory', True)
         scrap = SerpScrap()
         scrap.init(config=config.get(), keywords=keywords)
         results = scrap.run()

@@ -30,7 +30,6 @@ class Config():
         'screenshot': True,
         'dir_screenshot': '/tmp/screenshots',
         'database_name': '/tmp/serpscrap',
-        'database_inmemory': False,
         'minimize_caching_files': True,
         'clean_cache_after': 24,
         'output_filename': None,

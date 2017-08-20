@@ -282,18 +282,12 @@ def get_engine(config, path=None):
     db_name = config.get('database_name', '/tmp/serpscrap') + '.db'
     db_path = path if path else db_name
     echo = config.get('log_sqlalchemy', False)
-    if config.get('database_inmemory') is False:
-        engine = create_engine(
-            'sqlite:///' + db_path,
-            echo=echo,
-            connect_args={'check_same_thread': False}
-        )
-    else:
-        engine = create_engine(
-            'sqlite://',
-            echo=echo,
-            connect_args={'check_same_thread': False}
-        )
+    engine = create_engine(
+        'sqlite:///' + db_path,
+        echo=echo,
+        connect_args={'check_same_thread': False}
+    )
+
     Base.metadata.create_all(engine)
 
     return engine

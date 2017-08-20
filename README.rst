@@ -12,6 +12,8 @@ SerpScrap
 .. image:: https://travis-ci.org/ecoron/SerpScrap.svg?branch=master
     :target: https://travis-ci.org/ecoron/SerpScrap
 
+.. image:: https://img.shields.io/docker/pulls/ecoron/serpscrap.svg
+    :target: https://hub.docker.com/r/ecoron/serpscrap/)
 
 A python scraper to extract, analyze data from search engine result pages and urls. It might be usefull
 for SEO and research tasks. Also some text processing tools are available.

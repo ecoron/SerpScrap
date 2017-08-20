@@ -33,7 +33,6 @@ class ScraperSearch(Base):
     __tablename__ = 'scraper_search'
 
     id = Column(Integer, primary_key=True)
-    keyword_file = Column(String)
     number_search_engines_used = Column(Integer)
     used_search_engines = Column(String)
     number_proxies_used = Column(Integer)

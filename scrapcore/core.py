@@ -34,8 +34,6 @@ class Core():
         logger.setup_logger(level=config.get('log_level').upper())
         self.logger = logger.get_logger()
 
-        kwfile = None
-
         keywords = set(config.get('keywords', []))
         proxy_file = config.get('proxy_file', '')
 
@@ -92,7 +90,6 @@ class Core():
         Proxies().add_proxies_to_db(proxies, session)
 
         scraper_search = ScraperSearch(
-            keyword_file=kwfile,
             number_search_engines_used=num_search_engines,
             number_proxies_used=len(proxies),
             number_search_queries=len(keywords),

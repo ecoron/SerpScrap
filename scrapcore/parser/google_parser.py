@@ -44,6 +44,15 @@ class GoogleParser(Parser):
                 'sitelinks': 'div.osl::text'
             },
             'de_ip_news_items': {
+                'container': 'g-section-with-header',
+                'link': 'g-inner-card a::attr(href)',
+                'snippet': 'g-inner-card div._IRj _dTj _vSj _l7n::text',
+                'title': 'g-inner-card div._IRj _dTj _vSj _l7n::text',
+                'visible_link': 'g-inner-card cite::text',
+                'rating': 'div.osl a:first-child::text',
+                'sitelinks': 'div.osl::text'
+            },
+            'de_ip_othernews_items': {
                 'container': 'li.card-section',
                 'link': 'a._Dk::attr(href)',
                 'snippet': 'span._dwd::text',

@@ -3,7 +3,7 @@
 import pprint
 import serpscrap
 
-keywords = ['berlin news']
+keywords = ['berlin']
 
 config = serpscrap.Config()
 

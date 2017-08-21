@@ -31,7 +31,7 @@ class GoogleParser(Parser):
                 'title': 'h3.r > a:first-child::text',
                 'visible_link': 'cite::text',
                 'rating': 'div.f.slp::text',
-                'sitelinks': 'div.osl::text'
+                'sitelinks': 'div.osl::text',
             },
             'de_ip': {
                 'container': '#center_col',
@@ -41,16 +41,18 @@ class GoogleParser(Parser):
                 'title': 'h3.r > a:first-child::text',
                 'visible_link': 'cite::text',
                 'rating': 'div.f.slp::text',
-                'sitelinks': 'div.osl::text'
+                'sitelinks': 'div.osl::text',
             },
+        },
+        'news': {
             'de_ip_news_items': {
-                'container': 'g-section-with-header',
+                'container': 'g-inner-card',
                 'link': 'g-inner-card a::attr(href)',
-                'snippet': 'g-inner-card div._IRj _dTj _vSj _l7n::text',
-                'title': 'g-inner-card div._IRj _dTj _vSj _l7n::text',
+                'snippet': 'g-inner-card::text',
+                'title': 'g-inner-card div._Jvo::text',
                 'visible_link': 'g-inner-card cite::text',
                 'rating': 'div.osl a:first-child::text',
-                'sitelinks': 'div.osl::text'
+                'sitelinks': 'div.osl::text',
             },
             'de_ip_othernews_items': {
                 'container': 'li.card-section',
@@ -59,7 +61,27 @@ class GoogleParser(Parser):
                 'title': 'a._Dk::text',
                 'visible_link': 'cite::text',
                 'rating': 'div.osl a:first-child::text',
-                'sitelinks': 'div.osl::text'
+                'sitelinks': 'div.osl::text',
+            },
+        },
+        'shopping': {
+            'de_ip_shopping_items': {
+                'container': 'div.pla-unit-container',
+                'link': 'a.pla-unit-title-link::attr(href)',
+                'snippet': 'div.pla-unit-container::text',
+                'title': 'a.pla-unit-title-link > span.rhsg4::text',
+                'visible_link': 'div._mC > span.rhsg4.a::text',
+                'rating': 'div._QD._pvi::text',
+                'sitelinks': 'div._zHp > div::text',
+            },
+            'de_ip_shoppingtop_items': {
+                'container': 'g-scrolling-carousel div.pla-unit-container',
+                'link': 'g-scrolling-carousel div.pla-unit-container a.pla-unit-title-link::attr(href)',
+                'snippet': 'g-scrolling-carousel div.pla-unit-container::text',
+                'title': 'g-scrolling-carousel div.pla-unit-container a.pla-unit-title-link::text',
+                'visible_link': 'g-scrolling-carousel div.pla-unit-container div._mC::text',
+                'rating': 'g-scrolling-carousel div.pla-unit-container div._p2d::text',
+                'sitelinks': 'div._zHp > div::text',
             },
         },
         'ads_main': {
@@ -71,7 +93,8 @@ class GoogleParser(Parser):
                 'title': 'h3.r > a:first-child::text',
                 'visible_link': '.ads-visurl cite::text',
                 'rating': 'div._Ond _Bu span::text',
-                'sitelinks': 'div.osl::text'
+                'sitelinks': 'div.osl::text',
+                'result_type': 'ads'
             },
             'de_ip': {
                 'container': '#center_col',
@@ -81,7 +104,8 @@ class GoogleParser(Parser):
                 'title': 'h3 > a:nth-child(2)::text',
                 'visible_link': '.ads-visurl cite::text',
                 'rating': 'div._Ond _Bu span::text',
-                'sitelinks': 'ul._wEo::text'
+                'sitelinks': 'ul._wEo::text',
+                'result_type': 'ads'
             }
         },
         'ads_aside': {

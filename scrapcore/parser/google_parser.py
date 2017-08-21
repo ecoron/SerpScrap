@@ -31,7 +31,7 @@ class GoogleParser(Parser):
                 'title': 'h3.r > a:first-child::text',
                 'visible_link': 'cite::text',
                 'rating': 'div.f.slp::text',
-                'sitelinks': 'div.osl::text',
+                'sitelinks': 'div.osl::text'
             },
             'de_ip': {
                 'container': '#center_col',
@@ -41,7 +41,7 @@ class GoogleParser(Parser):
                 'title': 'h3.r > a:first-child::text',
                 'visible_link': 'cite::text',
                 'rating': 'div.f.slp::text',
-                'sitelinks': 'div.osl::text',
+                'sitelinks': 'div.osl::text'
             },
         },
         'news': {
@@ -52,7 +52,7 @@ class GoogleParser(Parser):
                 'title': 'g-inner-card div._Jvo::text',
                 'visible_link': 'g-inner-card cite::text',
                 'rating': 'div.osl a:first-child::text',
-                'sitelinks': 'div.osl::text',
+                'sitelinks': 'div.osl::text'
             },
             'de_ip_othernews_items': {
                 'container': 'li.card-section',
@@ -61,7 +61,7 @@ class GoogleParser(Parser):
                 'title': 'a._Dk::text',
                 'visible_link': 'cite::text',
                 'rating': 'div.osl a:first-child::text',
-                'sitelinks': 'div.osl::text',
+                'sitelinks': 'div.osl::text'
             },
         },
         'shopping': {
@@ -72,7 +72,7 @@ class GoogleParser(Parser):
                 'title': 'a.pla-unit-title-link > span.rhsg4::text',
                 'visible_link': 'div._mC > span.rhsg4.a::text',
                 'rating': 'div._QD._pvi::text',
-                'sitelinks': 'div._zHp > div::text',
+                'sitelinks': 'div._zHp > div::text'
             },
             'de_ip_shoppingtop_items': {
                 'container': 'g-scrolling-carousel div.pla-unit-container',
@@ -81,7 +81,7 @@ class GoogleParser(Parser):
                 'title': 'g-scrolling-carousel div.pla-unit-container a.pla-unit-title-link::text',
                 'visible_link': 'g-scrolling-carousel div.pla-unit-container div._mC::text',
                 'rating': 'g-scrolling-carousel div.pla-unit-container div._p2d::text',
-                'sitelinks': 'div._zHp > div::text',
+                'sitelinks': 'div._zHp > div::text'
             },
         },
         'ads_main': {

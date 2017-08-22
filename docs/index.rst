@@ -18,20 +18,21 @@ SerpScrap
 .. image:: https://img.shields.io/docker/pulls/ecoron/serpscrap.svg
     :target: https://hub.docker.com/r/ecoron/serpscrap
 
-A python scraper to extract, analyze data from search engine result pages and urls. It might be usefull
-for SEO and research tasks. Also some text processing tools are available.
+A python scraper to extract, analyze data from search engine result pages and urls.
+It might be usefull for SEO and research tasks.
 
 
 Extract these result types
 --------------------------
 
-** ads_main - advertisments within regular search results
-** image - result from image search
-** news - news teaser within regular search results
-** results - standard search result
-** shopping - shopping teaser within regular search results
+* ads_main - advertisments within regular search results
+* image - result from image search
+* news - news teaser within regular search results
+* results - standard search result
+* shopping - shopping teaser within regular search results
 
 For each result in a resultspage get data of:
+
 * domain
 * rank
 * rich snippet

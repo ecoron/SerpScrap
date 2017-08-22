@@ -121,7 +121,7 @@ class GoogleParser(Parser):
     }
 
     image_search_selectors = {
-        'results': {
+        'image': {
             'de_ip': {
                 'container': '#isr_mc div.rg_di',
                 # 'result_container': 'div.rg_di',

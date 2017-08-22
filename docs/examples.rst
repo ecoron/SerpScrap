@@ -59,6 +59,33 @@ custom path to the binary.
        if 'serp_title' in result and len(result['serp_title']) > 1:
            print(result['serp_title'])
 
+Image search
+------------
+
+.. code-block:: bash
+
+   python examples\example_image.py
+
+To scrape the image search instead the standard serps, it's just enough to change
+the change the search_type in the config.
+
+.. code-block:: bash
+
+   import pprint
+   import serpscrap
+   
+   keywords = ['lost places']
+   
+   config = serpscrap.Config()
+   config.set('search_type', 'image')
+   
+   scrap = serpscrap.SerpScrap()
+   scrap.init(config=config.get(), keywords=keywords)
+   results = scrap.run()
+   
+   for result in results[:10]:
+       pprint.pprint(result)
+       print()
 
 Url Scrape Example
 ------------------

@@ -28,7 +28,8 @@ Extract these result types
 * results - standard search result
 * shopping - shopping teaser within regular search results
 
-For each result in a resultspage get data of:
+For each result in a resultspage get
+====================================
 
 * domain
 * rank
@@ -40,30 +41,31 @@ For each result in a resultspage get data of:
 * url
 * visible url
 
-Also get screenshots of each result page, or use a proxylist.
+Also get a screenshot of each result page.
 You can also scrape the text content of each result url.
-It also possible to save the results as CSV for future analytics
+It also possible to save the results as CSV for future analytics.
+If required you can use your own proxylist.
 
 
 Changes
-=======
+-------
 Notes about major changes between releases
 
 0.9.0
------
+=====
 
 * result types added (news, shopping, image)
 * Image search is supported
 
 0.8.0
------
+=====
 
 * text processing tools removed.
 * less requirements
 
 
 Ressources
-==========
+----------
 
 See http://serpscrap.readthedocs.io/en/latest/ for documentation.
 
@@ -71,7 +73,7 @@ Source is available at https://github.com/ecoron/SerpScrap
 
 
 Install
-=======
+-------
 
 The easy way to do:
 

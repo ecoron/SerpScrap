@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
+import json
+import logging
 import re
 from urllib.parse import unquote
+
 from scrapcore.parser.parser import Parser
+
+logger = logging.getLogger(__name__)
 
 
 class GoogleParser(Parser):
@@ -93,8 +98,7 @@ class GoogleParser(Parser):
                 'title': 'h3.r > a:first-child::text',
                 'visible_link': '.ads-visurl cite::text',
                 'rating': 'div._Ond _Bu span::text',
-                'sitelinks': 'div.osl::text',
-                'result_type': 'ads'
+                'sitelinks': 'div.osl::text'
             },
             'de_ip': {
                 'container': '#center_col',
@@ -104,12 +108,8 @@ class GoogleParser(Parser):
                 'title': 'h3 > a:nth-child(2)::text',
                 'visible_link': '.ads-visurl cite::text',
                 'rating': 'div._Ond _Bu span::text',
-                'sitelinks': 'ul._wEo::text',
-                'result_type': 'ads'
+                'sitelinks': 'ul._wEo::text'
             }
-        },
-        'ads_aside': {
-
         },
         'related_keywords': {
             'de_ip': {
@@ -123,16 +123,11 @@ class GoogleParser(Parser):
     image_search_selectors = {
         'results': {
             'de_ip': {
-                'container': '#isr_mc',
-                'result_container': 'div.rg_di',
+                'container': '#isr_mc div.rg_di',
+                # 'result_container': 'div.rg_di',
+                'snippet': 'div.rg_di > div.rg_meta',
                 'link': 'a.rg_l::attr(href)'
             },
-            'de_ip_raw': {
-                'container': '.images_table',
-                'result_container': 'tr td',
-                'link': 'a::attr(href)',
-                'visible_link': 'cite::text',
-            }
         }
     }
 
@@ -169,6 +164,22 @@ class GoogleParser(Parser):
                         if self.query.replace('"', '') in \
                            self.search_results[key][i]['snippet']:
                             self.no_results = False
+
+        if self.searchtype == 'image':
+            for key, i in self.iter_serp_items():
+                if self.search_results[key][i]:
+                    meta_dict = json.loads(self.search_results[key][i]['snippet'])
+                    rank = self.search_results[key][i]['rank']
+                    # logger.info(meta_dict)
+                    self.search_results[key][i] = {
+                        'link': meta_dict['ou'],
+                        'snippet': meta_dict['s'],
+                        'title': meta_dict['pt'],
+                        'visible_link': meta_dict['isu'],
+                        'rating': None,
+                        'sitelinks': None,
+                        'rank': rank
+                    }
 
         clean_regexes = {
             'normal': r'/url\?q=(?P<url>.*?)&sa=U&ei=',

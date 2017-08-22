@@ -27,6 +27,19 @@ If you prefer to save the results use the as_csv() method.
     'screenshot': '/tmp/screenshots/2017-05-21/google_example-p1.png'
    }
 
+
+serp_type
+---------
+
+The following serp_types are supported
+
+* ads_main - advertisments within regular search results
+* image - result from image search
+* news - news teaser within regular search results
+* results - standard search result
+* shopping - shopping teaser within regular search results
+
+
 Related keywords
 ----------------
 

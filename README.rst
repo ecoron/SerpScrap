@@ -13,29 +13,50 @@ SerpScrap
     :target: https://travis-ci.org/ecoron/SerpScrap
 
 .. image:: https://img.shields.io/docker/pulls/ecoron/serpscrap.svg
-    :target: https://hub.docker.com/r/ecoron/serpscrap
+    :target: https://hub.docker.com/r/ecoron/serpscrap
 
-A python scraper to extract, analyze data from search engine result pages and urls. It might be usefull
-for SEO and research tasks. Also some text processing tools are available.
+A python scraper to extract, analyze data from search engine result pages and urls.
+It might be usefull for SEO and research tasks.
 
-* Extract position, url, title, description, related keywords and other details of searchresults for the given keywords.
-* get screenshots of each resultpage.
-* use a list of proxies for scraping.
-* scrape also the origin url of the searchresult, the cleaned raw text content from this url would be extracted.
-* save results as csv for future analytics
 
-Changes
-=======
-in version 0.8.0 the text processing tools was removed. this will be part of a new project. This changes helps to
-reduce the requirements and to make it more easy to setup and run SerpScrap.
+Extract these result types
+--------------------------
+
+* ads_main - advertisments within regular search results
+* image - result from image search
+* news - news teaser within regular search results
+* results - standard search result
+* shopping - shopping teaser within regular search results
+
+For each result in a resultspage get
+====================================
+
+* domain
+* rank
+* rich snippet
+* site links
+* snippet
+* title
+* type
+* url
+* visible url
+
+Also get a screenshot of each result page.
+You can also scrape the text content of each result url.
+It also possible to save the results as CSV for future analytics.
+If required you can use your own proxylist.
+
+
+Ressources
+----------
 
 See http://serpscrap.readthedocs.io/en/latest/ for documentation.
 
-Source is available at https://github.com/ecoron/SerpScrap.
+Source is available at https://github.com/ecoron/SerpScrap
 
 
 Install
-=======
+-------
 
 The easy way to do:
 
@@ -44,8 +65,8 @@ The easy way to do:
    pip uninstall SerpScrap -y
    pip install SerpScrap --upgrade
 
-
 More details in the `install`_ section of the documentation.
+
 
 Usage
 =====
@@ -83,6 +104,24 @@ To avoid encode/decode issues use this command before you start using SerpScrap 
 
 .. image:: https://raw.githubusercontent.com/ecoron/SerpScrap/master/docs/logo.png
     :target: https://github.com/ecoron/SerpScrap
+
+
+Changes
+-------
+Notes about major changes between releases
+
+0.9.0
+=====
+
+* result types added (news, shopping, image)
+* Image search is supported
+
+0.8.0
+=====
+
+* text processing tools removed.
+* less requirements
+
 
 References
 ----------

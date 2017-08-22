@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
+import json
+import logging
 import re
 from urllib.parse import unquote
+
 from scrapcore.parser.parser import Parser
+
+logger = logging.getLogger(__name__)
 
 
 class GoogleParser(Parser):
@@ -43,11 +48,13 @@ class GoogleParser(Parser):
                 'rating': 'div.f.slp::text',
                 'sitelinks': 'div.osl::text'
             },
+        },
+        'news': {
             'de_ip_news_items': {
-                'container': 'g-section-with-header',
+                'container': 'g-inner-card',
                 'link': 'g-inner-card a::attr(href)',
-                'snippet': 'g-inner-card div._IRj _dTj _vSj _l7n::text',
-                'title': 'g-inner-card div._IRj _dTj _vSj _l7n::text',
+                'snippet': 'g-inner-card::text',
+                'title': 'g-inner-card div._Jvo::text',
                 'visible_link': 'g-inner-card cite::text',
                 'rating': 'div.osl a:first-child::text',
                 'sitelinks': 'div.osl::text'
@@ -60,6 +67,26 @@ class GoogleParser(Parser):
                 'visible_link': 'cite::text',
                 'rating': 'div.osl a:first-child::text',
                 'sitelinks': 'div.osl::text'
+            },
+        },
+        'shopping': {
+            'de_ip_shopping_items': {
+                'container': 'div.pla-unit-container',
+                'link': 'a.pla-unit-title-link::attr(href)',
+                'snippet': 'div.pla-unit-container::text',
+                'title': 'a.pla-unit-title-link > span.rhsg4::text',
+                'visible_link': 'div._mC > span.rhsg4.a::text',
+                'rating': 'div._QD._pvi::text',
+                'sitelinks': 'div._zHp > div::text'
+            },
+            'de_ip_shoppingtop_items': {
+                'container': 'g-scrolling-carousel div.pla-unit-container',
+                'link': 'g-scrolling-carousel div.pla-unit-container a.pla-unit-title-link::attr(href)',
+                'snippet': 'g-scrolling-carousel div.pla-unit-container::text',
+                'title': 'g-scrolling-carousel div.pla-unit-container a.pla-unit-title-link::text',
+                'visible_link': 'g-scrolling-carousel div.pla-unit-container div._mC::text',
+                'rating': 'g-scrolling-carousel div.pla-unit-container div._p2d::text',
+                'sitelinks': 'div._zHp > div::text'
             },
         },
         'ads_main': {
@@ -84,9 +111,6 @@ class GoogleParser(Parser):
                 'sitelinks': 'ul._wEo::text'
             }
         },
-        'ads_aside': {
-
-        },
         'related_keywords': {
             'de_ip': {
                 'container': 'div.card-section',
@@ -97,18 +121,13 @@ class GoogleParser(Parser):
     }
 
     image_search_selectors = {
-        'results': {
+        'image': {
             'de_ip': {
-                'container': '#isr_mc',
-                'result_container': 'div.rg_di',
+                'container': '#isr_mc div.rg_di',
+                # 'result_container': 'div.rg_di',
+                'snippet': 'div.rg_di > div.rg_meta',
                 'link': 'a.rg_l::attr(href)'
             },
-            'de_ip_raw': {
-                'container': '.images_table',
-                'result_container': 'tr td',
-                'link': 'a::attr(href)',
-                'visible_link': 'cite::text',
-            }
         }
     }
 
@@ -145,6 +164,22 @@ class GoogleParser(Parser):
                         if self.query.replace('"', '') in \
                            self.search_results[key][i]['snippet']:
                             self.no_results = False
+
+        if self.searchtype == 'image':
+            for key, i in self.iter_serp_items():
+                if self.search_results[key][i]:
+                    meta_dict = json.loads(self.search_results[key][i]['snippet'])
+                    rank = self.search_results[key][i]['rank']
+                    # logger.info(meta_dict)
+                    self.search_results[key][i] = {
+                        'link': meta_dict['ou'],
+                        'snippet': meta_dict['s'],
+                        'title': meta_dict['pt'],
+                        'visible_link': meta_dict['isu'],
+                        'rating': None,
+                        'sitelinks': None,
+                        'rank': rank
+                    }
 
         clean_regexes = {
             'normal': r'/url\?q=(?P<url>.*?)&sa=U&ei=',

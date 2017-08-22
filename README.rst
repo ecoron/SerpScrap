@@ -47,23 +47,6 @@ It also possible to save the results as CSV for future analytics.
 If required you can use your own proxylist.
 
 
-Changes
--------
-Notes about major changes between releases
-
-0.9.0
-=====
-
-* result types added (news, shopping, image)
-* Image search is supported
-
-0.8.0
-=====
-
-* text processing tools removed.
-* less requirements
-
-
 Ressources
 ----------
 
@@ -82,8 +65,8 @@ The easy way to do:
    pip uninstall SerpScrap -y
    pip install SerpScrap --upgrade
 
-
 More details in the `install`_ section of the documentation.
+
 
 Usage
 =====
@@ -121,6 +104,24 @@ To avoid encode/decode issues use this command before you start using SerpScrap 
 
 .. image:: https://raw.githubusercontent.com/ecoron/SerpScrap/master/docs/logo.png
     :target: https://github.com/ecoron/SerpScrap
+
+
+Changes
+-------
+Notes about major changes between releases
+
+0.9.0
+=====
+
+* result types added (news, shopping, image)
+* Image search is supported
+
+0.8.0
+=====
+
+* text processing tools removed.
+* less requirements
+
 
 References
 ----------

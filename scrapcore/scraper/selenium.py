@@ -237,6 +237,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
     def _get_Chrome(self):
         try:
+            chrome_ops = webdriver.ChromeOptions()
             if self.proxy:
                 chrome_ops = webdriver.ChromeOptions()
                 chrome_ops.add_argument(
@@ -250,10 +251,25 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     executable_path=self.config['executebale_path'],
                     chrome_options=chrome_ops
                 )
-            else:
-                self.webdriver = webdriver.Chrome(
-                    executable_path=self.config['executable_path']
+
+            chrome_ops.add_argument('--no-sandbox')
+            chrome_ops.add_argument('--start-maximized')
+            chrome_ops.add_argument(
+                '--window-position={},{}'.format(
+                    randint(10, 30),
+                    randint(10, 30)
                 )
+            )
+            chrome_ops.add_argument(
+                '--window-size={},{}'.format(
+                    randint(800, 1024),
+                    randint(600, 900)
+                )
+            )
+            self.webdriver = webdriver.Chrome(
+                executable_path=self.config['executable_path'],
+                chrome_options=chrome_ops
+            )
             return True
         except WebDriverException:
             raise

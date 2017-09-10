@@ -626,7 +626,9 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             if self.search_param_fields:
                 wait_res = self._wait_until_search_param_fields_appears()
                 if wait_res is False:
+                    self.quit()
                     raise Exception('Waiting search param input fields time exceeds')
+
                 for param, field in self.search_param_fields.items():
                     if field[0] == By.ID:
                         js_tpl = '''
@@ -647,7 +649,11 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 self.search_input.send_keys(self.query + Keys.ENTER)
             except ElementNotVisibleException:
                 time.sleep(2)
-                self.search_input.send_keys(self.query + Keys.ENTER)
+                try:
+                    self.search_input.send_keys(self.query + Keys.ENTER)
+                except Exception:
+                    logger.error('send keys not possible, maybe page cannot loaded')
+                    self.quit()
             except Exception:
                 logger.error('send keys not possible')
                 pass
@@ -719,8 +725,11 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 self.build_search()
                 self.search()
 
-            if self.webdriver:
-                self.webdriver.quit()
+            self.quit()
+
+    def quit(self):
+        if self.webdriver:
+            self.webdriver.quit()
 
 
 """

@@ -60,7 +60,6 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         'yahoo': '.compPagination .next',
         'baidu': '.n',
         'ask': '#paging div a.txt3.l_nu',
-        'blekko': '',
         'duckduckgo': '',
         'googleimg': '#pnnext',
         'baiduimg': '.n',
@@ -74,7 +73,6 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         'baidu': (By.NAME, 'wd'),
         'duckduckgo': (By.NAME, 'q'),
         'ask': (By.NAME, 'q'),
-        'blekko': (By.NAME, 'q'),
         'google': (By.NAME, 'q'),
         'googleimg': (By.NAME, 'as_q'),
         'baiduimg': (By.NAME, 'word'),
@@ -102,7 +100,6 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         'baidu': 'http://baidu.com/',
         'duckduckgo': 'https://duckduckgo.com/',
         'ask': 'http://ask.com/',
-        'blekko': 'http://blekko.com/',
     }
 
     image_search_locations = {
@@ -113,7 +110,6 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         'baidu': 'http://image.baidu.com/',
         'duckduckgo': None,  # duckduckgo doesnt't support direct image search
         'ask': 'http://www.ask.com/pictures/',
-        'blekko': None,
         'googleimg': 'https://www.google.com/advanced_image_search',
         'baiduimg': 'http://image.baidu.com/',
     }
@@ -488,7 +484,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 element.click()
             except WebDriverException:
                 # See http://stackoverflow.com/questions/11908249/debugging-element-is-not-clickable-at-point-error
-                # first move mouse to the next element, some times the element is not visibility, like blekko.com
+                # first move mouse to the next element, some times the element is not visibility
                 selector = self.next_page_selectors[self.search_engine_name]
                 if selector:
                     try:
@@ -768,14 +764,6 @@ class DuckduckgoSelScrape(SelScrape):
 
     def wait_until_serp_loaded(self):
         super()._wait_until_search_input_field_appears()
-
-
-class BlekkoSelScrape(SelScrape):
-    def __init__(self, *args, **kwargs):
-        SelScrape.__init__(self, *args, **kwargs)
-
-    def _goto_next_page(self):
-        pass
 
 
 class AskSelScrape(SelScrape):

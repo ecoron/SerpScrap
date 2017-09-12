@@ -338,12 +338,16 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             logger.info('useragent: {}'.format(useragent))
             dcap = dict(DesiredCapabilities.PHANTOMJS)
             dcap["phantomjs.page.settings.userAgent"] = useragent
-            self.webdriver = webdriver.PhantomJS(
-                executable_path=self.config['executable_path'],
-                service_args=service_args,
-                desired_capabilities=dcap
-            )
-            return True
+            try:
+                self.webdriver = webdriver.PhantomJS(
+                    executable_path=self.config['executable_path'],
+                    service_args=service_args,
+                    desired_capabilities=dcap
+                )
+                return True
+            except (ConnectionError, ConnectionRefusedError, ConnectionResetError) as err:
+                logger.error(err)
+                return False
         except WebDriverException as e:
             logger.error(e)
         return False

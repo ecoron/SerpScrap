@@ -164,6 +164,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
         try:
             self.webdriver.get(self.config.get('proxy_info_url'))
+            time.sleep(2)
             try:
                 text = re.search(
                     r'(\{.*?\})',
@@ -207,7 +208,10 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 str(self.page_number),
             )
         )
-        self.webdriver.get_screenshot_as_file(location)
+        try:
+            self.webdriver.get_screenshot_as_file(location)
+        except (ConnectionError, ConnectionRefusedError, ConnectionResetError) as err:
+            logger.error(err)
 
     def _set_xvfb_display(self):
         # TODO: should we check the format of the config?
@@ -244,7 +248,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     )
                 )
                 self.webdriver = webdriver.Chrome(
-                    executable_path=self.config['executebale_path'],
+                    executable_path=self.config['executable_path'],
                     chrome_options=chrome_ops
                 )
 
@@ -678,6 +682,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     self._save_debug_screenshot()
                     time.sleep(.5)
                 self.html = self.webdriver.execute_script('return document.body.innerHTML;')
+            except (ConnectionError, ConnectionRefusedError, ConnectionResetError) as err:
+                logger.error(err)
             except WebDriverException:
                 self.html = self.webdriver.page_source
 

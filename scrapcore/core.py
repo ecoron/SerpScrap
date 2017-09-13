@@ -4,6 +4,7 @@ import datetime
 import queue
 import threading
 
+from random import shuffle
 from scrapcore.cachemanager import CacheManager
 from scrapcore.database import ScraperSearch
 from scrapcore.database import get_session, fixtures
@@ -78,6 +79,7 @@ class Core():
 
         if not proxies:
             raise Exception('''No proxies available. Turning down.''')
+        shuffle(proxies)
 
         # get a scoped sqlalchemy session
         session_cls = get_session(config, scoped=True)
@@ -122,10 +124,10 @@ class Core():
             self.logger.info('''
                 Going to scrape {num_keywords} keywords with {num_proxies}
                 proxies by using {num_threads} threads.'''.format(
-                    num_keywords=len(list(scrape_jobs)),
-                    num_proxies=len(proxies),
-                    num_threads=num_search_engines)
-                )
+                num_keywords=len(list(scrape_jobs)),
+                num_proxies=len(proxies),
+                num_threads=num_search_engines)
+            )
 
             progress_thread = None
 
@@ -139,7 +141,6 @@ class Core():
             for search_engine in search_engines:
 
                 for proxy in proxies:
-
                     for worker in range(num_workers):
                         num_worker += 1
                         workers.put(

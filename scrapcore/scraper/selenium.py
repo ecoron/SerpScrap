@@ -570,7 +570,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             elif self.search_engine_name == 'ask':
                 selector = '#paging .pgcsel .pg'
 
-            content = None
+            # content = None
             try:
                 time.sleep(1)
                 WebDriverWait(self.webdriver, 5).until(
@@ -582,7 +582,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             except TimeoutException:
                 self._save_debug_screenshot()
                 try:
-                    content = self.webdriver.find_element_by_css_selector(selector).text
+                    self.webdriver.find_element_by_css_selector(selector).text
                 except NoSuchElementException:
                     logger.error('Skipp it, no such element - SeleniumSearchError')
                     raise SeleniumSearchError('Stop Scraping, seems we are blocked')

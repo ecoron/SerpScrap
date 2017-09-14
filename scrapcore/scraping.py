@@ -308,5 +308,8 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
                 proxy.status = status
                 proxy.online = online
 
-                self.session.add(proxy)
-                self.session.commit()
+                try:
+                    self.session.merge(proxy, load=True)
+                    self.session.commit()
+                except:
+                    pass

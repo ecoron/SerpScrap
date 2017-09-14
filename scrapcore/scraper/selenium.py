@@ -60,7 +60,6 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         'yahoo': '.compPagination .next',
         'baidu': '.n',
         'ask': '#paging div a.txt3.l_nu',
-        'blekko': '',
         'duckduckgo': '',
         'googleimg': '#pnnext',
         'baiduimg': '.n',
@@ -74,7 +73,6 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         'baidu': (By.NAME, 'wd'),
         'duckduckgo': (By.NAME, 'q'),
         'ask': (By.NAME, 'q'),
-        'blekko': (By.NAME, 'q'),
         'google': (By.NAME, 'q'),
         'googleimg': (By.NAME, 'as_q'),
         'baiduimg': (By.NAME, 'word'),
@@ -102,7 +100,6 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         'baidu': 'http://baidu.com/',
         'duckduckgo': 'https://duckduckgo.com/',
         'ask': 'http://ask.com/',
-        'blekko': 'http://blekko.com/',
     }
 
     image_search_locations = {
@@ -113,7 +110,6 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         'baidu': 'http://image.baidu.com/',
         'duckduckgo': None,  # duckduckgo doesnt't support direct image search
         'ask': 'http://www.ask.com/pictures/',
-        'blekko': None,
         'googleimg': 'https://www.google.com/advanced_image_search',
         'baiduimg': 'http://image.baidu.com/',
     }
@@ -168,6 +164,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
         try:
             self.webdriver.get(self.config.get('proxy_info_url'))
+            time.sleep(2)
             try:
                 text = re.search(
                     r'(\{.*?\})',
@@ -211,7 +208,10 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 str(self.page_number),
             )
         )
-        self.webdriver.get_screenshot_as_file(location)
+        try:
+            self.webdriver.get_screenshot_as_file(location)
+        except (ConnectionError, ConnectionRefusedError, ConnectionResetError) as err:
+            logger.error(err)
 
     def _set_xvfb_display(self):
         # TODO: should we check the format of the config?
@@ -237,6 +237,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
     def _get_Chrome(self):
         try:
+            chrome_ops = webdriver.ChromeOptions()
             if self.proxy:
                 chrome_ops = webdriver.ChromeOptions()
                 chrome_ops.add_argument(
@@ -247,13 +248,28 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     )
                 )
                 self.webdriver = webdriver.Chrome(
-                    executable_path=self.config['executebale_path'],
+                    executable_path=self.config['executable_path'],
                     chrome_options=chrome_ops
                 )
-            else:
-                self.webdriver = webdriver.Chrome(
-                    executable_path=self.config['executable_path']
+
+            chrome_ops.add_argument('--no-sandbox')
+            chrome_ops.add_argument('--start-maximized')
+            chrome_ops.add_argument(
+                '--window-position={},{}'.format(
+                    randint(10, 30),
+                    randint(10, 30)
                 )
+            )
+            chrome_ops.add_argument(
+                '--window-size={},{}'.format(
+                    randint(800, 1024),
+                    randint(600, 900)
+                )
+            )
+            self.webdriver = webdriver.Chrome(
+                executable_path=self.config['executable_path'],
+                chrome_options=chrome_ops
+            )
             return True
         except WebDriverException:
             raise
@@ -326,12 +342,16 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             logger.info('useragent: {}'.format(useragent))
             dcap = dict(DesiredCapabilities.PHANTOMJS)
             dcap["phantomjs.page.settings.userAgent"] = useragent
-            self.webdriver = webdriver.PhantomJS(
-                executable_path=self.config['executable_path'],
-                service_args=service_args,
-                desired_capabilities=dcap
-            )
-            return True
+            try:
+                self.webdriver = webdriver.PhantomJS(
+                    executable_path=self.config['executable_path'],
+                    service_args=service_args,
+                    desired_capabilities=dcap
+                )
+                return True
+            except (ConnectionError, ConnectionRefusedError, ConnectionResetError) as err:
+                logger.error(err)
+                return False
         except WebDriverException as e:
             logger.error(e)
         return False
@@ -472,7 +492,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 element.click()
             except WebDriverException:
                 # See http://stackoverflow.com/questions/11908249/debugging-element-is-not-clickable-at-point-error
-                # first move mouse to the next element, some times the element is not visibility, like blekko.com
+                # first move mouse to the next element, some times the element is not visibility
                 selector = self.next_page_selectors[self.search_engine_name]
                 if selector:
                     try:
@@ -550,7 +570,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             elif self.search_engine_name == 'ask':
                 selector = '#paging .pgcsel .pg'
 
-            content = None
+            # content = None
             try:
                 time.sleep(1)
                 WebDriverWait(self.webdriver, 5).until(
@@ -562,7 +582,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             except TimeoutException:
                 self._save_debug_screenshot()
                 try:
-                    content = self.webdriver.find_element_by_css_selector(selector).text
+                    self.webdriver.find_element_by_css_selector(selector).text
                 except NoSuchElementException:
                     logger.error('Skipp it, no such element - SeleniumSearchError')
                     raise SeleniumSearchError('Stop Scraping, seems we are blocked')
@@ -614,7 +634,9 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             if self.search_param_fields:
                 wait_res = self._wait_until_search_param_fields_appears()
                 if wait_res is False:
+                    self.quit()
                     raise Exception('Waiting search param input fields time exceeds')
+
                 for param, field in self.search_param_fields.items():
                     if field[0] == By.ID:
                         js_tpl = '''
@@ -635,7 +657,11 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 self.search_input.send_keys(self.query + Keys.ENTER)
             except ElementNotVisibleException:
                 time.sleep(2)
-                self.search_input.send_keys(self.query + Keys.ENTER)
+                try:
+                    self.search_input.send_keys(self.query + Keys.ENTER)
+                except Exception:
+                    logger.error('send keys not possible, maybe page cannot loaded')
+                    self.quit()
             except Exception:
                 logger.error('send keys not possible')
                 pass
@@ -656,6 +682,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     self._save_debug_screenshot()
                     time.sleep(.5)
                 self.html = self.webdriver.execute_script('return document.body.innerHTML;')
+            except (ConnectionError, ConnectionRefusedError, ConnectionResetError) as err:
+                logger.error(err)
             except WebDriverException:
                 self.html = self.webdriver.page_source
 
@@ -707,8 +735,11 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 self.build_search()
                 self.search()
 
-            if self.webdriver:
-                self.webdriver.quit()
+            self.quit()
+
+    def quit(self):
+        if self.webdriver:
+            self.webdriver.quit()
 
 
 """
@@ -752,14 +783,6 @@ class DuckduckgoSelScrape(SelScrape):
 
     def wait_until_serp_loaded(self):
         super()._wait_until_search_input_field_appears()
-
-
-class BlekkoSelScrape(SelScrape):
-    def __init__(self, *args, **kwargs):
-        SelScrape.__init__(self, *args, **kwargs)
-
-    def _goto_next_page(self):
-        pass
 
 
 class AskSelScrape(SelScrape):

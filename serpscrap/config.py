@@ -53,7 +53,7 @@ class Config():
         },
         'proxy_file': '',
         'proxy_check_url': 'http://canihazip.com/s',
-        'proxy_info_url': 'http://ipinfo.io/json',
+        'proxy_info_url': 'https://ipinfo.io/json',
         'stop_on_detection': True,
         'today': datetime.datetime.strftime(
             datetime.datetime.utcnow(),

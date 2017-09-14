@@ -59,6 +59,35 @@ custom path to the binary.
        if 'serp_title' in result and len(result['serp_title']) > 1:
            print(result['serp_title'])
 
+Using Chrome
+------------
+
+.. code-block:: bash
+
+   python examples\example_chrome.py
+
+It is possible to use Chrome, but we recomment PhantomJs, which is installed by default.
+For using Chrome u need to download the latest `chromedriver`_ and to set the executable_path.
+
+.. code-block:: bash
+
+   import pprint
+   import serpscrap
+   
+   keywords = ['berlin']
+   
+   config = serpscrap.Config()
+   config.set('sel_browser', 'chrome')
+   config.set('executable_path', '/tmp/chromedriver_win32/chromedriver.exe')
+   
+   scrap = serpscrap.SerpScrap()
+   scrap.init(config=config.get(), keywords=keywords)
+   results = scrap.run()
+   
+   for result in results:
+       pprint.pprint(result)
+       print()
+
 Image search
 ------------
 
@@ -157,3 +186,5 @@ References
 .. _`examples`: https://github.com/ecoron/SerpScrap/tree/master/examples
 .. _`example_simple.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_simple.py
 .. _`example_related.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_related.py
+.. _`chromedriver`: https://sites.google.com/a/chromium.org/chromedriver/downloads
+

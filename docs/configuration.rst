@@ -96,7 +96,10 @@ don't customize this setting, the default is used.
 Proxy file
 ----------
 
-You can provide a list of proxys which should used for scraping the search engines.
+This feature works not stable in versions <= 0.9.1, if you use more then one worker
+and have more then one proxy in your file.
+
+You can provide a list of proxies which should used for scraping the search engines.
 For this you have to create a proxy_file and to set the path to the file in the configuration.
 
 The proxy_file should look like this

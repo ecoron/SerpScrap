@@ -31,9 +31,9 @@ class GoogleParser(Parser):
             'us_ip': {
                 'container': '#center_col',
                 'result_container': 'div.g ',
-                'link': 'h3.r > a:first-child::attr(href)',
+                'link': 'h3.r > a:first-of-type::attr(href)',
                 'snippet': 'div.s span.st::text',
-                'title': 'h3.r > a:first-child::text',
+                'title': 'h3.r > a:first-of-type::text',
                 'visible_link': 'cite::text',
                 'rating': 'div.f.slp::text',
                 'sitelinks': 'div.osl::text'
@@ -41,9 +41,9 @@ class GoogleParser(Parser):
             'de_ip': {
                 'container': '#center_col',
                 'result_container': 'li.g ',
-                'link': 'h3.r > a:first-child::attr(href)',
+                'link': 'h3.r > a:first-of-type::attr(href)',
                 'snippet': 'div.s span.st::text',
-                'title': 'h3.r > a:first-child::text',
+                'title': 'h3.r > a:first-of-type::text',
                 'visible_link': 'cite::text',
                 'rating': 'div.f.slp::text',
                 'sitelinks': 'div.osl::text'
@@ -56,7 +56,7 @@ class GoogleParser(Parser):
                 'snippet': 'g-inner-card::text',
                 'title': 'g-inner-card div._Jvo::text',
                 'visible_link': 'g-inner-card cite::text',
-                'rating': 'div.osl a:first-child::text',
+                'rating': 'div.osl a:first-of-type::text',
                 'sitelinks': 'div.osl::text'
             },
             'de_ip_othernews_items': {
@@ -65,7 +65,7 @@ class GoogleParser(Parser):
                 'snippet': 'span._dwd::text',
                 'title': 'a._Dk::text',
                 'visible_link': 'cite::text',
-                'rating': 'div.osl a:first-child::text',
+                'rating': 'div.osl a:first-of-type::text',
                 'sitelinks': 'div.osl::text'
             },
         },
@@ -93,9 +93,9 @@ class GoogleParser(Parser):
             'us_ip': {
                 'container': '#center_col',
                 'result_container': 'li.ads-ad',
-                'link': 'h3.r > a:first-child::attr(href)',
+                'link': 'h3.r > a:first-of-type::attr(href)',
                 'snippet': 'div.s span.st::text',
-                'title': 'h3.r > a:first-child::text',
+                'title': 'h3.r > a:first-of-type::text',
                 'visible_link': '.ads-visurl cite::text',
                 'rating': 'div._Ond _Bu span::text',
                 'sitelinks': 'div.osl::text'

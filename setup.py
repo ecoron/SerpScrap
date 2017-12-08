@@ -27,8 +27,8 @@ setup(
         'beautifulsoup4==4.6.0',
         'html2text==2017.10.4',
         'lxml',
-        'sqlalchemy==1.1.14',
-        'selenium==3.6.0',
+        'sqlalchemy==1.1.15',
+        'selenium==3.8.0',
         'cssselect==1.0.1',
     ],
     classifiers=[
@@ -40,5 +40,5 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    keywords='serp-scraper url-scraper ad-detection',
+    keywords='seo scraper ad-detection scraping keywords',
 )

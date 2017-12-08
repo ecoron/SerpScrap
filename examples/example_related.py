@@ -7,7 +7,7 @@ import serpscrap
 def scrape_to_csv(config, keywords):
     scrap = serpscrap.SerpScrap()
     scrap.init(config=config.get(), keywords=keywords)
-    return scrap.as_csv('/tmp/planet-earth')
+    return scrap.as_csv('/tmp/cryptocurrency')
 
 
 def get_related(config, keywords, related):
@@ -25,7 +25,7 @@ config = serpscrap.Config()
 config.set('scrape_urls', False)
 config.set('num_workers', 1)
 
-keywords = ['planet earth']
+keywords = ['cryptocurrency']
 
 related = keywords
 related = get_related(config, keywords, related)

@@ -111,6 +111,12 @@ class SearchEngineResultsPage(Base):
                 for link in value:
                     parsed = urlparse(link['link'])
 
+                    if link['snippet'] is not None:
+                        # try to remove inline css, which is in some results since 12/2017
+                        tmp_snipped = link['snippet'].split('}')
+                        if len(tmp_snipped) > 1:
+                            link['snippet'] = tmp_snipped[len(tmp_snipped)-1]
+
                     # fill with nones to prevent key errors
                     [link.update({key: None}) for key in (
                          'snippet',

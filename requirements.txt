@@ -1,8 +1,8 @@
 lxml
 chardet==3.0.4
 beautifulsoup4==4.6.0
-html2text==2016.9.19
+html2text==2017.10.4
 PySocks==1.6.7
-sqlalchemy==1.1.13
-selenium==3.5.0
+sqlalchemy==1.1.15
+selenium==3.8.0
 cssselect==1.0.1

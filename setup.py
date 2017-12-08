@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.9.1'
+version = '0.9.2'
 
 
 setup(
@@ -25,10 +25,10 @@ setup(
         'PySocks==1.6.7',
         'chardet==3.0.4',
         'beautifulsoup4==4.6.0',
-        'html2text==2016.9.19',
+        'html2text==2017.10.4',
         'lxml',
-        'sqlalchemy==1.1.13',
-        'selenium==3.5.0',
+        'sqlalchemy==1.1.15',
+        'selenium==3.8.0',
         'cssselect==1.0.1',
     ],
     classifiers=[
@@ -40,5 +40,5 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    keywords='serp-scraper url-scraper ad-detection',
+    keywords='seo scraper ad-detection scraping keywords',
 )

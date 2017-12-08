@@ -110,10 +110,12 @@ class SearchEngineResultsPage(Base):
             if isinstance(value, list):
                 for link in value:
                     parsed = urlparse(link['link'])
-                    # try to remove inline css, which is in some results since 12/2017
-                    tmp_snipped = link['snippet'].split('}')
-                    if len(tmp_snipped) > 1:
-                        link['snippet'] = tmp_snipped[len(tmp_snipped)-1]
+
+                    if link['snippet'] is not None:
+                        # try to remove inline css, which is in some results since 12/2017
+                        tmp_snipped = link['snippet'].split('}')
+                        if len(tmp_snipped) > 1:
+                            link['snippet'] = tmp_snipped[len(tmp_snipped)-1]
 
                     # fill with nones to prevent key errors
                     [link.update({key: None}) for key in (

@@ -8,6 +8,7 @@ import re
 import tempfile
 import threading
 import time
+import signal
 from urllib.parse import quote
 
 from scrapcore.scraping import MaliciousRequestDetected
@@ -739,6 +740,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
     def quit(self):
         if self.webdriver:
+            self.webdriver.close()
             self.webdriver.quit()
 
 

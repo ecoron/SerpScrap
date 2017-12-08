@@ -104,7 +104,7 @@ class GoogleParser(Parser):
                 'container': '#center_col',
                 'result_container': '.ads-ad',
                 'link': 'h3 > a:nth-child(2)::attr(href)',
-                'snippet': '.ads-creative::text',
+                'snippet': 'div.ads-creative::text',
                 'title': 'h3 > a:nth-child(2)::text',
                 'visible_link': '.ads-visurl cite::text',
                 'rating': 'div._Ond _Bu span::text',

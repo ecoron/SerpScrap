@@ -24,6 +24,7 @@ class Config():
         'num_pages_for_keyword': 2,
         'scrape_method': 'selenium',
         'sel_browser': 'phantomjs',
+        'chrome_headless': True,
         'executable_path': '',
         'do_caching': True,
         'cachedir': '/tmp/.serpscrap/',
@@ -45,11 +46,9 @@ class Config():
         'google_search_url': 'https://www.google.com/search?',
         'bing_search_url': 'http://www.bing.com/search?',
         'headers': {
-            'Accept': '*/*',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4',
-            'Accept-Encoding': 'gzip, deflate, sdch',
-            'Connection': 'keep-alive',
-            'Referer': 'https://www.google.de/'
+            'Accept-Encoding': 'gzip, deflate, br'
         },
         'proxy_file': '',
         'proxy_check_url': 'http://canihazip.com/s',

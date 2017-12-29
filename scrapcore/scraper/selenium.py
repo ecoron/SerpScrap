@@ -194,6 +194,11 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         Saves a debug screenshot of the browser window to figure
         out what went wrong.
         """
+        if self.config.get('sel_browser') == 'chrome' and self.config.get('chrome_headless') is True:
+            """screenshots in headless chrome does not work at the moment"""
+            logger.info('no screenshot for chrome headless possible, may be working in the future')
+            return
+
         screendir = '{}/{}'.format(
             self.config['dir_screenshot'],
             self.config['today']
@@ -209,9 +214,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 str(self.page_number),
             )
         )
+
+        if self.config.get('chrome_headless') is True:
+            self._enable_download_in_headless_chrome(self.webdriver, screendir)
         try:
             self.webdriver.get_screenshot_as_file(location)
-        except (ConnectionError, ConnectionRefusedError, ConnectionResetError) as err:
+        except Exception as err:
             logger.error(err)
 
     def _set_xvfb_display(self):
@@ -236,6 +244,13 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
         return False
 
+    def _enable_download_in_headless_chrome(self, browser, download_dir):
+        #add missing support for chrome "send_command"  to selenium webdriver
+        browser.command_executor._commands["send_command"] = ("POST", '/session/$sessionId/chromium/send_command')
+    
+        params = {'cmd': 'Page.setDownloadBehavior', 'params': {'behavior': 'allow', 'downloadPath': download_dir}}
+        browser.execute("send_command", params)
+
     def _get_Chrome(self):
         try:
             chrome_ops = webdriver.ChromeOptions()
@@ -253,8 +268,12 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     chrome_options=chrome_ops
                 )
 
+            if self.config.get('chrome_headless') is True:
+                chrome_ops.add_argument('--headless')
             chrome_ops.add_argument('--no-sandbox')
             chrome_ops.add_argument('--start-maximized')
+            chrome_ops.add_argument('--disable-gpu')
+            chrome_ops.add_argument('--verbose')
             chrome_ops.add_argument(
                 '--window-position={},{}'.format(
                     randint(10, 30),
@@ -272,7 +291,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 chrome_options=chrome_ops
             )
             return True
-        except WebDriverException:
+        except WebDriverException as e:
+            logger.error(e)
             raise
         return False
 
@@ -585,7 +605,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 try:
                     self.webdriver.find_element_by_css_selector(selector).text
                 except NoSuchElementException:
-                    logger.error('Skipp it, no such element - SeleniumSearchError')
+                    logger.error('Skip it, no such element - SeleniumSearchError')
+                    self.quit()
                     raise SeleniumSearchError('Stop Scraping, seems we are blocked')
             except Exception:
                 logger.error('Scrape Exception pass. Selector: ' + str(selector))
@@ -623,7 +644,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
         if self.search_input:
             try:
-                self.search_input.clear()
+                if self.config.get('sel_browser') != 'chrome' or (self.config.get('sel_browser') == 'chrome' and self.config.get('chrome_headless') is False):
+                    self.search_input.clear()
             except Exception as e:
                 logger.error('Possible blocked search, sleep 30 sec, Scrape Exception: ' + str(e))
                 self._save_debug_screenshot()
@@ -687,6 +709,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                 logger.error(err)
             except WebDriverException:
                 self.html = self.webdriver.page_source
+            except Exception as err:
+                logger.error(err)
 
             super().after_search()
 

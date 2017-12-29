@@ -78,7 +78,10 @@ For using Chrome u need to download the latest `chromedriver`_ and to set the ex
    
    config = serpscrap.Config()
    config.set('sel_browser', 'chrome')
+   config.set('chrome_headless', True)
    config.set('executable_path', '/tmp/chromedriver_win32/chromedriver.exe')
+   # linux
+   # config.set('executable_path', '/usr/local/bin/chromedriver')
    
    scrap = serpscrap.SerpScrap()
    scrap.init(config=config.get(), keywords=keywords)

@@ -111,6 +111,11 @@ Changes
 -------
 Notes about major changes between releases
 
+0.10.0
+======
+
+* support for headless chrome
+
 0.9.0
 =====
 

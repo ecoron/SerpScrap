@@ -31,7 +31,7 @@ Default configuration
 * sleeping_max: 15                    - max seconds to sleep between scrapes
 * screenshot: True                    - enable screenshots for each query
 * dir_screenshot: '/tmp/screenshots'  - basedir for saved screenshots
-
+* chrome_headless: True               - run chrome in headless mode, default is True
 
 Custom configuration
 --------------------

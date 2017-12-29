@@ -21,7 +21,7 @@ class TestClass:
 
     def test_config_default(self):
         config = Config()
-        assert len(config.get()) == 30
+        assert len(config.get()) == 31
         assert config.use_own_ip is True
         assert config.screenshot is True
         assert config.scrape_urls is False
@@ -37,6 +37,9 @@ class TestClass:
         keywords = random.choice(self.keyword_list)
 
         config = Config()
+        config.set('sel_browser', 'chrome')
+        config.set('chrome_headless', True)
+        config.set('executable_path', '/usr/local/bin/chromedriver')
         scrap = SerpScrap()
         scrap.init(config=config.get(), keywords=keywords)
         results = scrap.run()

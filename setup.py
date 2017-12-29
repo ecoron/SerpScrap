@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.9.3'
+version = '0.10.0'
 
 
 setup(
@@ -26,7 +26,7 @@ setup(
         'chardet==3.0.4',
         'beautifulsoup4==4.6.0',
         'html2text==2017.10.4',
-        'lxml',
+        'lxml==3.8.0',
         'sqlalchemy==1.1.15',
         'selenium==3.8.0',
         'cssselect==1.0.1',

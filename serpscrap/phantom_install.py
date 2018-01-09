@@ -4,6 +4,7 @@ import sys
 import tarfile
 import urllib.request
 import zipfile
+import tempfile
 from scrapcore.logger import Logger
 
 logger = Logger()
@@ -27,19 +28,13 @@ class PhantomInstall():
         if 'windows' in this_os:
             if os.path.isfile(self.home_dir + self.binary_win):
                 return self.home_dir + self.binary_win
-            else:
-                return False
         elif 'linux' in this_os:
             if sys.maxsize > 2 ** 32:
                 if os.path.isfile(self.home_dir + self.binary_linux64):
                     return self.home_dir + self.binary_linux64
-                else:
-                    return False
             else:
                 if os.path.isfile(self.home_dir + self.binary_linux32):
                     return self.home_dir + self.binary_linux32
-                else:
-                    return False
         else:
             raise Exception('''
             Platform not supported.
@@ -65,9 +60,13 @@ class PhantomInstall():
             Platform not supported.
             install phantomjs manualy and update the path in your config
             ''')
-        # Download the file from `url` and save it locally under `file_name`:
-        urllib.request.urlretrieve(base_url + file_name, '/tmp/' + file_name)
-        self.unpack('/tmp/' + file_name, archive)
+        # Download the file from `url` and save it under `file_name`:
+        tmp_dir = tempfile.gettempdir() + '/'
+        try:
+            urllib.request.urlretrieve(base_url + file_name, tmp_dir + file_name)
+            self.unpack(tmp_dir + file_name, archive)
+        except:
+            raise Exception('Download and unpack of phantomjs failed. Check if %(tmp_dir)s exists and has write permissions' % {'tmp_dir' : tmp_dir})
 
     def unpack(self, file_path, archive):
         logger.info('unpacking phantomjs')

@@ -215,7 +215,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             )
         )
 
-        if self.config.get('chrome_headless') is True:
+        if self.config.get('sel_browser') == 'chrome' and self.config.get('chrome_headless') is True:
             self._enable_download_in_headless_chrome(self.webdriver, screendir)
         try:
             self.webdriver.get_screenshot_as_file(location)

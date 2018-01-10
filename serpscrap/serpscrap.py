@@ -80,10 +80,10 @@ class SerpScrap():
             logger.info('preparing phantomjs')
             firstrun = PhantomInstall()
             phantomjs = firstrun.detect_phantomjs()
-            if phantomjs is not None:
+            if phantomjs is None:
                 firstrun.download()
                 phantomjs = firstrun.detect_phantomjs()
-                if phantomjs is not None:
+                if phantomjs is None:
                     raise Exception('''
                         phantomjs binary not found,
                         provide custom path in config''')

@@ -28,7 +28,7 @@ setup(
         'html2text==2017.10.4',
         'lxml==3.8.0',
         'sqlalchemy==1.1.15',
-        'selenium==3.8.0',
+        'selenium==3.8.1',
         'cssselect==1.0.1',
     ],
     classifiers=[

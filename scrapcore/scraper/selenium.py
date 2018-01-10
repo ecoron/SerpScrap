@@ -455,7 +455,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         else:
             return {}
 
-    def _wait_until_search_input_field_appears(self, max_wait=5):
+    def _wait_until_search_input_field_appears(self, max_wait=10):
         """Waits until the search input field can be located for the current search engine
 
         Args:

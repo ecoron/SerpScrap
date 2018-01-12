@@ -47,6 +47,7 @@ class TestClass:
         assert len(results) > 0
         assert len(results[0]) > 0
 
+
     def test_screenshot(self):
         keywords = random.choice(self.keyword_list)
         config = Config()

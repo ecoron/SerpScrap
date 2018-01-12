@@ -80,15 +80,15 @@ class SerpScrap():
             logger.info('preparing phantomjs')
             firstrun = PhantomInstall()
             phantomjs = firstrun.detect_phantomjs()
-            if phantomjs is False:
+            if phantomjs is None:
                 firstrun.download()
                 phantomjs = firstrun.detect_phantomjs()
-                if phantomjs is False:
+                if phantomjs is None:
                     raise Exception('''
                         phantomjs binary not found,
                         provide custom path in config''')
             self.config.__setitem__('executable_path', phantomjs)
-            logger.info('using ' + phantomjs)
+            logger.info('using ' + str(phantomjs))
 
         # cleanup screenshot dir on init
         if os.path.exists(self.config['dir_screenshot']):

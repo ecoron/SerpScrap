@@ -114,7 +114,7 @@ Notes about major changes between releases
 0.10.0
 ======
 
-* support for headless chrome
+* support for headless chrome, adjusted default time between scrapes
 
 0.9.0
 =====

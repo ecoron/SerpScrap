@@ -606,7 +606,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     self.webdriver.find_element_by_css_selector(selector).text
                 except NoSuchElementException:
                     try:
-                        logger.error('No such element - SeleniumSearchError. Seeing if title matches...')
+                        logger.error('No such element. Seeing if title matches before raising SeleniumSearchError')
                         self.wait_until_title_contains_keyword()
                     except TimeoutException:
                         self.quit()
@@ -719,7 +719,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
             # Click the next page link not when leaving the loop
             # in the next iteration.
-            if self.page_number in self.pages_per_keyword:
+            if self.page_number + 1 in self.pages_per_keyword:
                 next_url = self._goto_next_page()
                 self.requested_at = datetime.datetime.utcnow()
 

@@ -150,7 +150,7 @@ class SerpScrap():
                     })
                 for link in serp.links:
                     self.results.append({
-                        'query_num_results total': serp.num_results_for_query,
+                        'query_num_results_total': serp.num_results_for_query,
                         'query_num_results_page': serp.num_results,
                         'query_page_number': serp.page_number,
                         'query': serp.query,

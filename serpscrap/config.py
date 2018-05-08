@@ -94,4 +94,4 @@ class Config():
         Args:
             config (dict): new configuration
         """
-        self.config = {**self.config, **config}
+        self.config.update(config)

@@ -88,10 +88,10 @@ class Config():
         self.config.__setitem__(key, value)
 
     def apply(self, config):
-        """apply an individual conig
+        """apply an individual config, replace default config
+        by values of new config
 
         Args:
             config (dict): new configuration
         """
-
-        self.config = config
+        self.config = {**self.config, **config}

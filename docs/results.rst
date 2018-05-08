@@ -10,7 +10,7 @@ If you prefer to save the results use the as_csv() method.
 
    {
     'query': 'example',
-    'query_num_results total': 'Ungefähr 1.740.000.000 Ergebnisse (0,50 '
+    'query_num_results_total': 'Ungefähr 1.740.000.000 Ergebnisse (0,50 '
                                'Sekunden)\xa0',
     'query_num_results_page': 10,
     'query_page_number': 1,

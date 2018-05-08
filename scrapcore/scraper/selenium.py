@@ -576,7 +576,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         if self.search_type == 'normal':
 
             if self.search_engine_name == 'google':
-                selector = '#navcnt td.cur'
+                selector = '#resultStats'
             elif self.search_engine_name == 'yandex':
                 selector = '.pager__item_current_yes font font'
             elif self.search_engine_name == 'bing':
@@ -591,30 +591,21 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             elif self.search_engine_name == 'ask':
                 selector = '#paging .pgcsel .pg'
 
-            # content = None
             try:
-                time.sleep(1)
-                WebDriverWait(self.webdriver, 5).until(
-                    EC.text_to_be_present_in_element(
-                        (By.CSS_SELECTOR, selector),
-                        str(self.page_number)
-                    )
-                )
-            except TimeoutException:
+                WebDriverWait(self.webdriver, 5).until(EC.visibility_of_element_located((By.CSS_SELECTOR, selector)))
+            except NoSuchElementException:
+                logger.error('No such element. Seeing if title matches before raising SeleniumSearchError')
                 self._save_debug_screenshot()
                 try:
-                    self.webdriver.find_element_by_css_selector(selector).text
-                except NoSuchElementException:
-                    logger.error('Skip it, no such element - SeleniumSearchError')
+                    self.wait_until_title_contains_keyword()
+                except TimeoutException:
                     self.quit()
                     raise SeleniumSearchError('Stop Scraping, seems we are blocked')
-            except Exception:
+            except Exception as e:
                 logger.error('Scrape Exception pass. Selector: ' + str(selector))
+                logger.error('Error: ' + str(e))
                 self._save_debug_screenshot()
                 pass
-
-        elif self.search_type == 'image':
-            self.wait_until_title_contains_keyword()
 
         else:
             self.wait_until_title_contains_keyword()
@@ -716,7 +707,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
             # Click the next page link not when leaving the loop
             # in the next iteration.
-            if self.page_number in self.pages_per_keyword:
+            if self.page_number + 1 in self.pages_per_keyword:
+                logger.info('Requesting the next page')
                 next_url = self._goto_next_page()
                 self.requested_at = datetime.datetime.utcnow()
 

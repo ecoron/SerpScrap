@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.10.1'
+version = '0.10.2'
 
 
 setup(
@@ -22,14 +22,14 @@ setup(
     license='MIT',
     packages=find_packages(),
     install_requires=[
-        'PySocks==1.6.7',
+        'PySocks==1.6.8',
         'chardet==3.0.4',
         'beautifulsoup4==4.6.0',
-        'html2text==2017.10.4',
-        'lxml==3.8.0',
-        'sqlalchemy==1.1.15',
-        'selenium==3.8.1',
-        'cssselect==1.0.1',
+        'html2text==2018.1.9',
+        'lxml==4.2.1',
+        'sqlalchemy==1.2.7',
+        'selenium==3.11.0',
+        'cssselect==1.0.3',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

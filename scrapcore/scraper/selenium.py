@@ -194,10 +194,10 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         Saves a debug screenshot of the browser window to figure
         out what went wrong.
         """
-        if self.config.get('sel_browser') == 'chrome' and self.config.get('chrome_headless') is True:
-            """screenshots in headless chrome does not work at the moment"""
-            logger.info('no screenshot for chrome headless possible, may be working in the future')
-            return
+#         if self.config.get('sel_browser') == 'chrome' and self.config.get('chrome_headless') is True:
+#             """screenshots in headless chrome does not work at the moment"""
+#             logger.info('no screenshot for chrome headless possible, may be working in the future')
+#             return
 
         screendir = '{}/{}'.format(
             self.config['dir_screenshot'],

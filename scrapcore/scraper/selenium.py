@@ -217,6 +217,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
 
         if self.config.get('sel_browser') == 'chrome' and self.config.get('chrome_headless') is True:
             self._enable_download_in_headless_chrome(self.webdriver, screendir)
+            total_height = self.webdriver.execute_script("return document.body.parentNode.scrollHeight")
+            self.webdriver.set_window_size('1024', total_height)
         try:
             self.webdriver.get_screenshot_as_file(location)
         except Exception as err:
@@ -286,6 +288,7 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     randint(600, 900)
                 )
             )
+            
             self.webdriver = webdriver.Chrome(
                 executable_path=self.config['executable_path'],
                 chrome_options=chrome_ops

@@ -432,6 +432,9 @@ class SelScrape(SearchEngineScrape, threading.Thread):
             starting_point = self.image_search_locations[self.search_engine_name]
         else:
             starting_point = self.base_search_url
+            if self.config.get('num_results_per_page', 10) > 10:
+                starting_point = '{}num={}'.format(starting_point, str(self.config.get('num_results_per_page', 10)))
+            logger.info(starting_point)
 
         self.webdriver.get(starting_point)
 

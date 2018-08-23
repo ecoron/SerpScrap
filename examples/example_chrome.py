@@ -3,7 +3,7 @@
 import pprint
 import serpscrap
 
-keywords = ['screen']
+keywords = ['sommer']
 
 config = serpscrap.Config()
 config.set('sel_browser', 'chrome')

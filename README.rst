@@ -122,7 +122,7 @@ Notes about major changes between releases
 
 * behavior of scraping raw text contents from serp urls, and of course given urls, has changed
 * run scraping of serp results and contents at once
-* csv output format cahnged, now it's tab separated and quoted
+* csv output format changed, now it's tab separated and quoted
 * usage of phantomJS is deprecated, i recommend to use headless chrome
 
 0.10.0

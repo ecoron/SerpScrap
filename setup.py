@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.10.4'
+version = '0.11.0'
 
 
 setup(
@@ -24,7 +24,7 @@ setup(
     install_requires=[
         'PySocks==1.6.8',
         'chardet==3.0.4',
-        'beautifulsoup4==4.6.0',
+        'beautifulsoup4==4.6.3',
         'html2text==2018.1.9',
         'lxml==4.2.3',
         'sqlalchemy==1.2.10',

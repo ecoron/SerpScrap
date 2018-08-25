@@ -106,10 +106,24 @@ To avoid encode/decode issues use this command before you start using SerpScrap 
 .. image:: https://raw.githubusercontent.com/ecoron/SerpScrap/master/docs/logo.png
     :target: https://github.com/ecoron/SerpScrap
 
+Supported OS
+------------
+
+* SerpScrap should work on Linux, Windows and macOS with installed Python >= 3.4
+* SerpScrap requieres lxml
+* Doesn't work on iOS
 
 Changes
 -------
 Notes about major changes between releases
+
+0.11.0
+======
+
+* behavior of scraping raw text contents from serp urls, and of course given urls, has changed
+* run scraping of serp results and contents at once
+* csv output format cahnged, now it's tab separated and quoted
+* usage of phantomJS is deprecated, i recommend to use headless chrome
 
 0.10.0
 ======

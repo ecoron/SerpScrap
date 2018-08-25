@@ -34,33 +34,8 @@ You can disable url scraping by setting the config value scrape_urls to False.
    for result in results:
        print(result)
 
-Simple Example - custom phantomjs path
---------------------------------------
-
-If phantomjs could not installed, configure your
-custom path to the binary.
-
-.. code-block:: python
-
-   import serpscrap
-   
-   keywords = ['seo trends', 'seo news', 'seo tools']
-   
-   config = serpscrap.Config()
-   # only required if phantomjs binary could not detected
-   config.set('executable_path', '../phantomjs/phantomjs.exe')
-   config.set('num_workers', 1)
-   config.set('scrape_urls', False)
-   
-   scrap = serpscrap.SerpScrap()
-   scrap.init(config=config.get(), keywords=keywords)
-   results = scrap.run()
-   for result in results:
-       if 'serp_title' in result and len(result['serp_title']) > 1:
-           print(result['serp_title'])
-
-Using Chrome
-------------
+Simple example using headless Chrome (recommended)
+--------------------------------------------------
 
 .. code-block:: bash
 
@@ -90,6 +65,32 @@ For using Chrome u need to download the latest `chromedriver`_ and to set the ex
    for result in results:
        pprint.pprint(result)
        print()
+
+
+Simple Example - custom phantomjs path (deprecated)
+---------------------------------------------------
+
+If phantomjs could not installed, configure your
+custom path to the binary.
+
+.. code-block:: python
+
+   import serpscrap
+   
+   keywords = ['seo trends', 'seo news', 'seo tools']
+   
+   config = serpscrap.Config()
+   # only required if phantomjs binary could not detected
+   config.set('executable_path', '../phantomjs/phantomjs.exe')
+   config.set('num_workers', 1)
+   config.set('scrape_urls', False)
+   
+   scrap = serpscrap.SerpScrap()
+   scrap.init(config=config.get(), keywords=keywords)
+   results = scrap.run()
+   for result in results:
+       if 'serp_title' in result and len(result['serp_title']) > 1:
+           print(result['serp_title'])
 
 Image search
 ------------
@@ -137,11 +138,10 @@ In this example we scrape only an url, without crawling any searchengine.
    config = serpscrap.Config()
    
    urlscrape = serpscrap.UrlScrape(config.get())
-   results = urlscrape.scrap_url(url)
+   result = urlscrape.scrap_url(url)
    
-   for result in results:
-       print(result)
-       print()
+   print(result)
+   print()
 
 
 Command Line

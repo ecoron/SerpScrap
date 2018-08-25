@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.10.3'
+version = '0.10.4'
 
 
 setup(

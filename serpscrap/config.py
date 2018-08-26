@@ -23,7 +23,7 @@ class Config():
         'search_engines': ['google'],
         'num_pages_for_keyword': 2,
         'scrape_method': 'selenium',
-        'sel_browser': 'phantomjs',
+        'sel_browser': 'chrome',
         'chrome_headless': True,
         'executable_path': '',
         'do_caching': True,

@@ -8,8 +8,7 @@ sudo: required
 
 
 install:
-  - sh install_chrome.sh
-#  - pip install -r requirements.txt
+#  - sh install_chrome.sh
   - python setup.py -q install
 # command to run tests
 script: pytest

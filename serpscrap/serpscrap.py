@@ -12,6 +12,7 @@ from scrapcore.core import Core
 from scrapcore.logger import Logger
 from serpscrap.config import Config
 from serpscrap.csv_writer import CsvWriter
+from serpscrap.chrome_install import ChromeInstall
 from serpscrap.phantom_install import PhantomInstall
 from serpscrap.urlscrape import UrlScrape
 
@@ -76,7 +77,7 @@ class SerpScrap():
         else:
             self.config = Config().get()
 
-        if self.config['executable_path'] == '':
+        if self.config['executable_path'] == '' and self.config['sel_browser'] == 'phantomjs':
             logger.info('preparing phantomjs')
             firstrun = PhantomInstall()
             phantomjs = firstrun.detect_phantomjs()
@@ -89,6 +90,19 @@ class SerpScrap():
                         provide custom path in config''')
             self.config.__setitem__('executable_path', phantomjs)
             logger.info('using ' + str(phantomjs))
+        elif self.config['executable_path'] == '' and self.config['sel_browser'] == 'chrome':
+            logger.info('preparing chromedriver')
+            firstrun = ChromeInstall()
+            chromedriver = firstrun.detect_chromedriver()
+            if chromedriver is None:
+                firstrun.download()
+                chromedriver = firstrun.detect_chromedriver()
+                if chromedriver is None:
+                    raise Exception('''
+                        chromedriver binary not found,
+                        provide custom path in config''')
+            self.config.__setitem__('executable_path', chromedriver)
+            logger.info('using ' + str(chromedriver))
 
         # cleanup screenshot dir on init
         if os.path.exists(self.config['dir_screenshot']):

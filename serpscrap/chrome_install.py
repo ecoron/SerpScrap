@@ -5,6 +5,7 @@ import tarfile
 import urllib.request
 import zipfile
 import tempfile
+import subprocess
 from scrapcore.logger import Logger
 
 logger = Logger()
@@ -58,6 +59,7 @@ class ChromeInstall():
             file_name = 'chromedriver_win32.zip'
             archive = 'zip'
         elif 'linux' in this_os:
+            subprocess.call('./install_chrome.sh')
             archive = 'zip'
             if sys.maxsize > 2 ** 32:
                 file_name = 'chromedriver_linux64.zip'

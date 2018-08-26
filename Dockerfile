@@ -9,8 +9,8 @@ RUN apt-get autoremove
 RUN apt-get autoclean
 
 RUN mkdir serpscrap
-COPY install_chrome.sh .install_chrome.sh
-RUN sh .install_chrome.sh
+# COPY install_chrome.sh .install_chrome.sh
+# RUN sh .install_chrome.sh
 
 RUN pip install SerpScrap
 

@@ -31,6 +31,7 @@ setup(
         'selenium==3.13.0',
         'cssselect==1.0.3',
     ],
+    scripts=['install_chrome.sh'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',

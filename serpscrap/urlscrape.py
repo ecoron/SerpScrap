@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """SerpScrap.UrlScrape"""
 import chardet
-import concurrent.futures
 import hashlib
 import html2text
 import json
@@ -60,11 +59,10 @@ class UrlScrape():
                 UrlScrape.results.append(result)
         except:
             try:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=self.url_threads) as executor:
-                    executor.submit(UrlScrape.fetch_url, url, cache_file)
+                result = UrlScrape.fetch_url(url, cache_file)
             except:
                 pass
-        return UrlScrape.results
+        return result
 
     @staticmethod
     def fetch_url(url, cache_file):
@@ -130,7 +128,7 @@ class UrlScrape():
                     json.dump(result, fp)
         except:
             pass
-        UrlScrape.results.append(result)
+        return result
 
 ascii_lowercase = "abcdefghijklmnopqrstuvwxyz"
 ascii_uppercase = ascii_lowercase.upper()

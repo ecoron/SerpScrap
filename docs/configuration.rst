@@ -21,12 +21,13 @@ Default configuration
 * database_name: '/tmp/serpscrap'                     - path and name sqlite db (stores scrape results)
 * dir_screenshot: '/tmp/screenshots'                  - basedir for saved screenshots
 * do_caching: True                                    - enable / disable caching
-* executable_path: '/usr/local/bin/chromedriver'      - path to chromedriver
+* executable_path: '/usr/local/bin/chromedriver'      - path to chromedriver, should detected automaticly
 * google_search_url: 'https://www.google.com/search?' - base search url, modify for other countries
 * headers:                                            - dict to customize request header, see below
 * num_pages_for_keyword: 2                            - number of result pages to scrape
 * num_results_per_page: 10                            - number results per searchengine page
 * proxy_file: ''                                      - path to proxy file, see below
+* sel_browser: 'chrome'                               - browser (chrome, phantomjs)
 * scrape_urls: False                                  - scrape urls of search results
 * screenshot: True                                    - enable screenshots for each query
 * search_engines: ['google']                          - search engines (google)
@@ -80,7 +81,7 @@ for not provided config keys the deault values still exists.
 Headers
 -------
 
-You can customize your searchengine request headers
+You can customize your searchengine request headers if you are using phantomJS
 by providing a dict in your configuration. If you
 don't customize this setting, the default is used.
 

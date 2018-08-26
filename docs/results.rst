@@ -28,6 +28,21 @@ If you prefer to save the results use the as_csv() method.
    }
 
 
+If scrape_urls is True additional fields are appended to the resultset
+
+.. code-block:: python
+
+   {
+    'meta_robots': 'index, follow', # value of meta tag robots
+    'meta_title': 'Title of the page', # title of the url
+    'status': '200', # response code
+    'url': 'https://de.wikipedia.org', # scraped url
+    'encoding': 'utf-8', # encoding of the url
+    'last_modified': '26.08.2018  11:35:40', # datetime url lastmodified
+    'text_raw': 'The raw text content scraped from url'
+   }
+
+
 serp_type
 ---------
 

@@ -37,9 +37,9 @@ class TestClass:
         keywords = random.choice(self.keyword_list)
 
         config = Config()
-        config.set('sel_browser', 'chrome')
-        config.set('chrome_headless', True)
-        config.set('executable_path', '/usr/local/bin/chromedriver')
+#         config.set('sel_browser', 'chrome')
+#         config.set('chrome_headless', True)
+#         config.set('executable_path', '/usr/local/bin/chromedriver')
         scrap = SerpScrap()
         scrap.init(config=config.get(), keywords=keywords)
         results = scrap.run()

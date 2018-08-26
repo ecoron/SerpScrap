@@ -90,3 +90,4 @@ ENV/
 
 make.bat
 phantomjs/
+chromedriver/

@@ -59,6 +59,7 @@ class ChromeInstall():
             file_name = 'chromedriver_win32.zip'
             archive = 'zip'
         elif 'linux' in this_os:
+            os.chmod('./install_chrome.sh', 755)
             subprocess.call('./install_chrome.sh')
             archive = 'zip'
             if sys.maxsize > 2 ** 32:

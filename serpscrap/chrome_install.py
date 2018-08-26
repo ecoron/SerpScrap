@@ -1,13 +1,11 @@
+from scrapcore.logger import Logger
 import os
 import platform
-import sys
-import tarfile
+import stat
+import subprocess
+import tempfile
 import urllib.request
 import zipfile
-import tempfile
-import subprocess
-import stat
-from scrapcore.logger import Logger
 
 logger = Logger()
 logger.setup_logger()
@@ -18,8 +16,7 @@ class ChromeInstall():
 
     home_dir = os.path.expanduser('chromedriver/')
     binary_win = 'chromedriver.exe'
-    binary_linux64 = 'chromedriver'
-    binary_linux32 = 'chromedriver'
+    binary_linux = 'chromedriver'
     binary_mac64 = 'chromedriver'
 
     def get_os(self):
@@ -33,14 +30,9 @@ class ChromeInstall():
                 os.chmod(self.home_dir + self.binary_win, 755)
                 return self.home_dir + self.binary_win
         elif 'linux' in this_os:
-            if sys.maxsize > 2 ** 32:
-                if os.path.isfile(self.home_dir + self.binary_linux64):
-                    os.chmod(self.home_dir + self.binary_linux64, 755)
-                    return self.home_dir + self.binary_linux64
-            else:
-                if os.path.isfile(self.home_dir + self.binary_linux32):
-                    os.chmod(self.home_dir + self.binary_linux32, 755)
-                    return self.home_dir + self.binary_linux32
+            if os.path.isfile(self.home_dir + self.binary_linux):
+                os.chmod(self.home_dir + self.binary_linux, 755)
+                return self.home_dir + self.binary_linux
         elif 'darwin' in this_os:
             if os.path.isfile(self.home_dir + self.binary_mac64):
                 os.chmod(self.home_dir + self.binary_mac64, 755)
@@ -63,13 +55,10 @@ class ChromeInstall():
             os.chmod('install_chrome.sh', 755 | stat.S_IEXEC)
             subprocess.call('install_chrome.sh')
             archive = 'zip'
-            if sys.maxsize > 2 ** 32:
-                file_name = 'chromedriver_linux64.zip'
-            else:
-                file_name = 'chromedriver_linux64.zip'
+            file_name = 'chromedriver_linux64.zip'
         elif 'darwin' in this_os:
-                file_name = 'chromedriver_mac64.zip'
-                archive = 'zip'
+            file_name = 'chromedriver_mac64.zip'
+            archive = 'zip'
         else:
             raise Exception('''
             Platform not supported.
@@ -87,10 +76,6 @@ class ChromeInstall():
         logger.info('unpacking chromedriver')
         if os.path.isdir(self.home_dir) is False:
             os.mkdir(self.home_dir)
-        if 'tar.bz2' in archive:
-            tar = tarfile.open(file_path, 'r:bz2')
-            tar.extractall(self.home_dir)
-            tar.close()
         if 'zip' in archive:
             with zipfile.ZipFile(file_path, 'r') as zip_ref:
                 zip_ref.extractall(self.home_dir)

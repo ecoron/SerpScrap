@@ -3,14 +3,10 @@
 import pprint
 import serpscrap
 
-keywords = ['sommer']
+keywords = ['herbst']
 
 config = serpscrap.Config()
-config.set('sel_browser', 'chrome')
-config.set('chrome_headless', True)
-config.set('executable_path', '/tmp/chromedriver_win32/chromedriver.exe')
-# for linux
-# config.set('executable_path', '/usr/local/bin/chromedriver')
+config.set('sel_browser', 'phantomjs')
 
 scrap = serpscrap.SerpScrap()
 scrap.init(config=config.get(), keywords=keywords)

@@ -103,7 +103,7 @@ Notes about major changes between releases
 ------
 
 * Chrome headless is now the default browser, usage of phantomJS is deprecated
-* chromedriver is installed on the first run (tested on Linux and Windows. Mac OS should also work
+* chromedriver is installed on the first run (tested on Linux and Windows. Mac OS should also work)
 * behavior of scraping raw text contents from serp urls, and of course given urls, has changed
 * run scraping of serp results and contents at once
 * csv output format changed, now it's tab separated and quoted
@@ -131,7 +131,7 @@ References
 
 SerpScrap is using `Chrome headless`_ and `lxml`_ to scrape serp results. For raw text contents of fetched URL's, it is using `beautifulsoup4`_ .
 SerpScrap also supports `PhantomJs`_ ,which is deprecated, a scriptable headless WebKit, which is installed automaticly on the first run (Linux, Windows).
-The scrapcore was based on `GoogleScraper`_ and has many changes and improvemts.
+The scrapcore was based on `GoogleScraper`_ , an outdated project, and has many changes and improvements.
 
 .. target-notes::
 

@@ -28,7 +28,7 @@ If you prefer to save the results use the as_csv() method.
    }
 
 
-If scrape_urls is True additional fields are appended to the file
+If scrape_urls is True additional fields are appended to the resultset
 
 .. code-block:: python
 

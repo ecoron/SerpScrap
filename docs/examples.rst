@@ -173,8 +173,8 @@ to the file. The saved file is tab separated and values are quoted.
    scrap.as_csv('/tmp/seo-research')
 
 
-Example serpresults and rwa text of result urls
------------------------------------------------
+Example serp results and raw text of result urls
+------------------------------------------------
 
 You can scrape serp results and fetching the raw text contents of result urls at once
 
@@ -188,7 +188,7 @@ The resulting data will have additional fields containing data from the scraped 
 
    import serpscrap
    
-   keywords = ['corfu']
+   keywords = ['blockchain']
    
    config = serpscrap.Config()
    config.set('scrape_urls', True)

@@ -15,7 +15,7 @@ Chrome headless is recommended
 ------------------------------
 
 By default SerpScrap is using the headless Chrome.
-You can also use phantomJS, but is deprecated and is also blocked very fast by the searchengine.
+You can also use phantomJS, but it is deprecated and it is also blocked very fast by the searchengine.
 We recommend to use headless Chrome.
 
 lxml

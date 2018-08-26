@@ -27,7 +27,7 @@ Default configuration
 * num_pages_for_keyword: 2                            - number of result pages to scrape
 * num_results_per_page: 10                            - number results per searchengine page
 * proxy_file: ''                                      - path to proxy file, see below
-* sel_browser: 'chrome'                               - browser (chrome, phantomJS)
+* sel_browser: 'chrome'                               - browser (chrome, phantomjs)
 * scrape_urls: False                                  - scrape urls of search results
 * screenshot: True                                    - enable screenshots for each query
 * search_engines: ['google']                          - search engines (google)

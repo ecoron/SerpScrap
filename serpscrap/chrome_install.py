@@ -27,18 +27,21 @@ class ChromeInstall():
         logger.info('detecting chromedriver')
         this_os = self.get_os().lower()
         if 'windows' in this_os:
-            print(self.home_dir + self.binary_win)
             if os.path.isfile(self.home_dir + self.binary_win):
+                os.chmod(self.home_dir + self.binary_win, 755)
                 return self.home_dir + self.binary_win
         elif 'linux' in this_os:
             if sys.maxsize > 2 ** 32:
                 if os.path.isfile(self.home_dir + self.binary_linux64):
+                    os.chmod(self.home_dir + self.binary_linux64, 755)
                     return self.home_dir + self.binary_linux64
             else:
                 if os.path.isfile(self.home_dir + self.binary_linux32):
+                    os.chmod(self.home_dir + self.binary_linux32, 755)
                     return self.home_dir + self.binary_linux32
         elif 'darwin' in this_os:
             if os.path.isfile(self.home_dir + self.binary_mac64):
+                os.chmod(self.home_dir + self.binary_mac64, 755)
                 return self.home_dir + self.binary_mac64
         else:
             raise Exception('''

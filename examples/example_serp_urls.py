@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import serpscrap
 
-keywords = ['corfu']
+keywords = ['blockchain']
 
 config = serpscrap.Config()
 config.set('scrape_urls', True)

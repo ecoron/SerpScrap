@@ -34,15 +34,15 @@ You can disable url scraping by setting the config value scrape_urls to False.
    for result in results:
        print(result)
 
-Simple example using headless Chrome (recommended)
---------------------------------------------------
+Simple example using phantomjs (deprecated)
+-------------------------------------------
 
 .. code-block:: bash
 
-   python examples\example_chrome.py
+   python examples\example_phantomjs.py
 
-It is possible to use Chrome, but we recomment PhantomJs, which is installed by default.
-For using Chrome u need to download the latest `chromedriver`_ and to set the executable_path.
+It is possible to use phantomJS, but we recomment Chrome. Depending on your choice both will be tried to install automaticly.
+For using Chrome you need the latest `chromedriver`_ and to set the executable_path.
 
 .. code-block:: bash
 
@@ -52,11 +52,7 @@ For using Chrome u need to download the latest `chromedriver`_ and to set the ex
    keywords = ['berlin']
    
    config = serpscrap.Config()
-   config.set('sel_browser', 'chrome')
-   config.set('chrome_headless', True)
-   config.set('executable_path', '/tmp/chromedriver_win32/chromedriver.exe')
-   # linux
-   # config.set('executable_path', '/usr/local/bin/chromedriver')
+   config.set('sel_browser', 'phantomjs')
    
    scrap = serpscrap.SerpScrap()
    scrap.init(config=config.get(), keywords=keywords)
@@ -80,6 +76,7 @@ custom path to the binary.
    keywords = ['seo trends', 'seo news', 'seo tools']
    
    config = serpscrap.Config()
+   config.set('sel_browser', 'phantomjs')
    # only required if phantomjs binary could not detected
    config.set('executable_path', '../phantomjs/phantomjs.exe')
    config.set('num_workers', 1)
@@ -160,7 +157,7 @@ Example as_csv()
 
 save the results for later seo analytics by using the
 as_csv() method. this method needs as argument the path
-to the file.
+to the file. The saved file is tab separated and values are quoted.
 
 .. code-block:: python
 
@@ -173,7 +170,33 @@ to the file.
    
    scrap = serpscrap.SerpScrap()
    scrap.init(config=config.get(), keywords=keywords)
-   results = scrap.as_csv('/tmp/seo-research')
+   scrap.as_csv('/tmp/seo-research')
+
+
+Example serpresults and rwa text of result urls
+-----------------------------------------------
+
+You can scrape serp results and fetching the raw text contents of result urls at once
+
+.. code-block:: bash
+
+   python examples\example_serp_urls.py
+
+The resulting data will have additional fields containing data from the scraped urls.
+
+.. code-block:: python
+
+   import serpscrap
+   
+   keywords = ['corfu']
+   
+   config = serpscrap.Config()
+   config.set('scrape_urls', True)
+   
+   scrap = serpscrap.SerpScrap()
+   scrap.init(config=config.get(), keywords=keywords)
+   scrap.as_csv('/tmp/output')
+
 
 Example related
 ---------------

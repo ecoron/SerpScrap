@@ -26,6 +26,7 @@ Default configuration
 * headers:                                            - dict to customize request header, see below
 * num_pages_for_keyword: 2                            - number of result pages to scrape
 * num_results_per_page: 10                            - number results per searchengine page
+* results_age: 'Any'                                  - specify age of results default Any, y - last year, m - last month, w - last week, d - last 24h, h - last hour
 * proxy_file: ''                                      - path to proxy file, see below
 * sel_browser: 'chrome'                               - browser (chrome, phantomjs)
 * scrape_urls: False                                  - scrape urls of search results

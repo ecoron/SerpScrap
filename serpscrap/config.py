@@ -40,6 +40,7 @@ class Config():
         'log_level': 'INFO',
         'num_workers': 1,
         'num_results_per_page': 10,
+        'results_age': 'Any',
         'sleeping_min': 20,
         'sleeping_max': 25,
         'search_type': 'normal',

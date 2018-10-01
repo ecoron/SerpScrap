@@ -114,7 +114,7 @@ class GoogleParser(Parser):
         'related_keywords': {
             'de_ip': {
                 'container': 'div.card-section',
-                'result_container': 'p._e4b',
+                'result_container': 'p.nVcaUb',
                 'keyword': 'a::text'
             }
         }

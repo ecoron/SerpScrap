@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.11.1'
+version = '0.11.2'
 
 
 setup(
@@ -28,7 +28,7 @@ setup(
         'html2text==2018.1.9',
         'lxml==4.2.3',
         'sqlalchemy==1.2.10',
-        'selenium==3.13.0',
+        'selenium==3.13.1',
         'cssselect==1.0.3',
     ],
     scripts=['install_chrome.sh'],

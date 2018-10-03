@@ -6,7 +6,7 @@
 
 # Versions
 CHROME_DRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`
-SELENIUM_STANDALONE_VERSION=3.13.0
+SELENIUM_STANDALONE_VERSION=3.13.1
 SELENIUM_SUBDIR=$(echo "$SELENIUM_STANDALONE_VERSION" | cut -d"." -f-2)
 
 # Remove existing downloads and binaries so we can start from scratch.

@@ -82,7 +82,7 @@ for not provided config keys the deault values still exists.
 Headers
 -------
 
-You can customize your searchengine request headers if you are using phantomJS
+You can customize your searchengine request headers if you are using phantomJS (deprecated)
 by providing a dict in your configuration. If you
 don't customize this setting, the default is used.
 

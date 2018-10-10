@@ -9,10 +9,10 @@ setup(
     name='SerpScrap',
     version=version,
     description='''
-    A python scraper to extract and analyze data from
-    search engine result pages and urls.
-    Extract data, like url, title, snippet
-    of results or ratings for given keywords.
+    SEO python scraper to extract data from major searchengine result pages.
+    Extract data like url, title, snippet, richsnippet and the type from searchresults for given keywords. Detect Ads or make automated screenshots.
+    You can also fetch text content of urls provided in searchresults or by your own.
+    It's usefull for SEO and business related research tasks.
     ''',
     long_description=open('README.rst').read(),
     author='Ronald Schmidt',

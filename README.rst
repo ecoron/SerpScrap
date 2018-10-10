@@ -15,9 +15,10 @@ SerpScrap
 .. image:: https://img.shields.io/docker/pulls/ecoron/serpscrap.svg
     :target: https://hub.docker.com/r/ecoron/serpscrap
 
-SEO python scraper to extract and analyze data from major search engine serps or text content of any other url.
-Extract data like title, url, type, text- and richsnippet of searchresults for given keywords. detect ads, automated screenshots.
-It might be usefull for SEO and research tasks.
+SEO python scraper to extract data from major searchengine result pages.
+Extract data like url, title, snippet, richsnippet and the type from searchresults for given keywords. Detect Ads or make automated screenshots.
+You can also fetch text content of urls provided in searchresults or by your own.
+It's usefull for SEO and business related research tasks.
 
 
 Extract these result types

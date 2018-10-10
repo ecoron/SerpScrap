@@ -147,11 +147,11 @@ class Parser():
                     css = '{container} {result_container}'.format(**selectors)
                 else:
                     css = selectors['container']
-
+                # logger.info('try {}: '.format(css))
                 results = self.dom.xpath(
                     self.css_to_xpath(css)
                 )
-
+                # logger.info('results {}: '.format(results))
                 to_extract = set(selectors.keys()) - {'container', 'result_container'}
                 selectors_to_use = {key: selectors[key] for key in to_extract if key in selectors.keys()}
 

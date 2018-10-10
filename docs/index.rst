@@ -31,6 +31,7 @@ Extract these result types
 * news - news teaser within regular search results
 * results - standard search result
 * shopping - shopping teaser within regular search results
+* videos - video teaser within regular search results
 
 For each result of a resultspage get
 ====================================
@@ -98,6 +99,14 @@ Supported OS
 Changes
 =======
 Notes about major changes between releases
+
+0.12.0
+------
+
+I recommend an update to the latest version of SerpScrap, because the searchengine has updated the markup of search result pages(serp)
+
+* Update and cleanup of selectors to fetch results
+* new resulttype videos
 
 0.11.0
 ------

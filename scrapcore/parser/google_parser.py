@@ -28,91 +28,77 @@ class GoogleParser(Parser):
 
     normal_search_selectors = {
         'results': {
-            'us_ip': {
+            'items': {
                 'container': '#center_col',
-                'result_container': 'div.g ',
-                'link': 'h3.r > a:first-of-type::attr(href)',
+                'result_container': 'div.g',
+                'link': 'div.r > a:first-of-type::attr(href)',
                 'snippet': 'div.s span.st::text',
-                'title': 'h3.r > a:first-of-type::text',
-                'visible_link': 'cite::text',
-                'rating': 'div.f.slp::text',
-                'sitelinks': 'div.osl::text'
-            },
-            'de_ip': {
-                'container': '#center_col',
-                'result_container': 'li.g ',
-                'link': 'h3.r > a:first-of-type::attr(href)',
-                'snippet': 'div.s span.st::text',
-                'title': 'h3.r > a:first-of-type::text',
+                'title': 'div.r > a:first-of-type::text',
                 'visible_link': 'cite::text',
                 'rating': 'div.f.slp::text',
                 'sitelinks': 'div.osl::text'
             },
         },
-        'news': {
-            'de_ip_news_items': {
+        'videos': {
+            'video_items': {
                 'container': 'g-inner-card',
-                'link': 'g-inner-card a::attr(href)',
-                'snippet': 'g-inner-card::text',
-                'title': 'g-inner-card div._Jvo::text',
-                'visible_link': 'g-inner-card cite::text',
+                'result_container': 'div.y8AWGd',
+                'link': 'div.y8AWGd a::attr(href)',
+                'snippet': 'div.y8AWGd::text',
+                'title': 'div.y8AWGd::text',
+                'visible_link': 'div.y8AWGd cite::text',
                 'rating': 'div.osl a:first-of-type::text',
                 'sitelinks': 'div.osl::text'
             },
-            'de_ip_othernews_items': {
-                'container': 'li.card-section',
-                'link': 'a._Dk::attr(href)',
-                'snippet': 'span._dwd::text',
-                'title': 'a._Dk::text',
-                'visible_link': 'cite::text',
+        },
+        'news': {
+            'news_items': {
+                'container': 'g-scrolling-carousel',
+                'result_container': 'div.So9e7d',
+                'link': 'div.So9e7d a::attr(href)',
+                'snippet': 'div.So9e7d::text',
+                'title': 'div.So9e7d div.Igo7ld::text',
+                'visible_link': 'div.So9e7d cite::text',
                 'rating': 'div.osl a:first-of-type::text',
                 'sitelinks': 'div.osl::text'
             },
         },
         'shopping': {
-            'de_ip_shopping_items': {
-                'container': 'div.pla-unit-container',
-                'link': 'a.pla-unit-title-link::attr(href)',
-                'snippet': 'div.pla-unit-container::text',
-                'title': 'a.pla-unit-title-link > span.rhsg4::text',
-                'visible_link': 'div._mC > span.rhsg4.a::text',
-                'rating': 'div._QD._pvi::text',
-                'sitelinks': 'div._zHp > div::text'
+            'shopping_items_main': {
+                'container': 'div.top-pla-group-inner',
+                'result_container': 'div.mnr-c.pla-unit',
+                'link': 'div.mnr-c.pla-unit a.pla-unit-title-link::attr(href)',
+                'snippet': 'div.mnr-c.pla-unit::text',
+                'title': 'div.mnr-c.pla-unit a.pla-unit-title-link > span::text',
+                'visible_link': 'a.FfKHB::attr(href)',
+                'rating': 'xxxx',
+                'sitelinks': 'a.FfKHB > span::text'
             },
-            'de_ip_shoppingtop_items': {
-                'container': 'g-scrolling-carousel div.pla-unit-container',
-                'link': 'g-scrolling-carousel div.pla-unit-container a.pla-unit-title-link::attr(href)',
-                'snippet': 'g-scrolling-carousel div.pla-unit-container::text',
-                'title': 'g-scrolling-carousel div.pla-unit-container a.pla-unit-title-link::text',
-                'visible_link': 'g-scrolling-carousel div.pla-unit-container div._mC::text',
-                'rating': 'g-scrolling-carousel div.pla-unit-container div._p2d::text',
-                'sitelinks': 'div._zHp > div::text'
+            'shopping_items_side': {
+                'container': 'div.cu-container',
+                'result_container': 'div.mnr-c.pla-unit',
+                'link': 'div.mnr-c.pla-unit a.pla-unit-title-link::attr(href)',
+                'snippet': 'div.mnr-c.pla-unit::text',
+                'title': 'div.mnr-c.pla-unit a.pla-unit-title-link > span::text',
+                'visible_link': 'a.FfKHB::attr(href)',
+                'rating': 'xxxx',
+                'sitelinks': 'a.FfKHB > span::text'
             },
         },
         'ads_main': {
-            'us_ip': {
-                'container': '#center_col',
-                'result_container': 'li.ads-ad',
-                'link': 'h3.r > a:first-of-type::attr(href)',
-                'snippet': 'div.s span.st::text',
-                'title': 'h3.r > a:first-of-type::text',
-                'visible_link': '.ads-visurl cite::text',
-                'rating': 'div._Ond _Bu span::text',
-                'sitelinks': 'div.osl::text'
-            },
-            'de_ip': {
+            'ads_item': {
                 'container': '#center_col',
                 'result_container': '.ads-ad',
-                'link': 'h3 > a:nth-child(2)::attr(href)',
+                'link': 'div.ad_cclk > a:nth-child(2)::attr(href)',
                 'snippet': 'div.ads-creative::text',
-                'title': 'h3 > a:nth-child(2)::text',
+                'title': 'div.ad_cclk > a:nth-child(2)::text',
                 'visible_link': '.ads-visurl cite::text',
-                'rating': 'div._Ond _Bu span::text',
-                'sitelinks': 'ul._wEo::text'
+                'rating': 'div.xyt0c span::text',
+                'sitelinks': 'ul.OkkX2d::text'
             }
         },
         'related_keywords': {
-            'de_ip': {
+            'related_items': {
                 'container': 'div.card-section',
                 'result_container': 'p.nVcaUb',
                 'keyword': 'a::text'

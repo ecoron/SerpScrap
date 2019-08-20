@@ -46,7 +46,7 @@ class ChromeInstall():
     def download(self):
         logger.info('downloading chromedriver')
         this_os = self.get_os().lower()
-        base_url = 'http://chromedriver.storage.googleapis.com/2.41/'
+        base_url = 'http://chromedriver.storage.googleapis.com/76.0.3809.68/'
 
         if 'windows' in this_os:
             file_name = 'chromedriver_win32.zip'

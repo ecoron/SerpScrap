@@ -5,8 +5,8 @@ python:
   - "3.6"
 # command to install dependencies
 sudo: required
-
-
+addons:
+  chrome: stable
 install:
 #  - sh install_chrome.sh
   - python setup.py -q install

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '0.12.0'
+version = '0.13.0'
 
 
 setup(
@@ -22,14 +22,14 @@ setup(
     license='MIT',
     packages=find_packages(),
     install_requires=[
-        'PySocks==1.6.8',
+        'PySocks==1.7.0',
         'chardet==3.0.4',
-        'beautifulsoup4==4.6.3',
-        'html2text==2018.1.9',
-        'lxml==4.2.3',
-        'sqlalchemy==1.2.10',
-        'selenium==3.14.1',
-        'cssselect==1.0.3',
+        'beautifulsoup4==4.8.0',
+        'html2text==2019.8.11',
+        'lxml==4.3.2',
+        'sqlalchemy==1.3.7',
+        'selenium==3.141.0',
+        'cssselect==1.1.0',
     ],
     scripts=['install_chrome.sh'],
     classifiers=[

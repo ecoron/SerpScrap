@@ -101,6 +101,12 @@ Changes
 =======
 Notes about major changes between releases
 
+0.13.0
+------
+
+* updated dependencies: chromedriver >= 76.0.3809.68 to use actual driver, sqlalchemy>=1.3.7 to solve security issues and other minor update changes
+* minor changes install_chrome.sh
+
 0.12.0
 ------
 

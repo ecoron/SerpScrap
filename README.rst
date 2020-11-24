@@ -112,7 +112,7 @@ Supported OS
 ------------
 
 * SerpScrap should work on Linux, Windows and Mac OS with installed Python >= 3.4
-* SerpScrap requieres lxml
+* SerpScrap requires lxml
 * Doesn't work on iOS
 
 Changes

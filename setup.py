@@ -26,7 +26,7 @@ setup(
         'chardet==3.0.4',
         'beautifulsoup4==4.8.0',
         'html2text==2019.8.11',
-        'lxml==4.3.2',
+        'lxml==4.6.3',
         'sqlalchemy==1.3.7',
         'selenium==3.141.0',
         'cssselect==1.1.0',

@@ -36,6 +36,8 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
+        'Programming Language :: Python :: 3.14',
     ],
-    keywords='seo scraper ad-detection scraping keywords',
+    keywords='seo, search engine, serp, scraper, web scraping, data extraction, google, automation, python, cli, docker, ad-detection, keyword research, analytics',
 )

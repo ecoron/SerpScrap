@@ -1,61 +1,59 @@
 # -*- coding: utf-8 -*-
+import logging
+from .selenium import SelScrape  # Nutzt die refactored Chrome Headless Klasse!
 
+logger = logging.getLogger(__name__)
 
-class ScrapeWorkerFactory():
-    def __init__(self, config, cache_manager=None, mode=None, proxy=None,
-                 search_engine=None, session=None, db_lock=None,
-                 cache_lock=None, scraper_search=None, captcha_lock=None,
-                 progress_queue=None, browser_num=1):
-
+class ScrapeWorkerFactory:
+    """
+    Factory zum Erzeugen von Chrome Headless Scraper-Worker-Threads.
+    """
+    def __init__(self, config, search_engine, queries, screenshot_dir=None):
         self.config = config
-        self.cache_manager = cache_manager
-        self.mode = mode
-        self.proxy = proxy
-        self.search_engine = search_engine
-        self.session = session
-        self.db_lock = db_lock
-        self.cache_lock = cache_lock
-        self.scraper_search = scraper_search
-        self.captcha_lock = captcha_lock
-        self.progress_queue = progress_queue
-        self.browser_num = browser_num
+        self.search_engine = search_engine  # z.B. 'google', 'bing'
+        self.queries = queries  # Liste von Suchanfragen
+        self.screenshot_dir = screenshot_dir
+        self.workers = []
 
-        self.jobs = dict()
+    def create_workers(self):
+        """
+        Erzeuge einen Worker für jede Suchanfrage.
+        """
+        self.workers = [
+            SelScrape(
+                config = self.config,
+                search_engine_name = self.search_engine,
+                query = q,
+                screenshot_dir = self.screenshot_dir
+            )
+            for q in self.queries
+        ]
+        logger.info(f"{len(self.workers)} Scraper-Worker für {self.search_engine} erzeugt.")
 
-    def is_suitabe(self, job):
+    def run_all(self):
+        """
+        Startet alle Scraper-Worker nacheinander und speichert die Ergebnisse als Liste.
+        """
+        results = []
+        for worker in self.workers:
+            html = worker.search()
+            # Optional: weitere Verarbeitung/Parsing hier
+            results.append(html)
+            worker.quit()
+        return results
 
-        return job['scrape_method'] == self.mode and job['search_engine'] == self.search_engine
+# ==================== Beispielnutzung ====================
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    config = {}  # Deine Konfiguration ggf. laden
+    queries = ["site:python.org web scraping", "openai gpt", "selenium tutorials"]
 
-    def add_job(self, job):
-
-        query = job['query']
-        page_number = job['page_number']
-
-        if query not in self.jobs:
-            self.jobs[query] = []
-
-        self.jobs[query].append(page_number)
-
-    def get_worker(self):
-
-        if self.jobs:
-
-            if self.mode == 'selenium':
-                from scrapcore.scraper.selenium import get_selenium_scraper_by_search_engine_name
-                return get_selenium_scraper_by_search_engine_name(
-                    self.config,
-                    self.search_engine,
-                    cache_manager=self.cache_manager,
-                    search_engine=self.search_engine,
-                    jobs=self.jobs,
-                    session=self.session,
-                    scraper_search=self.scraper_search,
-                    cache_lock=self.cache_lock,
-                    db_lock=self.db_lock,
-                    proxy=self.proxy,
-                    progress_queue=self.progress_queue,
-                    captcha_lock=self.captcha_lock,
-                    browser_num=self.browser_num,
-                )
-
-        return None
+    factory = ScrapeWorkerFactory(
+        config=config,
+        search_engine="google",
+        queries=queries,
+        screenshot_dir="./screenshots"
+    )
+    factory.create_workers()
+    results = factory.run_all()
+    logger.info(f"Scraping abgeschlossen. Ergebnisse pro Query: {len(results)}.")

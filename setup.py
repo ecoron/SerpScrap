@@ -22,6 +22,7 @@ setup(
         'beautifulsoup4>=4.12.0',
         'html2text==2025.4.15',
         'lxml>=6.0.2',
+        'bleach>=6.2.0',
         'sqlalchemy>=2.0.0',
         'selenium>=4.0.0',
         'cssselect>=1.3.0',

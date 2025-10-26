@@ -15,7 +15,7 @@ sqlalchemy = ">=2.0.0"
 selenium = ">=4.0.0"
 cssselect = ">=1.3.0"
 chromedriver-autoinstaller = ">=0.6"
-serpscrap = {file = ".", editable = true}
+bleach = ">=6.2.0"
 
 [requires]
 python_version = "3"

@@ -107,6 +107,11 @@ class Core:
         except Exception:
             pass
         if return_results:
+            # Eager loading der serps-Relation, um DetachedInstanceError zu vermeiden
+            from sqlalchemy.orm import joinedload
+            session.refresh(scraper_search)
+            session.expunge(scraper_search)
+            scraper_search = session.query(ScraperSearch).options(joinedload(ScraperSearch.serps)).get(scraper_search.id)
             return scraper_search
 
     def _run_workers(self, scrape_jobs, search_engines, proxies, num_workers, method,
@@ -129,17 +134,9 @@ class Core:
                     workers.put(
                         ScrapeWorkerFactory(
                             config,
-                            cache_manager=cache_manager,
-                            mode=method,
-                            proxy=proxy,
                             search_engine=search_engine,
-                            session=session,
-                            db_lock=db_lock,
-                            cache_lock=cache_lock,
-                            scraper_search=scraper_search,
-                            captcha_lock=captcha_lock,
-                            progress_queue=q,
-                            browser_num=num_worker
+                            queries=[],
+                            screenshot_dir=None
                         )
                     )
         for job in scrape_jobs:

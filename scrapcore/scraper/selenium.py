@@ -115,11 +115,25 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         'baiduimg': 'http://image.baidu.com/',
     }
 
-    def __init__(self, config: dict, *args, captcha_lock=None, browser_num: int = 1, **kwargs):
-        """Initialisiert eine neue SelScrape-Instanz."""
+    def __init__(self, config: dict, search_engine=None, query=None, *args, screenshot_dir=None, captcha_lock=None, browser_num: int = 1, **kwargs):
+        self.query = query
+        self.screenshot_dir = screenshot_dir
         self.search_input = None
         threading.Thread.__init__(self)
-        SearchEngineScrape.__init__(self, config, *args, **kwargs)
+        # Fix: jobs-Key muss hashbar sein (z.B. String statt dict)
+        if isinstance(query, dict):
+            # Versuche, das Keyword zu extrahieren, sonst nutze repr(query)
+            key = query.get('keyword') if 'keyword' in query else repr(query)
+        else:
+            key = query
+        jobs = {key: [1]} if key else None
+        SearchEngineScrape.__init__(
+            self,
+            config=config,
+            search_engine=search_engine,
+            jobs=jobs,
+            **kwargs
+        )
         self.browser_type = self.config.get('sel_browser', 'chrome').lower()
         self.browser_num = browser_num
         self.captcha_lock = captcha_lock
@@ -232,8 +246,8 @@ class SelScrape(SearchEngineScrape, threading.Thread):
         browser.execute("send_command", params)
 
     def _get_Chrome(self) -> bool:
-        """Initialisiert einen Chrome-Webdriver (ggf. mit Proxy und Headless)."""
         try:
+            from selenium.webdriver.chrome.service import Service
             chrome_ops = webdriver.ChromeOptions()
             if self.proxy:
                 chrome_ops = webdriver.ChromeOptions()
@@ -244,11 +258,13 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                         self.proxy.port
                     )
                 )
+                service = Service(self.config['executable_path'])
                 self.webdriver = webdriver.Chrome(
-                    executable_path=self.config['executable_path'],
-                    chrome_options=chrome_ops
+                    service=service,
+                    options=chrome_ops
                 )
-
+            else:
+                service = Service(self.config['executable_path'])
             if self.config.get('chrome_headless') is True:
                 chrome_ops.add_argument('--headless')
             chrome_ops.add_argument('--no-sandbox')
@@ -267,10 +283,9 @@ class SelScrape(SearchEngineScrape, threading.Thread):
                     randint(600, 900)
                 )
             )
-            
             self.webdriver = webdriver.Chrome(
-                executable_path=self.config['executable_path'],
-                chrome_options=chrome_ops
+                service=service,
+                options=chrome_ops
             )
             return True
         except WebDriverException as e:

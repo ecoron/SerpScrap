@@ -5,7 +5,7 @@ import re
 
 from cssselect import HTMLTranslator
 import lxml.html
-from lxml.html.clean import Cleaner
+import bleach
 
 
 logger = logging.getLogger(__name__)
@@ -148,15 +148,18 @@ class Parser:
 
     @property
     def cleaned_html(self):
-        """Return cleaned HTML with unnecessary elements removed."""
-        cleaner = Cleaner()
-        cleaner.scripts = True
-        cleaner.javascript = True
-        cleaner.comments = True
-        cleaner.style = True
-        self.dom = cleaner.clean_html(self.dom)
-        assert len(self.dom), 'The html needs to be parsed to get the cleaned html'
-        return lxml.html.tostring(self.dom)
+        """Return cleaned HTML with unnecessary elements removed using bleach."""
+        allowed_tags = bleach.sanitizer.ALLOWED_TAGS + [
+            'html', 'head', 'body', 'title', 'meta', 'div', 'span', 'p', 'a', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br', 'hr', 'strong', 'em', 'b', 'i', 'u', 'blockquote', 'pre', 'code', 'dl', 'dt', 'dd', 'sup', 'sub', 'small', 'big', 'center', 'font', 'form', 'input', 'label', 'select', 'option', 'textarea', 'button', 'fieldset', 'legend', 'iframe', 'figure', 'figcaption', 'section', 'article', 'nav', 'header', 'footer', 'aside', 'main', 'video', 'audio', 'source', 'canvas', 'svg', 'path', 'g', 'line', 'rect', 'circle', 'ellipse', 'polygon', 'polyline', 'text', 'defs', 'symbol', 'use', 'clipPath', 'filter', 'foreignObject', 'marker', 'mask', 'pattern', 'switch', 'view', 'desc', 'title', 'style', 'script', 'noscript', 'link', 'base', 'bdi', 'bdo', 'cite', 'data', 'dfn', 'kbd', 'mark', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'time', 'var', 'wbr'
+        ]
+        allowed_attributes = bleach.sanitizer.ALLOWED_ATTRIBUTES
+        cleaned = bleach.clean(
+            lxml.html.tostring(self.dom, encoding='unicode'),
+            tags=allowed_tags,
+            attributes=allowed_attributes,
+            strip=True
+        )
+        return cleaned
 
     def iter_serp_items(self):
         """Yields the key and index of any item in the serp results that has a link value."""

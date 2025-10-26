@@ -1,17 +1,18 @@
-FROM ecoron/python36-sklearn
+FROM python:3.10-slim
 MAINTAINER ecoron
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update
-RUN apt-get -y install git wget curl sudo
-RUN apt-get autoremove
-RUN apt-get autoclean
+RUN apt-get update && \
+    apt-get -y install git wget curl sudo unzip openjdk-11-jre-headless xvfb libxi6 libgconf-2-4 gnupg && \
+    apt-get autoremove -y && \
+    apt-get autoclean -y
 
-RUN mkdir serpscrap
-# COPY install_chrome.sh .install_chrome.sh
-# RUN sh .install_chrome.sh
+WORKDIR /serpscrap
+COPY scripts/install_chrome.sh ./install_chrome.sh
+RUN sh ./install_chrome.sh
 
-RUN pip install SerpScrap
+COPY . .
+RUN pip install --upgrade pip && pip install pipenv && pipenv install --deploy --system
 
-# ENTRYPOINT python
+# ENTRYPOINT ["python"]

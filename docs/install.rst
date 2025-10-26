@@ -2,50 +2,46 @@
 Install
 =======
 
-.. code-block:: python
+SerpScrap requires Python >= 3.9 and Google Chrome (with chromedriver). The recommended way to manage dependencies is with pipenv.
 
-   pip uninstall SerpScrap -y
-   pip install SerpScrap --upgrade
+.. code-block:: bash
 
-On the first run SerpScrap will try to install the required Chromedriver or PhantomJS binary on Windows and Linux instances.
-If self install doesnt work you can configure your custom path to the chromedriver or phantomjs binary.
-For Linux SerpScrap provides https://github.com/ecoron/SerpScrap/blob/master/install_chrome.sh, this should be executed automaticly on the first run.
+   pip install pipenv
+   pipenv install
 
-Chrome headless is recommended
-------------------------------
+On Linux, you must have Google Chrome installed. The provided script at scripts/install_chrome.sh can be used to install Chrome and its dependencies in Docker or on a fresh system:
 
-By default SerpScrap is using the headless Chrome.
-You can also use phantomJS, but it is deprecated and it is also blocked very fast by the searchengine.
-We recommend to use headless Chrome.
+.. code-block:: bash
+
+   sh scripts/install_chrome.sh
+
+Chromedriver is managed automatically by SerpScrap using chromedriver-autoinstaller.
+
+Chrome headless is required
+---------------------------
+
+SerpScrap only supports headless Chrome. Other browsers (e.g., PhantomJS, Firefox) are not supported.
 
 lxml
 ----
 
-lxml is required.
+lxml is required and will be installed automatically with pipenv. On Windows, you may need the lxml binary from: http://www.lfd.uci.edu/~gohlke/pythonlibs/
 
-Windows
-=======
-for windows you may need the lxml binary form here: http://www.lfd.uci.edu/~gohlke/pythonlibs/
-For your convenience here are the direct links:
-* `lxml`_
-
-In some cases you may need also `Microsoft Visual C++ Build Tools`_ installed.
+In some cases, you may also need to install Microsoft Visual C++ Build Tools.
 
 iOS
 ===
-is not supported yet
+Not supported.
 
-
-cli encoding issues
+CLI encoding issues
 -------------------
 
-To avoid encode/decode issues use this command before you start using SerpScrap in your cli.
+To avoid encoding issues in the Windows CLI, use:
 
 .. code-block:: bash
 
    chcp 65001
    set PYTHONIOENCODING=utf-8
-
 
 References
 ==========

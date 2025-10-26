@@ -18,40 +18,40 @@ SerpScrap
 .. image:: https://img.shields.io/docker/pulls/ecoron/serpscrap.svg
     :target: https://hub.docker.com/r/ecoron/serpscrap
 
-SEO python scraper to extract data from major searchengine result pages.
-Extract data like url, title, snippet, richsnippet and the type from searchresults for given keywords. Detect Ads or make automated screenshots.
-You can also fetch text content of urls provided in searchresults or by your own.
-It's usefull for SEO and business related research tasks.
+SerpScrap is a Python tool for extracting SEO data from major search engine result pages (SERPs).
+It collects URLs, titles, snippets, rich snippets, and result types for your keywords. It can also detect ads, take automated screenshots, and fetch the text content of result URLs.
 
+SerpScrap is ideal for SEO and business research tasks.
 
-Extract these result types
---------------------------
+Features
+--------
 
-* ads_main - advertisements within regular search results
-* image - result from image search
-* news - news teaser within regular search results
-* results - standard search result
-* shopping - shopping teaser within regular search results
-* videos - video teaser within regular search results
+* Extracts result types: ads_main, image, news, results, shopping, videos
+* For each result, you get: domain, rank, rich snippet, site links, snippet, title, type, url, visible url
+* Takes a screenshot of each result page
+* Optionally scrapes the text content of each result URL
+* Results can be saved as CSV for analytics
+* Supports using your own proxy list
+* Only supports Google Chrome (headless)
 
-For each result of a resultspage get
-====================================
+Quickstart Example
+------------------
 
-* domain
-* rank
-* rich snippet
-* site links
-* snippet
-* title
-* type
-* url
-* visible url
+The recommended way to use SerpScrap is with pipenv:
 
-Also get a screenshot of each result page.
-You can also scrape the text content of each result url.
-It is also possible to save the results as CSV for future analytics.
-If required you can also use your own proxylist.
+.. code-block:: bash
 
+   pip install pipenv
+   pipenv install --dev
+   pipenv run python -m serpscrap.cli --help
+
+To run a simple search:
+
+.. code-block:: bash
+
+   pipenv run python -m serpscrap.cli --keywords "example keyword"
+
+For more details, see the install and usage sections.
 
 Ressources
 ==========
@@ -99,55 +99,12 @@ Supported OS
 
 Changes
 =======
-Notes about major changes between releases
-
-0.13.0
-------
-
-* updated dependencies: chromedriver >= 76.0.3809.68 to use actual driver, sqlalchemy>=1.3.7 to solve security issues and other minor update changes
-* minor changes install_chrome.sh
-
-0.12.0
-------
-
-I recommend an update to the latest version of SerpScrap, because the searchengine has updated the markup of search result pages(serp)
-
-* Update and cleanup of selectors to fetch results
-* new resulttype videos
-
-0.11.0
-------
-
-* Chrome headless is now the default browser, usage of phantomJS is deprecated
-* chromedriver is installed on the first run (tested on Linux and Windows. Mac OS should also work)
-* behavior of scraping raw text contents from serp urls, and of course given urls, has changed
-* run scraping of serp results and contents at once
-* csv output format changed, now it's tab separated and quoted
-
-0.10.0
-------
-
-* support for headless chrome, adjusted default time between scrapes
-
-0.9.0
------
-
-* result types added (news, shopping, image)
-* Image search is supported
-
-0.8.0
------
-
-* text processing tools removed.
-* less requirements
-
+For the full changelog, see the file `CHANGELOG.md` in the repository root.
 
 References
 ==========
 
-SerpScrap is using `Chrome headless`_ and `lxml`_ to scrape serp results. For raw text contents of fetched URL's, it is using `beautifulsoup4`_ .
-SerpScrap also supports `PhantomJs`_ ,which is deprecated, a scriptable headless WebKit, which is installed automaticly on the first run (Linux, Windows).
-The scrapcore was based on `GoogleScraper`_ , an outdated project, and has many changes and improvements.
+SerpScrap is using `Chrome headless`_ and `lxml`_ to scrape serp results. For raw text contents of fetched URL's, it is using `beautifulsoup4`_ . The scrapcore was based on `GoogleScraper`_ , an outdated project, and has many changes and improvements.
 
 .. target-notes::
 
@@ -156,7 +113,5 @@ The scrapcore was based on `GoogleScraper`_ , an outdated project, and has many 
 .. _`Chrome headless`: http://chromedriver.chromium.org/
 .. _`lxml`: https://lxml.de/
 .. _`beautifulsoup4`: https://www.crummy.com/software/BeautifulSoup/
-.. _`PhantomJs`: https://github.com/ariya/phantomjs
 .. _`GoogleScraper`: https://github.com/NikolaiT/GoogleScraper
 .. _`examples`: http://serpscrap.readthedocs.io/en/latest/examples.html
-

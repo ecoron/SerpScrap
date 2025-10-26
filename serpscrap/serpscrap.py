@@ -76,19 +76,25 @@ class SerpScrap():
         else:
             self.config = Config().get()
 
-        if self.config['executable_path'] == '' and self.config['sel_browser'] == 'chrome':
-            logger.info('preparing chromedriver')
-            firstrun = ChromeInstall()
+        logger.info('preparing chromedriver')
+        firstrun = ChromeInstall()
+        chromedriver = firstrun.detect_chromedriver()
+        if chromedriver is None:
+            firstrun.download()
             chromedriver = firstrun.detect_chromedriver()
             if chromedriver is None:
-                firstrun.download()
-                chromedriver = firstrun.detect_chromedriver()
-                if chromedriver is None:
-                    raise Exception('''
-                        chromedriver binary not found,
-                        provide custom path in config''')
-            self.config.__setitem__('executable_path', chromedriver)
-            logger.info('using ' + str(chromedriver))
+                raise Exception('''
+                    chromedriver binary not found,
+                    provide custom path in config''')
+        self.config.__setitem__('executable_path', chromedriver)
+        logger.info('using ' + str(chromedriver))
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        executable_path = self.config.get('executable_path', '')
+        self.driver = webdriver.Chrome(executable_path or None, options=options)
+
 
         # cleanup screenshot dir on init
         if os.path.exists(self.config['dir_screenshot']):

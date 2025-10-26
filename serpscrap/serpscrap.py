@@ -13,7 +13,6 @@ from scrapcore.logger import Logger
 from serpscrap.config import Config
 from serpscrap.csv_writer import CsvWriter
 from serpscrap.chrome_install import ChromeInstall
-from serpscrap.phantom_install import PhantomInstall
 from serpscrap.urlscrape import UrlScrape
 
 
@@ -77,20 +76,7 @@ class SerpScrap():
         else:
             self.config = Config().get()
 
-        if self.config['executable_path'] == '' and self.config['sel_browser'] == 'phantomjs':
-            logger.info('preparing phantomjs')
-            firstrun = PhantomInstall()
-            phantomjs = firstrun.detect_phantomjs()
-            if phantomjs is None:
-                firstrun.download()
-                phantomjs = firstrun.detect_phantomjs()
-                if phantomjs is None:
-                    raise Exception('''
-                        phantomjs binary not found,
-                        provide custom path in config''')
-            self.config.__setitem__('executable_path', phantomjs)
-            logger.info('using ' + str(phantomjs))
-        elif self.config['executable_path'] == '' and self.config['sel_browser'] == 'chrome':
+        if self.config['executable_path'] == '' and self.config['sel_browser'] == 'chrome':
             logger.info('preparing chromedriver')
             firstrun = ChromeInstall()
             chromedriver = firstrun.detect_chromedriver()

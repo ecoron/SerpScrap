@@ -4,6 +4,7 @@
 SerpScrap.SerpScrap
 """
 import argparse
+import chromedriver_autoinstaller
 import os
 import pprint
 import shutil
@@ -12,9 +13,7 @@ from scrapcore.core import Core
 from scrapcore.logger import Logger
 from serpscrap.config import Config
 from serpscrap.csv_writer import CsvWriter
-from serpscrap.chrome_install import ChromeInstall
 from serpscrap.urlscrape import UrlScrape
-
 
 logger = Logger()
 logger.setup_logger()
@@ -76,18 +75,11 @@ class SerpScrap():
         else:
             self.config = Config().get()
 
-        logger.info('preparing chromedriver')
-        firstrun = ChromeInstall()
-        chromedriver = firstrun.detect_chromedriver()
-        if chromedriver is None:
-            firstrun.download()
-            chromedriver = firstrun.detect_chromedriver()
-            if chromedriver is None:
-                raise Exception('''
-                    chromedriver binary not found,
-                    provide custom path in config''')
-        self.config.__setitem__('executable_path', chromedriver)
-        logger.info('using ' + str(chromedriver))
+        import chromedriver_autoinstaller
+        chromedriver_autoinstaller.install()
+        logger.info("Verified chromedriver installation via chromedriver-autoinstaller.")
+        self.config['executable_path'] = ""  # Optional: kann entfallen, wenn webdriver.Chrome() autohandled
+
         options = webdriver.ChromeOptions()
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class GoogleParser(Parser):
-    """Parses SERP pages of the Google search engine."""
+    """Parses SERP pages of the Google search engine for normal and image search types."""
 
     search_engine = 'google'
 
@@ -121,63 +121,38 @@ class GoogleParser(Parser):
         super().__init__(*args, **kwargs)
 
     def after_parsing(self):
-        """Clean the urls.
-
-        A typical scraped results looks like the following:
-
-        '/url?q=http://www.youtube.com/user/Apple&sa=U&ei=\
-        lntiVN7JDsTfPZCMgKAO&ved=0CFQQFjAO&usg=AFQjCNGkX65O-hKLmyq1FX9HQqbb9iYn9A'
-
-        Clean with a short regex.
-        """
+        """Clean and normalize Google SERP result URLs and handle no-results logic."""
         super().after_parsing()
-
         if self.searchtype == 'normal':
-            if self.num_results > 0:
-                self.no_results = False
-            elif self.num_results <= 0:
+            self.no_results = self.num_results <= 0
+            if 'No results found for' in self.html or 'did not match any documents' in self.html:
                 self.no_results = True
-
-            if 'No results found for' in \
-               self.html or 'did not match any documents' in self.html:
-                self.no_results = True
-
-            # finally try in the snippets
-            if self.no_results is True:
+            if self.no_results:
                 for key, i in self.iter_serp_items():
-
-                    if 'snippet' in self.search_results[key][i] and self.query:
-                        if self.query.replace('"', '') in \
-                           self.search_results[key][i]['snippet']:
-                            self.no_results = False
-
+                    snippet = self.search_results[key][i].get('snippet')
+                    if snippet and self.query and self.query.replace('"', '') in snippet:
+                        self.no_results = False
         if self.searchtype == 'image':
             for key, i in self.iter_serp_items():
                 if self.search_results[key][i]:
                     meta_dict = json.loads(self.search_results[key][i]['snippet'])
                     rank = self.search_results[key][i]['rank']
-                    # logger.info(meta_dict)
                     self.search_results[key][i] = {
-                        'link': meta_dict['ou'],
-                        'snippet': meta_dict['s'],
-                        'title': meta_dict['pt'],
-                        'visible_link': meta_dict['isu'],
+                        'link': meta_dict.get('ou'),
+                        'snippet': meta_dict.get('s'),
+                        'title': meta_dict.get('pt'),
+                        'visible_link': meta_dict.get('isu'),
                         'rating': None,
                         'sitelinks': None,
                         'rank': rank
                     }
-
         clean_regexes = {
-            'normal': r'/url\?q=(?P<url>.*?)&sa=U&ei=',
-            'image': r'imgres\?imgurl=(?P<url>.*?)&'
+            'normal': r'/url\\?q=(?P<url>.*?)&sa=U&ei=',
+            'image': r'imgres\\?imgurl=(?P<url>.*?)&'
         }
-
         for key, i in self.iter_serp_items():
-            result = re.search(
-                clean_regexes[self.searchtype],
-                self.search_results[key][i]['link']
-            )
-            if result:
-                self.search_results[key][i]['link'] = unquote(
-                    result.group('url')
-                )
+            link = self.search_results[key][i].get('link')
+            if link:
+                result = re.search(clean_regexes[self.searchtype], link)
+                if result:
+                    self.search_results[key][i]['link'] = unquote(result.group('url'))

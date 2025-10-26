@@ -12,6 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 logger = logging.getLogger(__name__)
 
 class SelScrape(threading.Thread):
+    """Threaded Selenium-based headless browser scraper for search engines."""
     next_page_selectors = {
         'google': '#pnnext',
         'bing': '.sb_pagN'
@@ -25,15 +26,17 @@ class SelScrape(threading.Thread):
         'bing': 'https://www.bing.com/'
     }
 
-    def __init__(self, config, search_engine_name, query, browser_num=1):
-        threading.Thread.__init__(self)
+    def __init__(self, config: dict, search_engine_name: str, query: str, browser_num: int = 1, screenshot_dir: str = None):
+        super().__init__()
         self.config = config
         self.search_engine_name = search_engine_name
         self.query = query
         self.browser_num = browser_num
+        self.screenshot_dir = screenshot_dir
         self.webdriver = None
 
-    def _get_webdriver(self):
+    def _get_webdriver(self) -> None:
+        """Initialize a headless Chrome WebDriver instance."""
         from chromedriver_autoinstaller import install as chrome_install
         chrome_install()
         options = webdriver.ChromeOptions()
@@ -42,7 +45,8 @@ class SelScrape(threading.Thread):
         options.add_argument('--disable-dev-shm-usage')
         self.webdriver = webdriver.Chrome(options=options)
 
-    def search(self):
+    def search(self) -> str:
+        """Perform a search and return the HTML of the results page."""
         self._get_webdriver()
         url = self.normal_search_locations[self.search_engine_name]
         self.webdriver.get(url)
@@ -53,9 +57,15 @@ class SelScrape(threading.Thread):
         time.sleep(1)
         html = self.webdriver.page_source
         logger.info(f"Suchanfrage '{self.query}' auf {self.search_engine_name}.")
+        if self.screenshot_dir:
+            try:
+                self.webdriver.save_screenshot(f"{self.screenshot_dir}/screenshot_{self.search_engine_name}_{self.browser_num}.png")
+            except Exception as e:
+                logger.warning(f"Screenshot konnte nicht gespeichert werden: {e}")
         return html
 
-    def go_to_next_page(self):
+    def go_to_next_page(self) -> str:
+        """Navigate to the next page of results and return the HTML, or None if not found."""
         try:
             next_selector = self.next_page_selectors[self.search_engine_name]
             next_button = WebDriverWait(self.webdriver, 10).until(
@@ -68,6 +78,7 @@ class SelScrape(threading.Thread):
             logger.info("Keine weitere Seite gefunden.")
             return None
 
-    def quit(self):
+    def quit(self) -> None:
+        """Quit the WebDriver instance if it exists."""
         if self.webdriver:
             self.webdriver.quit()

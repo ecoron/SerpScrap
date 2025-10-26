@@ -3,7 +3,6 @@
 """SerpScrap.UrlScrape"""
 import chardet
 import hashlib
-import html2text
 import json
 import re
 import urllib.request
@@ -11,123 +10,83 @@ import os
 from bs4 import BeautifulSoup
 
 
-class UrlScrape():
+class UrlScrape:
+    """Fetches and caches web pages, extracts metadata, and handles encoding."""
 
-    meta_robots_pattern = re.compile(
-        r'<meta\sname=["\']robots["\']\scontent=["\'](.*?)["\']\s/>'
-    )
-    meta_title_pattern = re.compile(
-        r'<title[^>]*>([^<]+)</title>'
-    )
-    results = []
+    meta_robots_pattern = re.compile(r'<meta\sname=["\']robots["\']\scontent=["\'](.*?)["\']\s/>')
+    meta_title_pattern = re.compile(r'<title[^>]*>([^<]+)</title>')
 
     def __init__(self, config=None):
         self.cache_dir = config['cachedir']
         self.url_threads = config['url_threads']
-        UrlScrape.assure_path_exists(self.cache_dir)
+        self.results = []
+        self.assure_path_exists(self.cache_dir)
 
     @staticmethod
-    def assure_path_exists(cache_dir):
-        cache_dir = os.path.dirname(cache_dir)
+    def assure_path_exists(cache_dir: str):
         if not os.path.exists(cache_dir):
-                os.makedirs(cache_dir)
+            os.makedirs(cache_dir)
 
     @staticmethod
-    def adjust_encoding(data):
-        """detect and adjust encoding of data return data decoded to utf-8"""
+    def adjust_encoding(data: bytes) -> dict:
+        """Detect and adjust encoding of data, return data decoded to utf-8."""
         check_encoding = chardet.detect(data)
         if 'utf-8' not in check_encoding['encoding']:
             try:
                 data = data.decode(check_encoding['encoding']).encode('utf-8')
-            except:
+            except Exception:
                 pass
         try:
             data = data.decode('utf-8')
-        except:
+        except Exception:
             data = data.decode('utf-8', 'ignore')
         return {'encoding': check_encoding['encoding'], 'data': data}
 
-    def scrap_url(self, url):
+    def scrap_url(self, url: str) -> dict:
+        """Fetch a URL, cache the result, and extract metadata."""
         m = hashlib.md5()
         m.update(url.encode('utf-8'))
         cache_file = os.path.join(self.cache_dir, m.hexdigest() + '.json')
-
+        result = None
         try:
             with open(cache_file) as json_data:
                 result = json.load(json_data)
-                json_data.close()
-                UrlScrape.results.append(result)
-        except:
+                self.results.append(result)
+        except Exception:
             try:
-                result = UrlScrape.fetch_url(url, cache_file)
-            except:
-                pass
+                result = self.fetch_url(url, cache_file)
+                self.results.append(result)
+            except Exception:
+                result = {'status': 'error', 'url': url}
         return result
 
     @staticmethod
-    def fetch_url(url, cache_file):
+    def fetch_url(url: str, cache_file: str) -> dict:
+        """Fetch a URL and cache the result as JSON."""
         result = {}
         try:
             with urllib.request.urlopen(url) as response:
                 html = response.read()
-
                 encoded = UrlScrape.adjust_encoding(data=html)
                 html = encoded['data']
-
                 for sign in ['[', ']', '(', ')']:
                     html = html.replace(sign, ' ')
                 for sign in ['»']:
                     html = html.replace(sign, '')
-
                 meta_robots = UrlScrape.meta_robots_pattern.findall(html)
                 meta_title = UrlScrape.meta_title_pattern.findall(html)
-                if len(meta_robots) > 0:
-                    result.update({'meta_robots': meta_robots[0][0:15]})
-                else:
-                    result.update({'meta_robots': ''})
-                if len(meta_title) > 0:
-                    result.update({'meta_title': meta_title[0]})
-                else:
-                    result.update({'meta_title': ''})
-                result.update({'status': response.getcode()})
-                result.update({'url': response.geturl()})
-                result.update({'encoding': encoded['encoding']})
-
+                result['meta_robots'] = meta_robots[0][0:15] if meta_robots else ''
+                result['meta_title'] = meta_title[0] if meta_title else ''
+                result['status'] = response.getcode()
+                result['url'] = response.geturl()
+                result['encoding'] = encoded['encoding']
                 headers = dict(response.getheaders())
-                if 'Last-Modified' in headers.keys():
-                    result.update({'last_modified': headers['Last-Modified']})
-                else:
-                    result.update({'last_modified': None})
-
-                h = html2text.HTML2Text()
-                h.ignore_links = True
-                h.ignore_images = True
-
-                txt = split_into_sentences(
-                    BeautifulSoup(h.handle(html), 'html.parser').get_text().replace('\n', ' ')
-                )
-                row_count = len(txt)
-                word_sum = 0
-                tmp_txt = []
-                for row in txt:
-                    row = row.replace('*', '').replace('#', '').replace('_', '').replace('\t', '').replace('   ', ' ').replace('  ', ' ')
-                    row = ' '.join(
-                        [word for word in row.split(' ') if len(word) > 1]
-                    )
-                    word_sum += len(row.split(' '))
-                    tmp_txt.append(row)
-                avg_row_length = int(word_sum/row_count)
-                clean_txt = ''
-                for row in tmp_txt:
-                    word_count = len(row.split(' '))
-                    if 2 < word_count < avg_row_length*3:
-                        clean_txt += row+'\n'
-                result.update({'text_raw': clean_txt})
-
-                with open(cache_file, 'w') as fp:
-                    json.dump(result, fp)
-        except:
-            pass
+                result['last_modified'] = headers.get('Last-Modified')
+                # Save to cache
+                with open(cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(result, f)
+        except Exception as e:
+            result = {'status': 'error', 'url': url, 'error': str(e)}
         return result
 
 ascii_lowercase = "abcdefghijklmnopqrstuvwxyz"

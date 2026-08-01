@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added the Phase 6 plan for reproducible Read-the-Docs documentation builds and Sphinx configuration alignment.
+- Added a root-level Read the Docs version-2 build configuration, reproducible Sphinx requirements, MyST Markdown support, and warning-clean build settings.
+- Aligned the local documentation Makefile/navigation and removed the obsolete Jekyll configuration.
+- Added a dedicated CI job for the warning-as-error Sphinx HTML build.
 - Completed Phase 5 production integration for the registered multi-engine plugins, including validated readiness/capability metadata, per-engine concurrency ceilings, versioned country-aware cache identities, atomic cache writes, and explainable deterministic fusion report metadata.
 - Added documentation examples for multi-engine searches capped at four concurrent requests.
 - CLI searches now inherit all omitted option values from ``serpscrap/config.py``; ``search -k`` no longer replaces configured defaults.

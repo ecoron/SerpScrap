@@ -15,7 +15,7 @@ SerpScrap
 .. image:: https://img.shields.io/docker/pulls/ecoron/serpscrap.svg
     :target: https://hub.docker.com/r/ecoron/serpscrap
 
-SerpScrap is a Python tool for extracting structured Google search engine result pages (SERPs).
+SerpScrap is a Python tool for extracting structured search engine result pages (SERPs).
 It collects URLs, titles, snippets, rich snippets, and result types for your keywords. It can also detect ads, take automated screenshots, and fetch the text content of result URLs.
 
 SerpScrap is ideal for SEO and business research tasks.
@@ -29,7 +29,8 @@ Features
 * Optionally scrapes the text content of each result URL
 * Results are returned as JSON-compatible dictionaries and can be saved as JSON
 * Supports using your own proxy list
-* Only supports Google Chrome (headless)
+* Uses Google Chrome (headless) for browser-based capture
+* Supports configurable multi-engine searches with bounded concurrency
 
 Quickstart Example
 ------------------
@@ -52,7 +53,7 @@ For more details, see the install and usage sections.
 Ressources
 ==========
 
-See http://serpscrap.readthedocs.io/en/latest/ for documentation.
+See https://serpscrap.readthedocs.io/en/latest/ for documentation.
 
 Source is available at https://github.com/ecoron/SerpScrap
 
@@ -68,6 +69,9 @@ Contents
    docker
    examples
    ressources
+   searchengines
+   refactoring2026
+   changelog-refactoring2026
 
 
 Usage
@@ -82,7 +86,7 @@ SerpScrap in your applications
    scraper = serpscrap.SerpScrap()
    results = scraper.search(['one', 'two'])
 
-More detailes in the `examples`_ section of the documentation.
+More details are available in the :doc:`examples` section of the documentation.
 
 Supported OS
 ------------
@@ -93,7 +97,7 @@ Supported OS
 
 Changes
 =======
-For the full changelog, see the file `CHANGELOG.md` in the repository root.
+For the full changelog, see the file ``CHANGELOG.md`` in the repository root.
 
 References
 ==========
@@ -102,10 +106,8 @@ SerpScrap is using `Chrome headless`_ and `lxml`_ to scrape serp results. For ra
 
 .. target-notes::
 
-.. _`install`: http://serpscrap.readthedocs.io/en/latest/install.html
-.. _`examples`: http://serpscrap.readthedocs.io/en/latest/examples.html
-.. _`Chrome headless`: http://chromedriver.chromium.org/
+.. _`install`: https://serpscrap.readthedocs.io/en/latest/install.html
+.. _`Chrome headless`: https://chromedriver.chromium.org/
 .. _`lxml`: https://lxml.de/
 .. _`beautifulsoup4`: https://www.crummy.com/software/BeautifulSoup/
 .. _`GoogleScraper`: https://github.com/NikolaiT/GoogleScraper
-.. _`examples`: http://serpscrap.readthedocs.io/en/latest/examples.html

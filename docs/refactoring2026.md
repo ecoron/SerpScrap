@@ -1,5 +1,78 @@
 # SerpScrap Refactoring Plan 2026
 
+## Refactoring Phase 6 - Reproducible Read-the-Docs Documentation Build
+
+### Objective
+
+Make the Sphinx documentation build reproducibly on Read the Docs and locally. Add the repository-root `.readthedocs.yaml` required by the current Read the Docs platform, align `docs/conf.py`, `docs/Makefile`, the legacy `docs/_config.yml`, and documentation dependencies, and ensure the published documentation reflects the current Phase-5 API and configuration defaults.
+
+Phase 6 is documentation infrastructure work. It does not change the public search API or provider behavior. The build must remain offline, deterministic, warning-clean, and independent of Chrome, Selenium, network access, SQLite state, and live search providers.
+
+### Current State and Constraints
+
+- No `.readthedocs.yaml` exists in the repository root. Read the Docs expects this file at the top level and currently uses configuration version 2.
+- `docs/conf.py` is a legacy Sphinx quickstart configuration with `source_suffix = ['.rst', '.md']`, but the repository has no declared documentation requirements and no explicit Markdown parser dependency.
+- `docs/Makefile` is usable for local Sphinx builds but assumes the Sphinx executable is already installed and uses `docs/` as its source directory when invoked from that directory.
+- `docs/_config.yml` is a Jekyll-style theme configuration and is not a valid replacement for `.readthedocs.yaml`; its ownership and removal/retention must be decided explicitly.
+- The current documentation includes Phase-5 Markdown planning/research files and RST user documentation, so both source formats and their cross-references must be validated.
+
+### Production Principles
+
+- Read the Docs configuration is explicit, version-controlled, and pinned to a supported Ubuntu/Python/Sphinx toolchain.
+- Documentation dependencies are declared in one reproducible requirements file; documentation builds never install the full runtime stack or start browser/network services.
+- Warnings are treated as build failures in CI and on Read the Docs wherever the selected builder supports it.
+- Local `make` builds, CI builds, and Read the Docs use the same `docs/conf.py`, source directory, builder, dependency versions, and environment assumptions.
+- Legacy configuration files are either migrated, clearly documented as obsolete, or removed only after references and deployment behavior are checked.
+
+### 1. Read-the-Docs Configuration
+
+- Add a root-level `.readthedocs.yaml` using configuration `version: 2`.
+- Configure a supported Linux image and a project-supported Python version, with the selected versions documented as the Phase-6 build baseline.
+- Point the Sphinx builder at `docs/conf.py` and explicitly select the HTML builder; decide whether PDF/ePub artifacts are required and enable them only when their dependencies are verified.
+- Install the documentation requirements file through the Read the Docs `python.install.requirements` setting.
+- Decide whether the package itself must be installed for autodoc/imports; if so, use the supported package installation path without installing Chrome or launching runtime services.
+- Add YAML/schema validation coverage so malformed configuration is caught before publication.
+
+### 2. Sphinx and Source-Format Alignment
+
+- Modernize `docs/conf.py` to the current package version, stable project metadata, supported extensions, source paths, theme, static assets, and exclusion patterns.
+- Add and pin the Markdown parser needed for `.md` sources, or remove Markdown from `source_suffix` and migrate the published Markdown pages to RST after checking all links and headings.
+- Ensure `docs/refactoring2026.md`, `docs/searchengines.md`, and `docs/changelog-refactoring2026.md` are either intentionally included in the toctree or explicitly excluded from the published user documentation.
+- Resolve duplicate labels, broken internal references, missing static directories, outdated HTTP links, and stale Google-only wording exposed by a strict Sphinx build.
+- Keep the existing `docs/Makefile` as a thin local wrapper around the same Sphinx configuration used by Read the Docs, adding explicit `html`, `linkcheck`, and clean/help behavior only where useful.
+
+### 3. Documentation Dependencies and Local Workflow
+
+- Create `docs/requirements.txt` with a compatible pinned/ranged Sphinx version, Markdown parser/theme dependencies, and any extensions used by `conf.py`.
+- Document the supported local commands from the Pipenv environment, including a warning-clean HTML build and an optional link check.
+- Keep documentation dependencies separate from runtime and development lock files unless the project deliberately adopts one synchronized lock strategy.
+- Verify that local builds do not write outside `docs/_build` and do not require network access after dependencies are installed.
+
+### 4. Content and Navigation Review
+
+- Update `docs/index.rst` and the user-facing pages for current multi-engine defaults, CLI Config inheritance, the four-worker default, normalized results, partial failures, and provider-safety behavior.
+- Add navigation for configuration, results, search-engine status, refactoring notes, and changelog content according to the intended public/private documentation boundary.
+- Replace stale Read the Docs HTTP links and old package/version references with canonical HTTPS links and current project metadata.
+- Add a short contributor section explaining how to build the docs locally and how Read the Docs selects the configuration file.
+
+### 5. Verification and Operations
+
+- Run the complete offline test suite, Ruff, and a clean Sphinx HTML build with warnings treated as errors.
+- Run Sphinx link checking with network access disabled where possible; classify unavoidable external-link checks and keep them out of the default deterministic gate if necessary.
+- Build at least one additional configured artifact only if it is part of the publication contract.
+- Test the build from a clean temporary checkout or clean build directory so stale `_build` output cannot hide missing files.
+- Verify the generated output contains the new Phase-5 configuration examples and that no credentials, query contents, browser state, or cache artifacts are included.
+- Record the Read the Docs project settings and first successful remote build result in the Phase-6 changelog.
+
+### Phase 6 Acceptance Criteria
+
+- A root-level `.readthedocs.yaml` is valid, uses configuration version 2, and points to `docs/conf.py`.
+- Read the Docs can install the declared documentation dependencies and build the HTML documentation without Chrome, Selenium, network search requests, or SQLite setup.
+- The same warning-clean Sphinx build succeeds locally through the documented Makefile/Pipenv workflow and in CI.
+- All intentionally published RST and Markdown pages parse correctly, appear in the intended navigation, and have no unresolved internal references.
+- `docs/_config.yml` is either removed as obsolete or explicitly documented and verified as belonging to a separate workflow.
+- The documentation describes current Phase-5 defaults and CLI behavior, and the Phase-6 changes are recorded in both changelogs.
+
 ## Refactoring Phase 5 - Production Integration of Configurable Search-Engine Plugins
 
 ### Objective

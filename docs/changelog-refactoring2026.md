@@ -5,6 +5,17 @@ This file records the implementation work performed against
 
 ## 2026-08-01
 
+### Refactoring Phase 6 - planning
+
+- Added the Phase 6 plan for a reproducible Read-the-Docs/Sphinx build, including root-level `.readthedocs.yaml`, declared documentation dependencies, RST/Markdown alignment, legacy configuration review, strict offline verification, and current Phase-5 content/navigation checks.
+
+### Refactoring Phase 6 - implementation
+
+- Added the root-level Read the Docs version-2 configuration with a pinned Python build baseline, Sphinx builder, warning failures, and dedicated documentation requirements.
+- Added MyST Markdown support, refreshed Sphinx metadata, aligned the local Makefile with the Read the Docs builder, and included search-engine/refactoring documents in the documentation navigation.
+- Removed the unused Jekyll `_config.yml` and fixed stale Read the Docs links and duplicate documentation targets.
+- Added a dedicated CI documentation job that runs the warning-as-error HTML build on Python 3.12.
+
 ### Refactoring Phase 5 - planning
 
 - Added the Phase 5 plan for production integration of all eleven documented search-engine plugins, configurable engine selection and global/per-engine parallelism, concrete fixture-backed provider adapters, normalized JSON output, deterministic relevance fusion, cache/history migration, and provider-safe verification.

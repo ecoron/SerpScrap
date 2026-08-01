@@ -1,0 +1,16 @@
+-r requirements.lock
+build==1.5.0
+coverage==7.15.2
+iniconfig==2.3.0
+librt==0.13.0
+mypy==1.20.2
+mypy_extensions==1.1.0
+packaging==26.2
+pathspec==1.1.1
+pluggy==1.6.0
+Pygments==2.20.0
+pyproject_hooks==1.2.0
+pytest==9.1.1
+pytest-cov==7.1.0
+ruff==0.16.1
+setuptools==80.9.0

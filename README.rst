@@ -33,30 +33,37 @@ Features
 Quickstart Example (CLI)
 -----------------------
 
-The recommended way to use SerpScrap is with pipenv:
+Install SerpScrap into a virtual environment:
 
 .. code-block:: bash
 
-   pip install pipenv
-   pipenv install --dev
-   pipenv run python -m serpscrap.cli --help
+   python -m pip install .
+   serpscrap --help
 
 This will show you the available CLI options. For a simple search, try:
 
 .. code-block:: bash
 
-   pipenv run python -m serpscrap.cli --keywords "example keyword"
+   serpscrap search --keyword "example keyword"
+
+Use ``--log-level`` and ``--log-format`` before the command to control stderr
+logging independently from JSON results on stdout:
+
+.. code-block:: bash
+
+   serpscrap --log-level DEBUG --log-format json search -k "example keyword"
 
 
 Install
 -------
 
-SerpScrap requires Python >= 3.9 and Google Chrome (with chromedriver).
+SerpScrap requires Python >= 3.10 and Google Chrome. Selenium Manager resolves
+ChromeDriver automatically; controlled environments may configure explicit
+Chrome and ChromeDriver paths.
 
 .. code-block:: bash
 
-   pip install pipenv
-   pipenv install
+   python -m pip install .
 
 For more details, see the `install`_ section of the documentation.
 
@@ -94,8 +101,8 @@ To avoid encoding issues in the Windows CLI, use:
 Supported OS
 ------------
 
-* SerpScrap works on Linux, Windows, and Mac OS with Python >= 3.9
-* Requires lxml, Chrome, and chromedriver
+* SerpScrap works on Linux, Windows, and macOS with Python >= 3.10
+* Requires Google Chrome; ChromeDriver is managed by Selenium by default
 * Not supported on iOS
 
 Changes

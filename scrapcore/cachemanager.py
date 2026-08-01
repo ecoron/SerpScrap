@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 import hashlib
 import os
 import shutil
@@ -11,7 +10,7 @@ from scrapcore.database import SearchEngineResultsPage
 from scrapcore.parsing import Parsing
 
 
-class CacheManager():
+class CacheManager:
     """Manages caching"""
 
     CACHEDIR = '.serpscrap'
@@ -28,7 +27,7 @@ class CacheManager():
         if self.config.get('do_caching', True):
             cd = self.config.get('cachedir', self.CACHEDIR)
             if not os.path.exists(cd):
-                os.mkdir(cd)
+                os.makedirs(cd, exist_ok=True)
 
     def clean_cache(self):
         """Clean the caches searches."""
@@ -92,7 +91,7 @@ class CacheManager():
         ext = path.split('.')[-1]
         if ext == 'cache':
             try:
-                with open(path, 'r', encoding='utf-8') as fd:
+                with open(path, encoding='utf-8') as fd:
                     return fd.read()
             except UnicodeDecodeError as e:
                 self.logger.warning(str(e))
@@ -194,7 +193,9 @@ class CacheManager():
                         serp = self.parse_again(
                             file_name,
                             job['search_engine'],
-                            job['query']
+                            job['query'],
+                            job['scrape_method'],
+                            job['page_number'],
                         )
                     except Exception as e:
                         self.logger.error(f"Parse error for {file_name}: {e}")
@@ -216,11 +217,8 @@ class CacheManager():
             len(files),
             self.config.get('cachedir'))
         )
-        self.logger.info('''{}/{} objects have been read from the cache.
-        {} remain to get scraped.'''.format(
-            num_cached,
-            num_total,
-            num_total - num_cached)
+        self.logger.info(f'''{num_cached}/{num_total} objects have been read from the cache.
+        {num_total - num_cached} remain to get scraped.'''
         )
 
         session.add(scraper_search)
@@ -228,19 +226,25 @@ class CacheManager():
 
         return scrape_jobs
 
-    def parse_again(self, file_name, search_engine, query):
+    def parse_again(self, file_name, search_engine, query, scrape_method, page_number):
         path = os.path.join(
             self.config.get('cachedir', self.CACHEDIR),
             file_name
         )
         html = self.read_cached_file(path)
         parsing = Parsing()
-        return parsing.parse_serp(
+        serp = parsing.parse_serp(
             self.config,
             html=html,
             search_engine=search_engine,
             query=query
         )
+        serp.search_engine_name = search_engine
+        serp.scrape_method = scrape_method
+        serp.page_number = page_number
+        serp.requested_by = 'cache'
+        serp.status = 'successful'
+        return serp
 
     def get_serp_from_database(self,
                                session,

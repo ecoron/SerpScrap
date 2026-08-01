@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import csv
 import traceback
 
@@ -18,4 +17,4 @@ class CsvWriter:
                     writer.writerow(row)
         except Exception as e:
             print(traceback.format_exc())
-            raise Exception(f"Failed to write CSV: {e}")
+            raise RuntimeError(f"Failed to write CSV: {e}") from e

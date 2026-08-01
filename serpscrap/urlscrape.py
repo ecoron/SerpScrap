@@ -1,13 +1,12 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 """SerpScrap.UrlScrape"""
-import chardet
 import hashlib
 import json
+import os
 import re
 import urllib.request
-import os
-from bs4 import BeautifulSoup
+
+import chardet
 
 
 class UrlScrape:
@@ -148,7 +147,7 @@ def split_into_sentences(text):
         for x in dot_iter
         if is_sentence_ender(x.group(1))
     ]
-    spans = zip([None] + end_indices, end_indices + [None])
+    spans = zip([None] + end_indices, end_indices + [None], strict=True)
     sentences = [
         text[start:end].strip() for start, end in spans
     ]

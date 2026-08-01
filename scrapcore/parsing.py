@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 import re
 
@@ -8,7 +7,7 @@ from scrapcore.parser.google_parser import GoogleParser
 logger = logging.getLogger(__name__)
 
 
-class Parsing():
+class Parsing:
 
     def get_parser_by_url(self, url):
         """Get the appropriate parser by an search engine url."""
@@ -17,7 +16,7 @@ class Parsing():
         if re.search(r'^http[s]?://www\.google', url):
             parser = GoogleParser
         if not parser:
-            raise Exception('No parser for {}.'.format(url))
+            raise Exception(f'No parser for {url}.')
 
         return parser
 
@@ -26,7 +25,7 @@ class Parsing():
         if search_engine == 'google' or search_engine == 'googleimg':
             return GoogleParser
         else:
-            raise Exception('No such parser for "{}"'.format(search_engine))
+            raise Exception(f'No such parser for "{search_engine}"')
 
     def parse_serp(self,
                    config,

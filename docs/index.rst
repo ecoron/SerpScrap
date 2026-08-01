@@ -12,13 +12,10 @@ SerpScrap
     :target: http://serpscrap.readthedocs.io/en/latest/
     :alt: Documentation Status
 
-.. image:: https://travis-ci.org/ecoron/SerpScrap.svg?branch=master
-    :target: https://travis-ci.org/ecoron/SerpScrap
-
 .. image:: https://img.shields.io/docker/pulls/ecoron/serpscrap.svg
     :target: https://hub.docker.com/r/ecoron/serpscrap
 
-SerpScrap is a Python tool for extracting SEO data from major search engine result pages (SERPs).
+SerpScrap is a Python tool for extracting structured Google search engine result pages (SERPs).
 It collects URLs, titles, snippets, rich snippets, and result types for your keywords. It can also detect ads, take automated screenshots, and fetch the text content of result URLs.
 
 SerpScrap is ideal for SEO and business research tasks.
@@ -26,9 +23,9 @@ SerpScrap is ideal for SEO and business research tasks.
 Features
 --------
 
-* Extracts result types: ads_main, image, news, results, shopping, videos
+* Extracts organic and image search results
 * For each result, you get: domain, rank, rich snippet, site links, snippet, title, type, url, visible url
-* Takes a screenshot of each result page
+* Optionally takes a diagnostic screenshot of each result page
 * Optionally scrapes the text content of each result URL
 * Results can be saved as CSV for analytics
 * Supports using your own proxy list
@@ -37,19 +34,18 @@ Features
 Quickstart Example
 ------------------
 
-The recommended way to use SerpScrap is with pipenv:
+Install the package and inspect the CLI:
 
 .. code-block:: bash
 
-   pip install pipenv
-   pipenv install --dev
-   pipenv run python -m serpscrap.cli --help
+   python -m pip install .
+   serpscrap --help
 
 To run a simple search:
 
 .. code-block:: bash
 
-   pipenv run python -m serpscrap.cli --keywords "example keyword"
+   serpscrap search --keyword "example keyword"
 
 For more details, see the install and usage sections.
 

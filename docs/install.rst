@@ -2,51 +2,48 @@
 Install
 =======
 
-SerpScrap requires Python >= 3.9 and Google Chrome (with chromedriver). The recommended way to manage dependencies is with pipenv.
+SerpScrap requires Python 3.10 or newer and Google Chrome.
+
+Create a virtual environment and install the package:
 
 .. code-block:: bash
 
-   pip install pipenv
-   pipenv install
+   python -m venv .venv
+   .venv/bin/python -m pip install .
 
-On Linux, you must have Google Chrome installed. The provided script at scripts/install_chrome.sh can be used to install Chrome and its dependencies in Docker or on a fresh system:
+On Windows, use ``.venv\Scripts\python`` instead.
 
-.. code-block:: bash
+ChromeDriver
+------------
 
-   sh scripts/install_chrome.sh
+Selenium Manager locates or downloads a compatible ChromeDriver automatically.
+No separate driver installer is required. Controlled or offline environments can
+set ``executable_path`` and ``chrome_binary`` explicitly or use the environment
+variables ``SERPSCRAP_CHROMEDRIVER`` and ``SERPSCRAP_CHROME_BINARY``.
 
-Chromedriver is managed automatically by SerpScrap using chromedriver-autoinstaller.
+Development
+-----------
 
-Chrome headless is required
----------------------------
-
-SerpScrap only supports headless Chrome. Other browsers (e.g., PhantomJS, Firefox) are not supported.
-
-lxml
-----
-
-lxml is required and will be installed automatically with pipenv. On Windows, you may need the lxml binary from: http://www.lfd.uci.edu/~gohlke/pythonlibs/
-
-In some cases, you may also need to install Microsoft Visual C++ Build Tools.
-
-iOS
-===
-Not supported.
-
-CLI encoding issues
--------------------
-
-To avoid encoding issues in the Windows CLI, use:
+Install the exact development dependency set and the local package:
 
 .. code-block:: bash
 
-   chcp 65001
-   set PYTHONIOENCODING=utf-8
+   python -m pip install -r requirements-dev.lock
+   python -m pip install --no-deps -e .
+   python -m pytest -m "not browser"
 
-References
-==========
+Pipenv remains supported as a development frontend. The editable package in
+``Pipfile`` reads its metadata and runtime dependencies from ``pyproject.toml``:
 
-.. target-notes::
+.. code-block:: bash
 
-.. _`lxml`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml
-.. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools
+   pipenv install --dev
+   pipenv run serpscrap --help
+
+The browser smoke test is opt-in because it requires Chrome and network access:
+
+.. code-block:: bash
+
+   SERPSCRAP_RUN_BROWSER=1 python -m pytest -m browser
+
+iOS is not supported.

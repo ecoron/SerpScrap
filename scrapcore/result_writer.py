@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 """Stores SERP results in the appropriate output format."""
 import pprint
 import sys
-from scrapcore.database import Link, SERP
+
+from scrapcore.database import SERP, Link
 from scrapcore.tools import CsvStreamWriter, JsonStreamWriter
 
 

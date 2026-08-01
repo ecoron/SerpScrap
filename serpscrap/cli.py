@@ -1,21 +1,149 @@
-import argparse
-from serpscrap import SerpScrap, Config
+"""Click-based command-line interface for SerpScrap."""
 
-def main():
-    parser = argparse.ArgumentParser(description="SerpScrap CLI - Search engine scraping tool")
-    parser.add_argument('--keywords', nargs='+', required=True, help='Keywords to search for (separate by space)')
-    parser.add_argument('--scrape-urls', action='store_true', help='Also scrape the URLs found in the SERPs')
-    args = parser.parse_args()
+from __future__ import annotations
 
+import json
+import logging
+from typing import Any
+
+import click
+
+from scrapcore.scraper.browser import ChromeDriverFactory
+from serpscrap import Config, SerpScrap
+
+LOG_LEVELS = click.Choice(
+    ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
+)
+
+
+class JsonLogFormatter(logging.Formatter):
+    """Emit one compact JSON object per log record."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict[str, Any] = {
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
+class ClickLogHandler(logging.Handler):
+    """Route Python log records through Click's stderr handling."""
+
+    _serpscrap_click_handler = True
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            click.echo(self.format(record), err=True)
+        except Exception:
+            self.handleError(record)
+
+
+def configure_logging(level: str, log_format: str) -> None:
+    root = logging.getLogger()
+    root.setLevel(level.upper())
+    root.handlers = [
+        handler
+        for handler in root.handlers
+        if not getattr(handler, "_serpscrap_click_handler", False)
+    ]
+    handler = ClickLogHandler()
+    if log_format == "json":
+        handler.setFormatter(JsonLogFormatter())
+    else:
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        )
+    root.addHandler(handler)
+
+
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.option("--log-level", type=LOG_LEVELS, default="INFO", show_default=True)
+@click.option(
+    "--log-format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+)
+def main(log_level: str, log_format: str) -> None:
+    """Retrieve structured Google SERPs with headless Chrome."""
+
+    configure_logging(log_level, log_format)
+
+
+@main.command("search")
+@click.option(
+    "-k",
+    "--keyword",
+    "--keywords",
+    "keywords",
+    multiple=True,
+    required=True,
+    help="Query to run; repeat the option for multiple queries.",
+)
+@click.option("--pages", type=click.IntRange(min=1), default=1, show_default=True)
+@click.option("--workers", type=click.IntRange(min=1), default=1, show_default=True)
+@click.option("--visible", is_flag=True, help="Show the Chrome window.")
+@click.option("--screenshots", is_flag=True, help="Save diagnostic screenshots.")
+@click.option("--scrape-urls", is_flag=True, help="Also fetch parsed result pages.")
+def search(
+    keywords: tuple[str, ...],
+    pages: int,
+    workers: int,
+    visible: bool,
+    screenshots: bool,
+    scrape_urls: bool,
+) -> None:
+    """Run one or more Google search queries and write JSON results to stdout."""
+
+    logger = logging.getLogger("serpscrap.cli")
     config = Config()
-    config.set('scrape_urls', args.scrape_urls)
+    config.apply(
+        {
+            "num_pages_for_keyword": pages,
+            "num_workers": workers,
+            "chrome_headless": not visible,
+            "screenshot": screenshots,
+            "scrape_urls": scrape_urls,
+        }
+    )
+    logger.info("Starting %d query job(s) with %d worker(s)", len(keywords), workers)
+    scraper = SerpScrap()
+    try:
+        scraper.init(config=config.get(), keywords=list(keywords))
+        results = scraper.run()
+    except Exception as exc:
+        logger.exception("Search failed")
+        raise click.ClickException(str(exc)) from exc
+    logger.info("Search completed with %d parsed result(s)", len(results))
+    click.echo(json.dumps(results, ensure_ascii=False, indent=2))
 
-    scrap = SerpScrap()
-    scrap.init(config=config.get(), keywords=args.keywords)
-    results = scrap.run()
 
-    for result in results:
-        print(result)
+@main.command("browser-check")
+@click.option("--visible", is_flag=True, help="Show the Chrome window.")
+def browser_check(visible: bool) -> None:
+    """Start Chrome, print its version, and terminate it without network access."""
 
-if __name__ == '__main__':
+    logger = logging.getLogger("serpscrap.cli")
+    config = Config().get()
+    config["chrome_headless"] = not visible
+    driver = None
+    try:
+        logger.info("Starting Chrome health check")
+        driver = ChromeDriverFactory.from_config(config).create()
+        version = driver.capabilities.get("browserVersion", "unknown")
+        click.echo(f"Chrome {version}")
+        logger.info("Chrome health check completed")
+    except Exception as exc:
+        logger.exception("Chrome health check failed")
+        raise click.ClickException(str(exc)) from exc
+    finally:
+        if driver is not None:
+            driver.quit()
+
+
+if __name__ == "__main__":
     main()

@@ -41,7 +41,7 @@ Simple example using phantomjs (deprecated)
 
    python examples\example_phantomjs.py
 
-It is possible to use phantomJS, but we recomment Chrome. Depending on your choice both will be tried to install automaticly.
+SerpScrap uses Chrome. Selenium Manager locates a compatible ChromeDriver automatically.
 For using Chrome you need the latest `chromedriver`_ and to set the executable_path.
 
 .. code-block:: bash
@@ -213,4 +213,3 @@ References
 .. _`example_simple.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_simple.py
 .. _`example_related.py`: https://github.com/ecoron/SerpScrap/blob/master/examples/example_related.py
 .. _`chromedriver`: https://sites.google.com/a/chromium.org/chromedriver/downloads
-

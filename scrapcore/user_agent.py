@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import random
 
 user_agents_mobile = [

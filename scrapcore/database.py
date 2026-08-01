@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 The database schema.
 There are four entities:
@@ -10,14 +9,19 @@ There are four entities:
 import datetime
 from urllib.parse import urlparse
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey
-from sqlalchemy import Integer, String, Table
-from sqlalchemy import create_engine, UniqueConstraint
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy.orm import scoped_session
-from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    UniqueConstraint,
+    create_engine,
+)
+from sqlalchemy.orm import backref, declarative_base, relationship, scoped_session, sessionmaker
 
 Base = declarative_base()
 
@@ -114,7 +118,7 @@ class SearchEngineResultsPage(Base):
                         rating=link['rating'],
                         sitelinks=link['sitelinks']
                     )
-        for key, value in parser.related_keywords.items():
+        for _key, value in parser.related_keywords.items():
             if isinstance(value, list) and value:
                 for keyword in value:
                     keyword.setdefault('keyword', None)
@@ -280,6 +284,7 @@ def get_session(config, scoped=False, engine=None, path=None):
         bind=engine,
         autoflush=True,
         autocommit=False,
+        expire_on_commit=False,
     )
 
     if scoped:

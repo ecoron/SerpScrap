@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
 import logging
 import pprint
 import re
 
-from cssselect import HTMLTranslator
-import lxml.html
 import bleach
-
+import lxml.html
+from cssselect import HTMLTranslator
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +18,9 @@ class Parser:
     page_number_selectors = []
     search_types = []
 
-    def __init__(self, config: dict = {}, html: str = '', query: str = ''):
+    def __init__(self, config: dict | None = None, html: str = '', query: str = ''):
         """Create new Parser instance and parse all information."""
-        self.config = config
+        self.config = config or {}
         self.searchtype = self.config.get('search_type', 'normal')
         assert self.searchtype in self.search_types, (
             f'search type "{self.searchtype}" is not supported in {self.__class__.__name__}'
@@ -149,9 +147,9 @@ class Parser:
     @property
     def cleaned_html(self):
         """Return cleaned HTML with unnecessary elements removed using bleach."""
-        allowed_tags = bleach.sanitizer.ALLOWED_TAGS + [
-            'html', 'head', 'body', 'title', 'meta', 'div', 'span', 'p', 'a', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br', 'hr', 'strong', 'em', 'b', 'i', 'u', 'blockquote', 'pre', 'code', 'dl', 'dt', 'dd', 'sup', 'sub', 'small', 'big', 'center', 'font', 'form', 'input', 'label', 'select', 'option', 'textarea', 'button', 'fieldset', 'legend', 'iframe', 'figure', 'figcaption', 'section', 'article', 'nav', 'header', 'footer', 'aside', 'main', 'video', 'audio', 'source', 'canvas', 'svg', 'path', 'g', 'line', 'rect', 'circle', 'ellipse', 'polygon', 'polyline', 'text', 'defs', 'symbol', 'use', 'clipPath', 'filter', 'foreignObject', 'marker', 'mask', 'pattern', 'switch', 'view', 'desc', 'title', 'style', 'script', 'noscript', 'link', 'base', 'bdi', 'bdo', 'cite', 'data', 'dfn', 'kbd', 'mark', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'time', 'var', 'wbr'
-        ]
+        allowed_tags = set(bleach.sanitizer.ALLOWED_TAGS) | {
+            'html', 'head', 'body', 'title', 'meta', 'div', 'span', 'p', 'a', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'br', 'hr', 'strong', 'em', 'b', 'i', 'u', 'blockquote', 'pre', 'code', 'dl', 'dt', 'dd', 'sup', 'sub', 'small', 'big', 'center', 'font', 'form', 'input', 'label', 'select', 'option', 'textarea', 'button', 'fieldset', 'legend', 'iframe', 'figure', 'figcaption', 'section', 'article', 'nav', 'header', 'footer', 'aside', 'main', 'video', 'audio', 'source', 'canvas', 'svg', 'path', 'g', 'line', 'rect', 'circle', 'ellipse', 'polygon', 'polyline', 'text', 'defs', 'symbol', 'use', 'clipPath', 'filter', 'foreignObject', 'marker', 'mask', 'pattern', 'switch', 'view', 'desc', 'style', 'script', 'noscript', 'link', 'base', 'bdi', 'bdo', 'cite', 'data', 'dfn', 'kbd', 'mark', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'time', 'var', 'wbr'
+        }
         allowed_attributes = bleach.sanitizer.ALLOWED_ATTRIBUTES
         cleaned = bleach.clean(
             lxml.html.tostring(self.dom, encoding='unicode'),

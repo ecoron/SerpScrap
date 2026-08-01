@@ -1,0 +1,28 @@
+# Runtime lock generated for SerpScrap 0.15.0 on 2026-08-01.
+attrs==26.1.0
+beautifulsoup4==4.15.0
+bleach==6.4.0
+certifi==2026.7.22
+chardet==5.2.0
+click==8.4.2
+colorama==0.4.6; platform_system == "Windows"
+cssselect==1.5.0
+greenlet==3.5.4
+h11==0.16.0
+html2text==2025.4.15
+idna==3.18
+lxml==6.1.1
+outcome==1.3.0.post0
+PySocks==1.7.1
+selenium==4.46.0
+sniffio==1.3.1
+sortedcontainers==2.4.0
+soupsieve==2.9.1
+SQLAlchemy==2.0.51
+trio==0.33.0
+trio-websocket==0.12.2
+typing_extensions==4.16.0
+urllib3==2.7.0
+webencodings==0.5.1
+websocket-client==1.9.0
+wsproto==1.3.2

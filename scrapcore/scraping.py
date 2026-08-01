@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import abc
 import datetime
 import logging
@@ -42,10 +41,10 @@ def get_base_search_url_by_search_engine(config,
                                          search_engine_name,
                                          search_mode):
     """Retrieves the search engine base url for a specific search_engine."""
-    assert search_mode in SEARCH_MODES, 'search mode "{}" is not available'.format(search_mode)
+    assert search_mode in SEARCH_MODES, f'search mode "{search_mode}" is not available'
 
     specific_base_url = config.get(
-        '{}_search_url'.format(search_engine_name),
+        f'{search_engine_name}_search_url',
         None
     )
 
@@ -145,7 +144,7 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
         # the current request time
         self.requested_at = None
         # The name of the scraper
-        self.name = '[{}]'.format(self.search_engine_name) + self.__class__.__name__
+        self.name = f'[{self.search_engine_name}]' + self.__class__.__name__
 
         # How long to sleep (in seconds) after every request
         self.sleeping_min = self.config.get('sleeping_min')
@@ -179,7 +178,7 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
         Args:
             status_code: The status code of the http response.
         """
-        self.status = 'Malicious request detected: {}'.format(status_code)
+        self.status = f'Malicious request detected: {status_code}'
 
     def store(self):
         """Store the parsed data in the sqlalchemy scoped session."""
@@ -217,32 +216,17 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
 
     def keyword_info(self):
         """Print a short summary"""
-        logger.info('''
-            {thread_name} {ip} - Keyword: "{keyword}" with {num_pages} pages,
-            slept {delay} seconds before scraping. {done}/{all} already scraped
-            '''.format(
-                    thread_name=self.name,
-                    ip=self.requested_by,
-                    keyword=self.query,
-                    num_pages=self.pages_per_keyword,
-                    delay=self.current_delay,
-                    done=self.search_number,
-                    all=self.num_keywords
-                    ))
+        logger.info(f'''
+            {self.name} {self.requested_by} - Keyword: "{self.query}" with {self.pages_per_keyword} pages,
+            slept {self.current_delay} seconds before scraping. {self.search_number}/{self.num_keywords} already scraped
+            ''')
 
     def instance_creation_info(self, scraper_name):
         """Debug message whenever a scraping worker is created"""
-        logger.info('''
-        [+] {}[{}][search-type:{}][{}] using search engine "{}".
-        Num keywords={}, num pages for keyword={}
-        '''.format(
-            scraper_name,
-            self.requested_by,
-            self.search_type,
-            self.base_search_url,
-            self.search_engine_name,
-            len(self.jobs),
-            self.pages_per_keyword))
+        logger.info(f'''
+        [+] {scraper_name}[{self.requested_by}][search-type:{self.search_type}][{self.base_search_url}] using search engine "{self.search_engine_name}".
+        Num keywords={len(self.jobs)}, num pages for keyword={self.pages_per_keyword}
+        ''')
 
     def cache_results(self):
         """Caches the html for the current request."""
@@ -270,11 +254,9 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
         self.search_number += 1
 
         if not self.store():
-            logger.debug('''
-            No results to store for keyword: "{}" in search engine: {}
-            '''.format(
-                self.query,
-                self.search_engine_name)
+            logger.debug(f'''
+            No results to store for keyword: "{self.query}" in search engine: {self.search_engine_name}
+            '''
             )
 
         if self.progress_queue:
@@ -311,5 +293,5 @@ class SearchEngineScrape(metaclass=abc.ABCMeta):
                 try:
                     self.session.merge(proxy, load=True)
                     self.session.commit()
-                except:
+                except Exception:
                     pass

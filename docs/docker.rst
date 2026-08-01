@@ -2,26 +2,19 @@
 Docker
 ------
 
-You can run SerpScrap easily with Docker. The provided Dockerfile uses a modern, minimal Python 3.10 base image and installs all required dependencies, including Google Chrome and chromedriver.
-
-Build the Docker image:
+The image uses Python 3.12 and pins matching Chrome for Testing and ChromeDriver
+builds. Build it with:
 
 .. code-block:: bash
 
    docker build -t serpscrap .
 
-Run SerpScrap using the CLI inside the container:
+Run a query through the configured CLI entry point:
 
 .. code-block:: bash
 
-   docker run --rm -it serpscrap python -m serpscrap.cli --keywords "example keyword"
+   docker run --rm serpscrap search --keyword "example keyword" --pages 1
 
-To mount your own configuration or keyword files, use a volume:
-
-.. code-block:: bash
-
-   docker run --rm -v /path/to/your/config:/serpscrap/config serpscrap python -m serpscrap.cli --config /serpscrap/config/your_config.json
-
-The image is based on python:3.10-slim and is suitable for both development and production use.
-
-Docker Hub: https://hub.docker.com/r/ecoron/serpscrap/
+Mount output directories when caching, databases, or screenshots must survive
+the container. The image health check starts and closes headless Chrome without
+accessing a search engine.

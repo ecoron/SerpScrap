@@ -91,3 +91,5 @@ ENV/
 make.bat
 phantomjs/
 chromedriver/
+/.mypy_cache/
+/.pytest_cache/

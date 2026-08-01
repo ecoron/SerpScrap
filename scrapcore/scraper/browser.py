@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from random import Random
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlencode
 
 from selenium import webdriver
@@ -68,7 +68,10 @@ class ChromeIdentityProvider:
         candidates = [binary_location] if binary_location else []
         if os.name == "nt":
             try:
-                import winreg
+                # Typeshed exposes ``winreg`` only partially on non-Windows
+                # runners. Keep the platform-specific API behind an Any cast;
+                # the import is still performed only on Windows at runtime.
+                winreg = cast(Any, __import__("winreg"))
 
                 for registry_root in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
                     try:

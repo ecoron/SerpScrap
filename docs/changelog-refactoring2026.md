@@ -16,6 +16,10 @@ This file records the implementation work performed against
 - Removed the unused Jekyll `_config.yml` and fixed stale Read the Docs links and duplicate documentation targets.
 - Added a dedicated CI documentation job that runs the warning-as-error HTML build on Python 3.12.
 
+### CI compatibility fix
+
+- Isolated the Windows-only `winreg` API behind an explicit type cast so the Linux GitHub Actions mypy runner can validate the shared browser module without changing Windows runtime behavior.
+
 ### Refactoring Phase 5 - planning
 
 - Added the Phase 5 plan for production integration of all eleven documented search-engine plugins, configurable engine selection and global/per-engine parallelism, concrete fixture-backed provider adapters, normalized JSON output, deterministic relevance fusion, cache/history migration, and provider-safe verification.

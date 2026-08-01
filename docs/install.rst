@@ -38,6 +38,7 @@ Pipenv remains supported as a development frontend. The editable package in
 .. code-block:: bash
 
    pipenv install --dev
+   pipenv shell
    pipenv run serpscrap --help
 
 The browser smoke test is opt-in because it requires Chrome and network access:

@@ -71,6 +71,7 @@ class SearchApplication:
                         message=message if separator else category,
                         retryable=bool(getattr(serp, "failure_retryable", False)),
                         correlation_id=getattr(serp, "correlation_id", None),
+                        attempt_count=int(getattr(serp, "attempt_count", 1)),
                     )
                 )
                 continue
@@ -98,6 +99,13 @@ class SearchApplication:
                         "serp_visible_link": link.visible_link,
                         "serp_snippet": link.snippet,
                         "serp_sitelinks": link.sitelinks,
+                        "serp_source": getattr(link, "source", None),
+                        "serp_date": getattr(link, "published_at", None),
+                        "serp_price": getattr(link, "price", None),
+                        "serp_merchant": getattr(link, "merchant", None),
+                        "serp_duration": getattr(link, "duration", None),
+                        "serp_image_url": getattr(link, "image_url", None),
+                        "serp_thumbnail_url": getattr(link, "thumbnail_url", None),
                         "screenshot": getattr(serp, "screenshot", None),
                     }
                 )

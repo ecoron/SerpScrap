@@ -93,9 +93,10 @@ def test_application_keeps_results_and_reports_page_failure():
         "url": "https://google.example/search",
         "category": "timeout",
         "message": "page did not load",
-        "retryable": True,
-        "correlation_id": "job-1",
-    }
+            "retryable": True,
+            "correlation_id": "job-1",
+            "attempt_count": 1,
+        }
 
 
 def test_application_reports_optional_history_failure_without_losing_rows():
@@ -163,6 +164,8 @@ def test_removed_output_configuration_has_migration_error():
 def test_search_request_is_deeply_immutable_and_returns_isolated_config():
     request = SearchRequest.create("query")
 
+    assert "Chrome/" in request.settings["user_agent"]
+    assert "HeadlessChrome" not in request.settings["user_agent"]
     with pytest.raises(TypeError):
         request.settings["headers"]["Accept"] = "changed"
 

@@ -20,6 +20,7 @@ from sqlalchemy import (
     Table,
     UniqueConstraint,
     create_engine,
+    inspect,
 )
 from sqlalchemy.orm import backref, declarative_base, relationship, scoped_session, sessionmaker
 
@@ -110,7 +111,11 @@ class SearchEngineResultsPage(Base):
                         if len(tmp_snipped) > 1:
                             link['snippet'] = tmp_snipped[-1]
                     # Fill with None to prevent key errors
-                    for k in ('snippet', 'title', 'visible_link', 'rating', 'sitelinks'):
+                    for k in (
+                        'snippet', 'title', 'visible_link', 'rating', 'sitelinks',
+                        'source', 'published_at', 'price', 'merchant', 'duration',
+                        'image_url', 'thumbnail_url',
+                    ):
                         link.setdefault(k, None)
                     Link(
                         link=link['link'],
@@ -122,7 +127,14 @@ class SearchEngineResultsPage(Base):
                         serp=self,
                         link_type=key,
                         rating=link['rating'],
-                        sitelinks=link['sitelinks']
+                        sitelinks=link['sitelinks'],
+                        source=link['source'],
+                        published_at=link['published_at'],
+                        price=link['price'],
+                        merchant=link['merchant'],
+                        duration=link['duration'],
+                        image_url=link['image_url'],
+                        thumbnail_url=link['thumbnail_url'],
                     )
         for _key, value in parser.related_keywords.items():
             if isinstance(value, list) and value:
@@ -172,6 +184,13 @@ class Link(Base):
     link_type = Column(String)
     rating = Column(String)
     sitelinks = Column(String)
+    source = Column(String)
+    published_at = Column(String)
+    price = Column(String)
+    merchant = Column(String)
+    duration = Column(String)
+    image_url = Column(String)
+    thumbnail_url = Column(String)
 
     serp_id = Column(Integer, ForeignKey('serp.id'))
     serp = relationship(
@@ -277,6 +296,20 @@ def get_engine(config, path=None):
     )
 
     Base.metadata.create_all(engine)
+    existing = {column["name"] for column in inspect(engine).get_columns("link")}
+    added_columns = {
+        "source",
+        "published_at",
+        "price",
+        "merchant",
+        "duration",
+        "image_url",
+        "thumbnail_url",
+    } - existing
+    if added_columns:
+        with engine.begin() as connection:
+            for column in sorted(added_columns):
+                connection.exec_driver_sql(f'ALTER TABLE link ADD COLUMN "{column}" VARCHAR')
 
     return engine
 

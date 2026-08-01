@@ -5,6 +5,38 @@ This file records the implementation work performed against
 
 ## 2026-08-01
 
+### Refactoring Phase 3 - request identity and traffic policy
+
+- Added a central `ChromeIdentityProvider` that resolves a non-headless desktop user agent from the installed Chrome major version and otherwise uses a dated Chrome 151 fallback based on Google's July 22, 2026 early-stable desktop release, with a test-enforced 120-day maintenance window; explicit desktop Chrome overrides remain supported and validated.
+- Applied the effective identity consistently to Chrome command-line/CDP configuration and URL-enrichment `User-Agent`, `Accept`, and `Accept-Language` headers; Chrome language, viewport, and identity now come from one validated browser settings object.
+- Added validated request pacing, jitter ranges, bounded transient retries with exponential backoff, attempt counts, conservative single-worker defaults, and a thread-safe run circuit breaker shared by browser workers.
+- Preserved one Chrome session across pages of a query and retained cache-before-browser behavior. Explicit Google block/CAPTCHA, consent, and rate-limit states stop the affected job without automatic identity/proxy rotation or access-control bypass.
+- Expanded Google state classification with CAPTCHA/interstitial signatures, rate-limit text, localized empty-result signals, and precedence before parsing; routine failure/retry logs now use correlation IDs instead of query contents.
+- Extended cache representation keys with search type, language, and requested result count so incompatible SERP variants cannot collide.
+
+### Refactoring Phase 3 - Google result formats
+
+- Extended Google URL construction and validation with the `image`, `news`, `shopping`, and `videos` verticals alongside normal search and exposed the same values through CLI `--search-type`.
+- Reworked the offline Google parser into a common result assembler plus isolated specialized selectors for canonical `results`, `image`, `news`, `shopping`, and `videos` types.
+- Added mixed-SERP precedence, cross-format URL normalization/deduplication, deterministic per-type ranks, and observable warnings for unknown `data-serp-type` modules.
+- Added optional source/date, price/merchant, duration, image URL, and thumbnail URL fields to parser values, SQLite link persistence, schema upgrade handling for existing databases, and canonical public JSON rows.
+
+### Refactoring Phase 3 - URL enrichment
+
+- Replaced direct unbounded `urllib.request.urlopen()` use with an injectable pooled `HttpClient` that reuses per-origin connections, sends the effective Chrome identity, applies separate connect/read timeouts and redirect limits, accepts only HTML/XHTML, and bounds compressed and decompressed response sizes.
+- Declared urllib3 as a direct bounded runtime dependency for the pooled transport; the existing runtime lock already pins the verified urllib3 2.7.0 build.
+- Added classified DNS, TLS, timeout, network, HTTP, redirect, unsupported-content, oversized-response, and decoding failures instead of collapsing every exception into an indistinguishable error.
+- Changed URL-enrichment cache keys to include request identity and language, added explicit cache-hit metadata, and made cache writes atomic with temporary-file cleanup.
+- Retained `SerpScrap.scrap_url()` and `UrlScrape.scrap_url()` compatibility boundaries while separating transport, decoding, metadata extraction, and cache behavior for deterministic testing.
+
+### Refactoring Phase 3 - tests, documentation, and verification
+
+- Added captured mixed-SERP and image fixtures plus deterministic tests for all five documented result formats, type-specific fields, vertical query parameters, installed/fallback Chrome identity, fallback expiry, pacing, circuit breaking, retry counts, and no-retry block handling.
+- Added URL-enrichment tests for effective headers, timeout propagation, content-type and response-size rejection, classified failures, representation-aware cache separation, cache hits, and atomic temporary-file cleanup.
+- Updated configuration, result schema, examples, installation guidance, CLI help, and README for the Phase 3 request policy and search formats.
+- Verified 57 deterministic offline tests with the bundled workspace Python, Ruff with no findings, and focused mypy checks for the new browser/request and URL-enrichment modules. `pipenv` was not available on this execution host, so the same commands could not be launched through `pipenv run`; the supported `pipenv shell` and `pipenv run` workflows remain documented.
+- Built the Phase 3 source distribution and wheel successfully without build isolation; the browser/network smoke test remains opt-in and was not invoked to avoid generating an unnecessary live Google request.
+
 ### Refactoring Phase 2 - public contract and architecture
 
 - Added deeply immutable, validated `SearchRequest` values and a `SearchApplication` boundary that returns a canonical `SearchReport` without exposing ORM, session, browser, or parser objects publicly.

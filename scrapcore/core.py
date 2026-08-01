@@ -130,6 +130,7 @@ class Core:
         serp.failure_url = failure.url
         serp.failure_retryable = failure.retryable
         serp.correlation_id = failure.correlation_id
+        serp.attempt_count = failure.attempt_count
         scraper_search.serps.append(serp)
         session.add(serp)
         return serp

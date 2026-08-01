@@ -17,6 +17,13 @@ converted to strings.
            'serp_domain': 'example.com',
            'serp_rank': 1,
            'serp_rating': None,
+           'serp_source': None,
+           'serp_date': None,
+           'serp_price': None,
+           'serp_merchant': None,
+           'serp_duration': None,
+           'serp_image_url': None,
+           'serp_thumbnail_url': None,
            'serp_sitelinks': None,
            'serp_snippet': 'An example result.',
            'serp_title': 'Example',
@@ -61,17 +68,25 @@ are separate from successful rows:
    related = scraper.get_related()
 
 Each failure contains query, search engine, page, URL, category, message,
-retryability, and correlation ID. Related keywords contain ``keyword`` and
+retryability, correlation ID, and request attempt count. Categories distinguish
+blocking, consent, rate limiting, circuit breaking, timeout, WebDriver, browser
+startup, and persistence failures. Related keywords contain ``keyword`` and
 ``rank``.
 
 URL enrichment
 --------------
 
-Set ``scrape_urls=True`` to append URL metadata and raw text fields to each
-successful result dictionary.
+Set ``scrape_urls=True`` to append bounded URL-response metadata to each
+successful result dictionary. Enrichment uses the same effective desktop Chrome
+identity, explicit headers, pooled per-origin connections, separate connect/read
+timeouts, redirect/content-type/response-size limits, classified failures, and
+an identity-aware atomic cache.
 
 serp_type
 ---------
 
 The parser can return organic ``results`` and engine-specific result types such
 as ``image``, ``news``, ``shopping``, and ``videos`` when present in the SERP.
+All types retain the common fields above. News adds source/date, shopping adds
+price/merchant/rating, videos add duration/source/date, and images add image and
+thumbnail URLs where Google exposes them. Missing values remain ``None``.

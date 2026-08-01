@@ -10,7 +10,7 @@ Core settings
 -------------
 
 * ``search_engines``: currently ``['google']`` only.
-* ``search_type``: ``normal`` or ``image``.
+* ``search_type``: ``normal``, ``image``, ``news``, ``shopping``, or ``videos``.
 * ``num_pages_for_keyword``: positive page count per query.
 * ``num_results_per_page``: positive value up to 100.
 * ``num_workers``: maximum concurrent Chrome instances.
@@ -19,6 +19,17 @@ Core settings
 * ``executable_path``: optional explicit ChromeDriver executable. Empty uses Selenium Manager.
 * ``page_load_timeout``: WebDriver navigation timeout in seconds.
 * ``wait_timeout``: maximum wait for a recognizable SERP state.
+* ``user_agent``: optional explicit desktop Chrome identity. Empty resolves a
+  user agent matching the installed Chrome major version, with a maintained
+  current Chrome fallback when detection is unavailable.
+* ``request_delay_min`` and ``request_delay_max``: jittered delay range between
+  Google navigations; no delay is added before the first navigation.
+* ``request_retry_limit``: bounded retries for transient timeout/WebDriver
+  failures. Blocking, CAPTCHA, consent, and rate-limit outcomes are not retried.
+* ``request_backoff_base`` and ``request_backoff_max``: exponential retry delay
+  bounds.
+* ``block_threshold``: explicit block/rate-limit outcomes that open the shared
+  run circuit breaker and stop new navigation.
 * ``window_width`` and ``window_height``: Chrome viewport dimensions.
 * ``language``: Google ``hl`` query parameter.
 * ``screenshot``: save diagnostic screenshots; defaults to ``False``.
@@ -27,6 +38,10 @@ Core settings
 * ``store_history``: persist SQLite run history; defaults to ``True``.
 * ``database_name``: SQLite history path without the ``.db`` suffix.
 * ``scrape_urls``: fetch the text content of parsed result URLs.
+* ``url_connect_timeout`` and ``url_read_timeout``: URL-enrichment network
+  timeout settings.
+* ``url_max_redirects`` and ``url_max_response_bytes``: enrichment response
+  safety bounds.
 
 Example
 -------
@@ -62,3 +77,13 @@ line uses one of these formats:
 
 Authenticated proxies are rejected by the Chrome factory because they require
 an external extension. They are not silently started without authentication.
+
+Request policy
+--------------
+
+The defaults deliberately favor low request volume: captured-page cache hits
+are resolved before Chrome starts, each query reuses one Chrome session, and
+Google navigation starts are paced across workers. SerpScrap classifies access
+controls and returns partial failures; it does not rotate identities or bypass
+CAPTCHAs automatically. Reducing delays or increasing workers raises the chance
+that Google rejects a run.

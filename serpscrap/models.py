@@ -65,6 +65,12 @@ class SearchRequest:
             merged.apply(options)
         settings = dict(merged.get())
         settings["keywords"] = list(_queries(queries))
+        from scrapcore.scraper.browser import ChromeIdentityProvider
+
+        settings["user_agent"] = ChromeIdentityProvider().resolve(
+            settings.get("user_agent") or None,
+            settings.get("chrome_binary") or None,
+        )
         from scrapcore.validator_config import ValidatorConfig
 
         ValidatorConfig().validate(settings)
@@ -90,6 +96,7 @@ class FailureRecord:
     message: str
     retryable: bool
     correlation_id: str | None = None
+    attempt_count: int = 1
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -101,6 +108,7 @@ class FailureRecord:
             "message": self.message,
             "retryable": self.retryable,
             "correlation_id": self.correlation_id,
+            "attempt_count": self.attempt_count,
         }
 
 

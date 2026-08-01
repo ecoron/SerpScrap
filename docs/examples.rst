@@ -49,6 +49,19 @@ Image search
        search_type='image',
    )
 
+Other Google verticals
+----------------------
+
+Use ``news``, ``shopping``, or ``videos`` in the same way. Mixed normal pages
+are also classified into their actual result types.
+
+.. code-block:: python
+
+   news = serpscrap.SerpScrap().search(
+       'renewable energy',
+       search_type='news',
+   )
+
 Result URL content
 ------------------
 
@@ -78,6 +91,7 @@ saves the same JSON array locally.
 .. code-block:: bash
 
    serpscrap search -k "seo tools" -k "seo news" --pages 2
+   serpscrap search -k "renewable energy" --search-type news
    serpscrap search -k "seo tools" --output results.json --overwrite
 
 Use ``--no-cache`` or ``--no-history`` when those local artifacts are not

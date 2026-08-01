@@ -33,6 +33,7 @@ dependencies = [
   "lxml>=6.1.1,<7",
   "selenium>=4.33,<5",
   "SQLAlchemy>=2.0.51,<2.1",
+  "urllib3>=2.5,<3",
 ]
 
 [project.optional-dependencies]

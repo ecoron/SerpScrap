@@ -17,6 +17,9 @@ from scrapcore.jobs import CapturedPage, ScrapeFailure, ScrapeJob, ScrapeJobResu
 from scrapcore.scraper.browser import (
     ChromeDriverFactory,
     GoogleSearchAdapter,
+    RequestPacer,
+    RequestPolicy,
+    RunCircuitBreaker,
     screenshot_path,
 )
 
@@ -33,6 +36,14 @@ class MaliciousRequestDetected(SeleniumSearchError):
 
 class ConsentRequiredError(SeleniumSearchError):
     """A consent page prevented access to the SERP."""
+
+
+class RateLimitedError(SeleniumSearchError):
+    """Google asked the client to reduce its request rate."""
+
+
+class CircuitOpenError(SeleniumSearchError):
+    """The run stopped issuing Google requests after repeated rejections."""
 
 
 class SerpLoadTimeout(SeleniumSearchError):
@@ -58,11 +69,18 @@ class SelScrape:
         job: ScrapeJob,
         driver_factory: ChromeDriverFactory | None = None,
         adapter: GoogleSearchAdapter | None = None,
+        pacer: RequestPacer | None = None,
+        circuit_breaker: RunCircuitBreaker | None = None,
     ) -> None:
         self.config = config
         self.job = job
         self.driver_factory = driver_factory or ChromeDriverFactory.from_config(config)
         self.adapter = adapter or GoogleSearchAdapter(config)
+        self.policy = RequestPolicy.from_config(config)
+        self.pacer = pacer or RequestPacer(self.policy)
+        self.circuit_breaker = circuit_breaker or RunCircuitBreaker(
+            self.policy.block_threshold
+        )
         self.result: ScrapeJobResult | None = None
 
     def _wait_for_serp(self, driver) -> None:
@@ -93,13 +111,20 @@ class SelScrape:
         return str(path)
 
     def _failure(
-        self, page_number: int, url: str, category: str, error: Exception, retryable: bool
+        self,
+        page_number: int,
+        url: str,
+        category: str,
+        error: Exception,
+        retryable: bool,
+        attempt_count: int = 1,
     ) -> ScrapeFailure:
         logger.warning(
-            "SERP capture failed [%s] query=%r page=%s: %s",
+            "SERP capture failed [%s] correlation_id=%s page=%s attempt=%s: %s",
             category,
-            self.job.query,
+            self.job.correlation_id,
             page_number,
+            attempt_count,
             error,
         )
         return ScrapeFailure(
@@ -111,59 +136,123 @@ class SelScrape:
             message=str(error),
             retryable=retryable,
             correlation_id=self.job.correlation_id,
+            attempt_count=attempt_count,
         )
 
     def retrieve(self) -> ScrapeJobResult:
         pages: list[CapturedPage] = []
         failures: list[ScrapeFailure] = []
         driver = None
+        processed_pages: set[int] = set()
         try:
             driver = self.driver_factory.create(proxy=self.job.proxy)
             for page_number in self.job.pages:
                 url = self.adapter.build_url(
                     self.job.query, page_number, self.job.search_type
                 )
-                try:
-                    driver.get(url)
-                    self._wait_for_serp(driver)
-                    html = driver.page_source or ""
-                    state = self.adapter.classify(driver.current_url, html)
-                    if state == "blocked":
-                        raise MaliciousRequestDetected("Google rejected the request")
-                    if state == "consent_required":
-                        raise ConsentRequiredError("Google consent is required")
-                    screenshot = self._save_screenshot(driver, page_number)
-                    pages.append(
-                        CapturedPage(
-                            query=self.job.query,
-                            search_engine=self.job.search_engine,
-                            page_number=page_number,
-                            url=driver.current_url,
-                            html=html,
-                            requested_at=datetime.now(timezone.utc),
-                            requested_by=(
-                                f"{self.job.proxy.host}:{self.job.proxy.port}"
-                                if self.job.proxy
-                                else "localhost"
-                            ),
-                            screenshot=screenshot,
+                if self.circuit_breaker.open:
+                    failures.append(
+                        self._failure(
+                            page_number,
+                            url,
+                            "circuit_open",
+                            SeleniumSearchError("Google request circuit breaker is open"),
+                            False,
                         )
                     )
-                except MaliciousRequestDetected as exc:
-                    failures.append(self._failure(page_number, url, "blocked", exc, False))
+                    processed_pages.add(page_number)
                     break
-                except ConsentRequiredError as exc:
-                    failures.append(
-                        self._failure(page_number, url, "consent_required", exc, False)
-                    )
+
+                stop_job = False
+                for attempt in range(1, self.policy.retry_limit + 2):
+                    try:
+                        self.pacer.wait()
+                        if self.circuit_breaker.open:
+                            raise CircuitOpenError("Google request circuit breaker is open")
+                        driver.get(url)
+                        self._wait_for_serp(driver)
+                        html = driver.page_source or ""
+                        state = self.adapter.classify(driver.current_url, html)
+                        if state == "blocked":
+                            raise MaliciousRequestDetected("Google rejected the request")
+                        if state == "consent_required":
+                            raise ConsentRequiredError("Google consent is required")
+                        if state == "rate_limited":
+                            raise RateLimitedError("Google requested a lower request rate")
+                        screenshot = self._save_screenshot(driver, page_number)
+                        pages.append(
+                            CapturedPage(
+                                query=self.job.query,
+                                search_engine=self.job.search_engine,
+                                page_number=page_number,
+                                url=driver.current_url,
+                                html=html,
+                                requested_at=datetime.now(timezone.utc),
+                                requested_by=(
+                                    f"{self.job.proxy.host}:{self.job.proxy.port}"
+                                    if self.job.proxy
+                                    else "localhost"
+                                ),
+                                screenshot=screenshot,
+                            )
+                        )
+                        processed_pages.add(page_number)
+                        break
+                    except MaliciousRequestDetected as exc:
+                        self.circuit_breaker.record_block()
+                        failures.append(
+                            self._failure(page_number, url, "blocked", exc, False, attempt)
+                        )
+                        processed_pages.add(page_number)
+                        stop_job = True
+                        break
+                    except ConsentRequiredError as exc:
+                        failures.append(
+                            self._failure(
+                                page_number, url, "consent_required", exc, False, attempt
+                            )
+                        )
+                        processed_pages.add(page_number)
+                        stop_job = True
+                        break
+                    except RateLimitedError as exc:
+                        self.circuit_breaker.record_block()
+                        failures.append(
+                            self._failure(
+                                page_number, url, "rate_limited", exc, True, attempt
+                            )
+                        )
+                        processed_pages.add(page_number)
+                        stop_job = True
+                        break
+                    except CircuitOpenError as exc:
+                        failures.append(
+                            self._failure(page_number, url, "circuit_open", exc, False, attempt)
+                        )
+                        processed_pages.add(page_number)
+                        stop_job = True
+                        break
+                    except (SerpLoadTimeout, WebDriverException) as exc:
+                        category = "timeout" if isinstance(exc, SerpLoadTimeout) else "webdriver"
+                        if attempt <= self.policy.retry_limit:
+                            logger.info(
+                                "Retrying SERP capture correlation_id=%s page=%s attempt=%s",
+                                self.job.correlation_id,
+                                page_number,
+                                attempt,
+                            )
+                            self.pacer.backoff(attempt)
+                            continue
+                        self._save_screenshot(driver, page_number)
+                        failures.append(
+                            self._failure(page_number, url, category, exc, True, attempt)
+                        )
+                        processed_pages.add(page_number)
+                        break
+                if stop_job:
                     break
-                except SerpLoadTimeout as exc:
-                    self._save_screenshot(driver, page_number)
-                    failures.append(self._failure(page_number, url, "timeout", exc, True))
-                except WebDriverException as exc:
-                    failures.append(self._failure(page_number, url, "webdriver", exc, True))
         except Exception as exc:
-            pending_pages = self.job.pages[len(pages) + len(failures) :]
+            pending_pages = tuple(page for page in self.job.pages if page not in processed_pages)
             if not pending_pages:
                 pending_pages = self.job.pages[:1]
             for page_number in pending_pages:

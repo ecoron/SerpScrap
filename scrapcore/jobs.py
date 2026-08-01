@@ -46,6 +46,7 @@ class ScrapeFailure:
     message: str
     retryable: bool
     correlation_id: str | None = None
+    attempt_count: int = 1
 
 
 @dataclass(frozen=True, slots=True)

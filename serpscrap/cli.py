@@ -86,6 +86,12 @@ def main(log_level: str, log_format: str) -> None:
 )
 @click.option("--pages", type=click.IntRange(min=1), default=1, show_default=True)
 @click.option("--workers", type=click.IntRange(min=1), default=1, show_default=True)
+@click.option(
+    "--search-type",
+    type=click.Choice(["normal", "image", "news", "shopping", "videos"]),
+    default="normal",
+    show_default=True,
+)
 @click.option("--visible", is_flag=True, help="Show the Chrome window.")
 @click.option("--screenshots", is_flag=True, help="Save diagnostic screenshots.")
 @click.option("--scrape-urls", is_flag=True, help="Also fetch parsed result pages.")
@@ -101,6 +107,7 @@ def search(
     keywords: tuple[str, ...],
     pages: int,
     workers: int,
+    search_type: str,
     visible: bool,
     screenshots: bool,
     scrape_urls: bool,
@@ -117,6 +124,7 @@ def search(
         {
             "num_pages_for_keyword": pages,
             "num_workers": workers,
+            "search_type": search_type,
             "chrome_headless": not visible,
             "screenshot": screenshots,
             "scrape_urls": scrape_urls,
@@ -138,9 +146,9 @@ def search(
         raise click.ClickException(str(exc)) from exc
     for failure in scraper.get_failures():
         logger.warning(
-            "Partial failure [%s] query=%r page=%s retryable=%s: %s",
+            "Partial failure [%s] correlation_id=%s page=%s retryable=%s: %s",
             failure["category"],
-            failure["query"],
+            failure["correlation_id"],
             failure["page_number"],
             failure["retryable"],
             failure["message"],

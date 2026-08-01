@@ -34,3 +34,18 @@ def test_validator_rejects_unsupported_engine():
 def test_validator_accepts_default_config():
     ValidatorConfig().validate(Config().get())
 
+
+@pytest.mark.parametrize("search_type", ["normal", "image", "news", "shopping", "videos"])
+def test_validator_accepts_documented_google_search_types(search_type):
+    config = Config().get()
+    config["search_type"] = search_type
+
+    ValidatorConfig().validate(config)
+
+
+def test_validator_rejects_invalid_request_policy():
+    config = Config().get()
+    config.update({"request_delay_min": 3, "request_delay_max": 1})
+
+    with pytest.raises(ConfigurationError, match="delay range"):
+        ValidatorConfig().validate(config)

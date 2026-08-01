@@ -6,6 +6,7 @@ from scrapcore.jobs import CapturedPage, ScrapeJobResult
 from serpscrap.config import Config
 
 FIXTURE = Path(__file__).parent / "fixtures" / "google_normal.html"
+MIXED_FIXTURE = Path(__file__).parent / "fixtures" / "google_mixed.html"
 
 
 class FixtureWorkerFactory:
@@ -70,6 +71,28 @@ def test_core_reuses_cached_result_without_browser(tmp_path):
     assert len(cached_search.serps) == 1
     assert cached_search.serps[0].page_number == 1
     assert cached_search.serps[0].search_engine_name == "google"
+
+
+def test_core_persists_type_specific_result_fields(tmp_path):
+    config = Config().get()
+    config.update(
+        {
+            "keywords": ["mixed query"],
+            "database_name": str(tmp_path / "serpscrap"),
+            "cachedir": str(tmp_path / "cache"),
+            "do_caching": False,
+            "store_history": False,
+        }
+    )
+
+    search = Core(
+        worker_factory=FixtureWorkerFactory(MIXED_FIXTURE.read_text(encoding="utf-8"))
+    ).run(config)
+    links = {link.link_type: link for link in search.serps[0].links}
+
+    assert links["news"].source == "Example News"
+    assert links["shopping"].price == "EUR 19.99"
+    assert links["videos"].duration == "03:21"
 
 
 def test_core_can_disable_persistent_sqlite_history(tmp_path):

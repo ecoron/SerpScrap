@@ -48,7 +48,17 @@ def test_search_command_passes_json_output_options(monkeypatch, tmp_path):
 
     result = CliRunner().invoke(
         main,
-        ["search", "-k", "one", "--output", str(target), "--overwrite", "--no-history"],
+        [
+            "search",
+            "-k",
+            "one",
+            "--search-type",
+            "news",
+            "--output",
+            str(target),
+            "--overwrite",
+            "--no-history",
+        ],
     )
 
     assert result.exit_code == 0
@@ -57,3 +67,4 @@ def test_search_command_passes_json_output_options(monkeypatch, tmp_path):
     assert called["output"] == str(target)
     assert called["overwrite"] is True
     assert called["config"].get()["store_history"] is False
+    assert called["config"].get()["search_type"] == "news"

@@ -1,6 +1,6 @@
 """Validation for the public dictionary configuration."""
 
-from scrapcore.scraper.browser import BrowserSettings
+from scrapcore.scraper.browser import BrowserSettings, RequestPolicy
 from serpscrap.exceptions import ConfigurationError
 
 
@@ -23,8 +23,11 @@ class ValidatorConfig:
             raise ConfigurationError("Only the selenium scrape method is supported")
         if config.get("sel_browser") != "chrome":
             raise ConfigurationError("Only Chrome is supported")
-        if config.get("search_type") not in {"normal", "image"}:
-            raise ConfigurationError("search_type must be 'normal' or 'image'")
+        search_types = {"normal", "image", "news", "shopping", "videos"}
+        if config.get("search_type") not in search_types:
+            raise ConfigurationError(
+                "search_type must be one of: normal, image, news, shopping, videos"
+            )
 
         engines = config.get("search_engines")
         if isinstance(engines, str):
@@ -51,5 +54,19 @@ class ValidatorConfig:
 
         try:
             BrowserSettings.from_config(config)
+            RequestPolicy.from_config(config)
         except (TypeError, ValueError) as exc:
             raise ConfigurationError(str(exc)) from exc
+
+        for key in (
+            "url_connect_timeout",
+            "url_read_timeout",
+            "url_max_redirects",
+            "url_max_response_bytes",
+        ):
+            try:
+                numeric_value = float(config.get(key, 0))
+            except (TypeError, ValueError) as exc:
+                raise ConfigurationError(f"{key} must be numeric") from exc
+            if numeric_value <= 0:
+                raise ConfigurationError(f"{key} must be positive")

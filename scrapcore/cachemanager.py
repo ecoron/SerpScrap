@@ -53,7 +53,15 @@ class CacheManager:
                          scrape_mode,
                          page_number):
         """Make a unique file name from the search engine search request."""
-        unique = [keyword, search_engine, scrape_mode, page_number]
+        unique = [
+            keyword,
+            search_engine,
+            scrape_mode,
+            page_number,
+            self.config.get('search_type', 'normal'),
+            self.config.get('language', 'en'),
+            int(self.config.get('num_results_per_page', 10)),
+        ]
         sha = hashlib.sha256()
         sha.update(b''.join(str(s).encode() for s in unique))
 

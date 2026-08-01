@@ -1,5 +1,102 @@
 # SerpScrap Refactoring Plan 2026
 
+## Refactoring Phase 3 - Resilient Google Requests and Complete SERP Formats
+
+### Objective
+
+Harden the Google request and scraping path so normal use does not trigger avoidable blocking through stale browser identity, bursty traffic, inconsistent request state, or unnecessary repeat navigation. Use a current desktop Google Chrome user agent consistently for Chrome-driven SERP retrieval and HTTP URL enrichment, while keeping explicit overrides possible. Extend capture and parsing to cover every search-result format documented in `docs/results.rst`: organic `results`, `image`, `news`, `shopping`, and `videos`. CAPTCHA and other Google access controls must be detected and reported, never bypassed automatically.
+
+### Request and Scraping Principles
+
+- Present one internally consistent Chrome identity: user agent, browser version, language, viewport, and request headers must not contradict each other.
+- Prefer a user agent derived from the installed current Chrome version; retain a centrally maintained, tested current stable desktop Chrome fallback instead of the stale random lists in `scrapcore/user_agent.py`.
+- Reduce avoidable request volume through caching, request deduplication, controlled pagination, and reuse of one browser session per scrape job.
+- Apply bounded concurrency and configurable pacing with jitter between Google navigations. Defaults must favor reliability over maximum throughput and remain deterministic in tests through injected clocks and randomness.
+- Retry only failures classified as transient, with bounded exponential backoff and server-provided delay hints where available. Never retry CAPTCHA, consent, or explicit blocking in a tight loop, rotate identities automatically, or claim that blocking can be prevented completely.
+- Keep request policy, Google navigation, HTML capture, response classification, parsing, and URL enrichment separate so each can be verified offline.
+- Treat documented result types as a public contract with stable names and a shared base schema, not as incidental selector matches.
+
+### Target Request and Result Contract
+
+- Introduce a validated request-policy value containing user agent, locale, timeouts, pacing range, retry limit, backoff bounds, concurrency limit, and proxy policy.
+- Resolve the effective user agent once per request. By default it must be a current desktop Chrome user agent matching the installed Chrome major version; an explicit `user_agent` remains supported and is recorded in diagnostic metadata without leaking it into result rows.
+- Apply the effective user agent and compatible `Accept`, `Accept-Language`, and navigation headers to both Selenium Chrome options and HTTP URL-enrichment requests.
+- Keep Google query URLs deterministic and correctly encoded. Validate page offsets and the vertical-specific parameters used for normal, image, news, shopping, and video retrieval.
+- Preserve the canonical Phase 2 `list[dict]` output. Every row keeps the documented common fields and uses exactly one stable `serp_type`: `results`, `image`, `news`, `shopping`, or `videos`; type-specific values are nullable and JSON-compatible.
+- Define typed outcomes for success, empty results, consent required, CAPTCHA/block, rate limiting, timeout, network failure, malformed response, and parser failure. Include retryability and attempted-request count in structured failures.
+
+### 1. Centralize Browser and HTTP Request Identity
+
+- Replace implicit or random user-agent selection with one `ChromeIdentityProvider` used by the composition root, Chrome driver factory, and URL-enrichment client.
+- Detect the installed Chrome product version without launching an extra browser where the platform exposes it, build the corresponding desktop Chrome user agent, and validate that it contains a supported non-headless Chrome version token.
+- Provide a centrally defined stable Chrome fallback whose freshness policy and update procedure are documented and covered by a test that fails when the fallback exceeds the agreed maintenance window.
+- Continue to accept an explicit user-agent override for controlled environments, but validate blank, malformed, mobile, and browser/version-inconsistent values with actionable errors.
+- Replace direct `urllib.request.urlopen()` calls with an injectable HTTP client that builds an explicit `Request`, applies the effective headers and timeout, follows a documented redirect policy, bounds response size, and always closes the response.
+- Remove `scrapcore/user_agent.py` after all consumers use the centralized identity provider and compatibility tests confirm that no public behavior depends on its random lists.
+
+### 2. Add Responsible Request Pacing and Session Reuse
+
+- Reuse one Chrome session for all pages of a scrape job and keep cookies, consent state, locale, and identity stable throughout that job.
+- Add a configurable delay range with jitter before subsequent Google navigations, plus a longer bounded backoff after transient rate or network failures. The first request must not incur an unnecessary delay.
+- Set conservative defaults for Google worker concurrency and prevent multiple workers from issuing simultaneous requests for the same query, page, search type, locale, and result count.
+- Consult the captured-page cache before acquiring a rate-limit slot or starting Chrome, so cache hits produce no Google traffic.
+- Stop the affected job immediately when blocking, CAPTCHA, or mandatory consent is detected. Preserve prior pages, emit a structured failure, and do not rotate proxies, user agents, or sessions automatically.
+- Expose pacing and retry decisions through structured debug logs with correlation IDs, while excluding query contents, proxy credentials, cookies, and full response bodies from routine logs.
+
+### 3. Strengthen Google Response Classification
+
+- Expand classification beyond URL fragments and English body text to recognize Google CAPTCHA/interstitial markup, HTTP-style rate signals exposed by the driver, consent pages, redirect loops, localized empty-result pages, and incomplete shell pages.
+- Run classification before parsing and after each navigation/state transition so an anti-bot or consent page cannot be misreported as an empty successful SERP.
+- Define one precedence order for ambiguous states: block/CAPTCHA, consent, rate limit, navigation failure, empty results, recognizable SERP, then malformed response.
+- Capture HTML and screenshots only when diagnostics are explicitly enabled; sanitize filenames and avoid persisting cookies, headers, or proxy credentials.
+- Add a circuit breaker scoped to a run: after a configurable number of block or rate-limit outcomes, cancel pending Google jobs and return partial results instead of increasing traffic.
+
+### 4. Cover All Documented Google Result Formats
+
+- Create fixture-backed parser adapters or components for organic `results`, `image`, `news`, `shopping`, and `videos`, sharing URL normalization, deduplication, rank assignment, and common-field assembly.
+- Add ordered selector fallbacks based on semantic structure and stable attributes where possible. Keep format-specific selectors isolated so one Google layout change does not disable unrelated formats.
+- Parse mixed normal SERPs into their actual documented `serp_type` values rather than flattening every card into `results`; prevent a card from being emitted twice by general and specialized selectors.
+- Define and document type-specific extraction: source/date for news, price/merchant/rating for shopping, duration/source/date for videos, and image/source/thumbnail metadata for images, while retaining the Phase 2 common row fields.
+- Add explicit Google search vertical routing where needed and reconcile it with the public `search_type` option. Validation and documentation must use the same supported values.
+- Treat an unknown Google module as an observable unsupported format in diagnostics, not as a parser crash or silently malformed organic result.
+
+### 5. Refactor URL Enrichment Safely
+
+- Move URL fetching, decoding, metadata extraction, and cache persistence out of `UrlScrape` into small testable components while retaining the public `scrap_url()` compatibility adapter during the migration.
+- Send the same effective current Chrome user agent and compatible request headers used by the scrape request; allow per-origin connection reuse without sharing Google cookies with result sites.
+- Add explicit connect/read timeout behavior, redirect limits, maximum response bytes, accepted content types, and decompression limits so a result URL cannot hold a worker indefinitely or exhaust memory.
+- Classify DNS, TLS, timeout, HTTP, unsupported-content, decoding, and parse failures without collapsing all exceptions into `status: error`.
+- Make cache keys include request-relevant representation inputs and write enrichment cache files atomically, so stale data from a previous identity or partial writes cannot masquerade as a current response.
+
+### 6. Migrate in Vertical Slices
+
+1. Freeze current Google URL construction, Chrome options, response classification, organic/image parsing, failures, caching, and URL enrichment with characterization tests.
+2. Add the central Chrome identity and request-policy values, route Chrome and the injectable HTTP client through them, and remove the random legacy user-agent source.
+3. Add cache-aware pacing, session reuse, bounded retry/backoff, and the run-scoped circuit breaker using fake clocks, deterministic jitter, and fake drivers.
+4. Add fixtures and parser contracts for `news`, `shopping`, and `videos`, then tighten mixed-SERP precedence and deduplication across all documented types.
+5. Refactor URL enrichment behind the HTTP client, preserve its compatibility entry points, and add response-size, content-type, redirect, encoding, and atomic-cache protections.
+6. Update configuration, results, examples, installation notes, and changelog; run the offline suite first and the opt-in live Chrome smoke matrix only after it passes.
+
+### Verification Strategy
+
+- Run development and verification commands from `C:\Users\space\workspace\SerpScrap` inside the Pipenv environment, using `pipenv shell` or the non-interactive equivalent `pipenv run ...`.
+- Unit-test installed-Chrome version detection, current fallback selection, explicit overrides, header consistency, and rejection of stale or contradictory identities without requiring Chrome or network access.
+- Test pacing, jitter bounds, rate-limit slot ordering, cache-before-navigation behavior, retries, circuit breaking, cancellation, and session cleanup with injected fakes and deterministic time.
+- Maintain captured HTML fixtures for every documented result format and for mixed, empty, localized, consent, CAPTCHA, rate-limited, malformed, and layout-fallback pages.
+- Contract-test that organic `results`, `image`, `news`, `shopping`, and `videos` rows have stable `serp_type` values, common fields, deterministic ranks, normalized URLs, no duplicates, and JSON-compatible type-specific fields.
+- Test URL enrichment with a local HTTP server or fake transport for headers, redirects, compression, encodings, oversized responses, unsupported content, timeouts, TLS/network failures, cache hits, and atomic writes.
+- Keep live Google tests opt-in, low-volume, single-worker, and tolerant of an honestly classified block or consent outcome. They must never be the only evidence for parser correctness.
+- Verify browser, response, executor, and cache-file cleanup on every success, retry, failure, cancellation, and circuit-breaker path.
+
+### Phase 3 Acceptance Criteria
+
+- Every Selenium Google navigation and HTTP URL-enrichment request uses one validated, current desktop Chrome user agent by default, matching the installed Chrome major version when detectable and using a documented maintained fallback otherwise.
+- Default request behavior reuses sessions, checks the cache before navigation, limits concurrency, spaces subsequent requests, and uses bounded retries only for transient failures.
+- Blocking, CAPTCHA, consent, rate limiting, empty results, malformed responses, and network failures are distinguished and exposed as structured outcomes; detected access controls are never bypassed automatically.
+- Fixture tests prove parsing and canonical serialization for all formats promised by `docs/results.rst`: `results`, `image`, `news`, `shopping`, and `videos`, including mixed SERPs and selector fallbacks.
+- URL enrichment has explicit headers, timeouts, redirect, response-size, content-type, decoding, error, and atomic-cache behavior and remains callable through the documented public API.
+- Offline Phase 1 and Phase 2 suites remain deterministic and pass without Chrome or network access; opt-in browser smoke tests run successfully from the repository's Pipenv environment.
+
 ## Refactoring Phase 2 - Slim Architecture and JSON Results
 
 ### Objective

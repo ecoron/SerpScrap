@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 - Made HTML caching and SQLite history independently optional.
 - Moved optional SQLite history behind a post-assembly repository so persistence failures retain successful in-memory results.
 - Removed CSV output, duplicate result writers, and the unreachable legacy scraping workflow.
+- Added current Chrome identity resolution, paced Google navigation, bounded transient retries, access-control/rate-limit classification, and a run circuit breaker.
+- Added canonical parsing and vertical routing for organic, image, news, shopping, and video result formats.
+- Hardened URL enrichment with explicit headers, limits, classified failures, and atomic identity-aware caching.
 
 ## [0.14.0] - 2025-10-26
 ### Changed

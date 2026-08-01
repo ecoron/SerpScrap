@@ -23,12 +23,14 @@ SerpScrap is useful for SEO and business research tasks.
 Features
 --------
 
-* Extracts result types: ads_main, image, news, results, shopping, videos
+* Extracts result types: image, news, results, shopping, videos
 * For each result, you get: domain, rank, rich snippet, site links, snippet, title, type, url, visible url
 * Takes a screenshot of each result page
 * Optionally scrapes the text content of each result URL
 * Results are returned as ``list[dict]`` and can be saved as UTF-8 JSON
 * Supports using your own proxy list
+* Uses a current desktop Chrome identity, paced navigation, bounded retries,
+  cache-first retrieval, and explicit block/rate-limit classification
 
 Quickstart Example (CLI)
 -----------------------
@@ -45,6 +47,7 @@ This will show you the available CLI options. For a simple search, try:
 .. code-block:: bash
 
    serpscrap search --keyword "example keyword" --output results.json
+   serpscrap search --keyword "latest news" --search-type news
 
 Use ``--log-level`` and ``--log-format`` before the command to control stderr
 logging independently from JSON results on stdout:

@@ -4,7 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
-serpscrap = {editable = true, path = "."}
+serpscrap = {path = ".", editable = true}
 
 [dev-packages]
 build = "==1.5.0"
@@ -14,4 +14,4 @@ pytest-cov = "==7.1.0"
 ruff = "==0.16.1"
 
 [requires]
-python_version = "3.10"
+python_version = ">=3.10"

@@ -93,3 +93,4 @@ phantomjs/
 chromedriver/
 /.mypy_cache/
 /.pytest_cache/
+/Pipfile.lock

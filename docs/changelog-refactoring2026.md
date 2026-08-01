@@ -5,6 +5,21 @@ This file records the implementation work performed against
 
 ## 2026-08-01
 
+### Refactoring Phase 4 - plugin registry and multi-engine execution
+
+- Added the trusted `serpscrap.plugins.searchengines` contract and explicit registry for Google plus Bing, Yandex, Yahoo, DuckDuckGo, Ecosia, Qwant, Startpage, Brave Search, Swisscows, and Mojeek.
+- Added country-aware engine URL construction, normalized engine rows with `search_engine` and ISO `country_code`, generic fixture-friendly organic-card parsing, response-state classification, and a Selenium capture adapter with per-call driver ownership.
+- Added bounded concurrent fan-out through `MultiEngineRunner`, engine-scoped limits, structured partial failures, deterministic completion ordering, and compatibility routing that leaves the legacy Google ORM path intact for Google-only requests.
+- Added pure URL canonicalization and versioned weighted reciprocal-rank fusion with engine frequency, position, market-share snapshots, provider-family metadata, fallback handling for StatCounter's `Other` bucket, and explainable provenance fields.
+- Bumped the public report schema to version 2 and added engine/country provenance to legacy Google rows as well as plugin metadata to multi-engine failures.
+- Updated the result contract documentation for engine provenance and fused multi-engine ranking fields.
+- Extended configuration and CLI with registered engine validation, `--engine`, `--country`, engine workers, and market-weight settings; added Phase 4 contract/fan-out/fusion tests and updated the stale URL-enrichment language assertion to match the configured `de-DE` locale.
+
+### Refactoring Phase 4 - planning and search-engine research
+
+- Added the Phase 4 plan for a trusted in-package search-engine plugin registry, eleven initial engines, bounded multi-engine thread fan-out, country-aware result provenance, partial failures, deterministic weighted reciprocal-rank fusion, compatibility migration, and fixture-first verification.
+- Added `docs/searchengines.md` with the July 2026 European market-share snapshot, transparent handling of StatCounter's unreported `Other` engines, the initial engine cohort, query/SERP reconnaissance, and source links.
+
 ### Refactoring Phase 3 - request identity and traffic policy
 
 - Added a central `ChromeIdentityProvider` that resolves a non-headless desktop user agent from the installed Chrome major version and otherwise uses a dated Chrome 151 fallback based on Google's July 22, 2026 early-stable desktop release, with a test-enforced 120-day maintenance window; explicit desktop Chrome overrides remain supported and validated.

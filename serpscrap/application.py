@@ -31,6 +31,7 @@ class SearchApplication:
         runner: SearchRunner | None = None,
         url_scraper_factory: Callable[[dict[str, Any]], Any] | None = None,
     ) -> None:
+        self._legacy_default = runner is None
         if runner is None:
             from scrapcore.core import Core
 
@@ -44,6 +45,11 @@ class SearchApplication:
 
     def execute(self, request: SearchRequest) -> SearchReport:
         config = request.to_config()
+        configured_engines = tuple(config.get("search_engines") or ("google",))
+        if self._legacy_default and configured_engines != ("google",):
+            from serpscrap.plugins.searchengines.multi import MultiEngineRunner
+
+            return MultiEngineRunner().execute(request)
         search = self.runner.run(config)
         query_order = {query: index for index, query in enumerate(request.queries)}
         serps = sorted(
@@ -107,6 +113,8 @@ class SearchApplication:
                         "serp_image_url": getattr(link, "image_url", None),
                         "serp_thumbnail_url": getattr(link, "thumbnail_url", None),
                         "screenshot": getattr(serp, "screenshot", None),
+                        "search_engine": str(serp.search_engine_name or "google"),
+                        "country_code": str(config.get("country_code", "DE")).upper(),
                     }
                 )
 

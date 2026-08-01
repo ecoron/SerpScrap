@@ -1,5 +1,126 @@
 # SerpScrap Refactoring Plan 2026
 
+## Refactoring Phase 4 - Pluggable Multi-Engine Search and Relevance Fusion
+
+### Objective
+
+Shift the primary retrieval strategy from a Google-only pipeline to a configurable portfolio of search engines. Add a standardized search-engine plugin directory, initially supporting the ten alternative engines selected in `docs/searchengines.md` plus Google. For every query, run the configured engines concurrently in bounded threads, preserve partial results and failures independently, add `search_engine` and ISO 3166-1 alpha-2 `country_code` provenance to every result, and produce one deterministic JSON-compatible result list ordered by a documented relevance score derived from cross-engine frequency, result position, and versioned European market-share weights.
+
+Google remains supported but is no longer architecturally privileged or required in the default alternative-first configuration. Phase 3 request safety remains mandatory for every plugin: SerpScrap must detect and report blocking, consent, CAPTCHA, and rate limiting, never bypass access controls automatically.
+
+### Architectural Principles
+
+- Keep engine-specific URL construction, country/locale mapping, response classification, and parsing inside one plugin package; the application pipeline depends only on a small shared contract.
+- Treat plugins as trusted, packaged Python components discovered through an explicit registry. Do not scan and execute arbitrary files from writable directories.
+- Separate raw engine results from cross-engine normalization and ranking so each stage is independently testable and raw provenance is never lost.
+- Apply bounded concurrency at two levels: a global request limit and a per-engine limit/policy. A slow, blocked, or broken engine must not prevent successful engines from completing.
+- Keep one browser driver owned by one worker at a time. Never share Selenium drivers, parser instances, mutable request state, or database sessions between threads.
+- Make engine selection, country, timeouts, weights, and ranking constants explicit, validated configuration. Identical captured inputs and configuration must produce byte-for-byte stable JSON ordering.
+- Prefer captured fixtures and plugin contract tests over live SERP tests. Live requests remain opt-in, low-volume, and subject to each provider's current terms and access controls.
+
+### Target Plugin Layout and Contract
+
+- Create `serpscrap/plugins/searchengines/` with a shared contract and registry plus one package per engine: `google`, `bing`, `yandex`, `yahoo`, `duckduckgo`, `ecosia`, `qwant`, `startpage`, `brave`, `swisscows`, and `mojeek`.
+- Define an immutable `SearchEnginePlugin` contract exposing stable metadata (`engine_id`, display name, supported countries/locales, supported result types and market-share record), request URL construction, response classification, organic result parsing, and optional engine-specific pacing/capability declarations.
+- Keep transport behind an injected capture interface. A plugin describes and interprets a request but does not construct executors, write caches/history/JSON, or own global browser lifecycle.
+- Use a central explicit registry mapping normalized engine IDs to plugin factories. Reject duplicate IDs, missing required metadata, unsupported countries/search types, invalid URL templates, and incompatible plugin contract versions during startup.
+- Give every plugin a version and fixture provenance date so selector drift and market-data changes can be diagnosed without changing the public engine ID.
+- Preserve the possibility of external entry-point plugins later, but do not make third-party discovery part of the first Phase 4 slice.
+
+### Target Request, Result, and Failure Contract
+
+- Extend `SearchRequest` with ordered `search_engines: tuple[str, ...]`, a required/defaulted ISO alpha-2 `country_code`, optional engine weight overrides, global and per-engine concurrency bounds, and ranking configuration.
+- Interpret `country_code` as the requested result market, not the scraper host location. Each plugin maps it to its own region/locale parameters and reports an actionable unsupported-country error when no honest mapping exists.
+- Add `search_engine` and `country_code` to every canonical successful result row. Add `relevance_score`, `engine_match_count`, `best_rank`, and `matched_engines` only after the schema-version and compatibility decision is recorded; all values remain native JSON types.
+- Keep raw per-engine rows internally through ranking. Group only normalized, canonical HTTP(S) target URLs; strip fragments and known tracking parameters, normalize host/port/path conservatively, and never merge different URLs merely because titles or snippets are similar.
+- Select a deterministic representative row for each canonical URL: highest individual weighted contribution, then best rank, configured engine order, normalized URL, and title. Preserve all contributing engines and country codes in structured provenance.
+- Extend failures with plugin ID/version and country code while retaining query, page, URL, category, retryability, correlation ID, and attempt count. One engine failure does not erase other engines' rows.
+- Increment the persisted schema version if the public result row changes. Document the exact migration from the Phase 2/3 flat schema before implementation.
+
+### 1. Establish the Plugin Boundary
+
+- Freeze current Google URL, classification, parser, and output behavior with characterization tests, then move it behind the new contract without rewriting its internals in the same slice.
+- Extract generic result assembly, URL normalization, cache key construction, and failure conversion from Google-specific modules. Plugin code returns typed engine results and never SQLAlchemy entities.
+- Add registry validation and a small plugin conformance suite reusable by all eleven engines.
+- Include plugin Python packages and any non-code metadata in wheel/sdist checks; keep HTML fixtures under `tests/fixtures/searchengines/<engine>/` rather than in the installed package.
+- Remove `if engine == "google"` factories and URL-regex parser dispatch only after all composition paths use the registry and compatibility tests pass.
+
+### 2. Implement the Initial Eleven Engines in Risk-Based Slices
+
+- First migrate Google and add Bing plus DuckDuckGo to prove the contract across distinct SERP structures and preserve Phase 3 behavior.
+- Add Yandex and Yahoo next because StatCounter reports them individually in Europe; include localized, empty, consent/block, and redirect fixtures.
+- Add Ecosia, Qwant, and Startpage as the first European alternative cohort, explicitly accounting for upstream-provider overlap without treating identical upstream indexes as independent proof of relevance.
+- Add Brave, Swisscows, and Mojeek after their URL, pagination, country mapping, response-state, and organic-card fixtures have been captured and reviewed.
+- Limit the first implementation to organic web results unless an engine declares and tests another common result type. Unsupported verticals must fail validation rather than silently falling back to organic search.
+- For every engine, document the verified query template, pagination mechanism, country mapping, result-card boundaries, redirect-link decoding, empty state, and block/consent state in fixture metadata. Treat selectors in `docs/searchengines.md` as reconnaissance, not as the parser contract.
+
+### 3. Fan Out Requests with Bounded Thread Concurrency
+
+- Build one immutable job per `(query, engine, country, page)` from the ordered request and submit it to a bounded `ThreadPoolExecutor` through the existing application service.
+- Enforce both a global worker ceiling and plugin-declared per-engine ceilings. Google keeps its conservative policy; alternative engines receive independent pacing, retry, and circuit-breaker state.
+- Apply cache lookup and in-run request deduplication before acquiring an engine rate slot or starting a browser. Cache keys include plugin ID/version, query, page, country, locale, search type, result count, and request-relevant identity.
+- Collect futures by job identity rather than completion order. Convert unexpected plugin exceptions into structured failures and assemble successful rows in deterministic request/engine/page/rank order before ranking.
+- Cancel only pending jobs covered by the same engine circuit breaker. Global cancellation remains reserved for caller cancellation or resource failure.
+- Guarantee driver, response, executor, cache temporary-file, and repository cleanup for success, partial failure, timeout, cancellation, and circuit-breaker paths.
+
+### 4. Normalize, Aggregate, and Rank Results
+
+- Introduce a pure `ResultFusion` service that accepts raw canonical engine rows plus an immutable weight snapshot and returns ranked rows without network, browser, filesystem, database, or clock access.
+- Use weighted reciprocal-rank fusion as the initial transparent algorithm. For a canonical URL `u`, compute `score(u) = sum(weight(engine) / (rrf_k + rank))` over at most one best occurrence per engine. Repeated presence increases the score, high positions contribute more, and the configured market weight scales each engine's contribution.
+- Default `rrf_k` to a documented constant and make it validated/configurable. Round only the serialized display score; sort using full precision.
+- Normalize configured market shares to weights across the active engines. Use the dated values in `docs/searchengines.md`; for engines hidden in StatCounter's `Other` bucket, use a clearly labelled fallback policy or an explicit operator override, never a fabricated measured share.
+- Prevent upstream syndication from inflating frequency by optionally defining provider families (for example Bing-backed or mixed-provider services). Deliver the first release with both `engine_match_count` and a diagnostic `independent_provider_count`; decide through tests whether provider-family capping participates in the production score.
+- Define deterministic tie breaks: descending relevance score, descending independent provider count, descending engine match count, ascending best rank, configured engine order, then canonical URL.
+- Keep ranking explainable in report metadata: algorithm/version, `rrf_k`, weight snapshot/as-of date, active engines, fallback weights, canonicalization version, and per-result contributions when diagnostics are enabled.
+
+### 5. Configuration, CLI, and Compatibility
+
+- Accept repeated/list engine selection in Python and CLI, validate it against the registry, preserve user order for tie-breaking, and reject an empty selection.
+- Ship all eleven plugins as supported, but define and document an alternative-first default separately from the supported set. Google must be explicitly disableable and its failure must never abort alternatives.
+- Add `--country ISO2`, repeated `--engine ENGINE`, global `--workers`, and clearly named per-engine concurrency/weight configuration without overloading the existing URL-enrichment thread setting.
+- Keep `search_engine="google"` and legacy `Config` calls working during a documented compatibility period by translating them into the new engine tuple.
+- Validate that output files and CLI stdout contain the same ranked JSON data and logs remain on stderr. Expose unranked/raw engine data only through an explicit diagnostic/report API, not a second accidental public schema.
+- Update README, configuration, result schema, examples, CLI help, package data, `docs/searchengines.md`, and the refactoring changelog together with each migration slice.
+
+### 6. Research and Maintenance Workflow
+
+- Treat `docs/searchengines.md` as a dated registry-design input containing selection rationale, measured/proxy market data, query entry points, SERP delivery notes, country/pagination research, and primary sources.
+- Refresh market-share data on a scheduled release cadence and retain the previous snapshot for reproducibility. A market update changes ranking metadata and tests deliberately; it must not silently alter historical cached runs.
+- Before enabling a plugin, review current provider terms, robots guidance where applicable, consent behavior, and availability of a supported API. Record the review date; do not encode bypasses for CAPTCHA, proof-of-work, login, or geographic restrictions.
+- Capture sanitized HTML fixtures manually or through an opt-in maintenance command with a distinctive low-volume query. Never run live capture in the default test suite.
+- Add a selector/fixture maintenance checklist and plugin ownership/status table so one broken engine can be disabled without removing or destabilizing the registry.
+
+### Migration Sequence
+
+1. Freeze Phase 3 behavior and add schema, concurrency, canonicalization, and ranking characterization tests.
+2. Add the plugin contract, registry, plugin metadata, and conformance suite; migrate Google unchanged behind it.
+3. Add Bing and DuckDuckGo, implement multi-engine job fan-out, partial failures, deterministic collection, and engine/country provenance.
+4. Add pure URL canonicalization and weighted reciprocal-rank fusion with a versioned July 2026 market snapshot and explicit `Other` fallback policy.
+5. Add Yandex, Yahoo, and Ecosia with fixtures and per-engine request policies.
+6. Add Qwant, Startpage, Brave, Swisscows, and Mojeek only after fixture-backed URL, country, pagination, state-classification, and parser contracts pass.
+7. Complete public schema/CLI compatibility, documentation, packaging, cache migration, changelog, and full offline verification; run the opt-in live matrix last and at low volume.
+
+### Verification Strategy
+
+- Run all development and verification commands from `C:\Users\space\workspace\SerpScrap` through `pipenv run ...` or an active `pipenv shell`.
+- Contract-test every plugin for metadata, URL encoding, country mapping, pagination, result parsing, URL decoding, rank assignment, JSON types, empty results, block/consent/rate states, and malformed responses.
+- Maintain at least normal, localized, empty, blocked/consent, and selector-fallback fixtures per engine. Fixtures must contain no cookies, account data, proxy credentials, or personally identifying queries.
+- Test executor bounds, per-engine limits, cache-before-capture, no shared drivers, completion-order independence, partial failure preservation, engine-scoped circuit breaking, cancellation, and cleanup with fake plugins and barriers rather than wall-clock sleeps.
+- Property-test or table-test URL canonicalization and result fusion for duplicates, tracking parameters, redirects, ranks, missing weights, provider-family overlap, tie breaks, precision, and permutation invariance.
+- Contract-test every public row for `search_engine`, uppercase ISO alpha-2 `country_code`, rank, relevance fields, canonical URL, deterministic provenance, and exact JSON round trips.
+- Keep all default tests offline. Use separate opt-in smoke markers per engine, one worker per provider, a harmless query, strict request budgets, and successful classification of honest blocks as an acceptable outcome.
+- Run the full Phase 1-3 regression suite, Ruff, focused mypy, wheel/sdist builds, installed-wheel plugin discovery, and documentation link/schema checks before Phase 4 acceptance.
+
+### Phase 4 Acceptance Criteria
+
+- The installed package exposes a validated registry with standardized plugins for Google and the ten alternatives listed in `docs/searchengines.md`; adding an in-tree engine requires no edits to application orchestration or ranking code.
+- A configured multi-engine search fans out in bounded threads, applies independent engine policies, uses no shared driver/session state, returns partial successes, and records structured failures without one engine aborting the run.
+- Every successful JSON row contains its engine and uppercase ISO alpha-2 country provenance, and the public schema/version/migration behavior is documented and identical across Python, CLI stdout, and saved JSON.
+- Results are conservatively canonicalized, grouped, and deterministically ordered by a versioned, explainable combination of cross-engine frequency, position, and market weight; ties and unreported market shares follow documented policies.
+- Offline fixtures and conformance tests cover normal, localized, empty, blocked/consent, and layout-fallback behavior for all eleven engines without network or Chrome.
+- Google can be disabled, is not a special orchestration dependency, and retains all Phase 3 request-safety behavior when enabled.
+- `docs/searchengines.md`, configuration/results documentation, examples, package artifacts, tests, and `docs/changelog-refactoring2026.md` agree with the delivered plugin set and ranking snapshot.
+
 ## Refactoring Phase 3 - Resilient Google Requests and Complete SERP Formats
 
 ### Objective

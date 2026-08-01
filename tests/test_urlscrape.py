@@ -111,7 +111,7 @@ def test_http_client_sends_chrome_identity_and_explicit_headers():
     response = client.fetch("https://example.com")
 
     assert "Chrome/" in captured["headers"]["User-Agent"]
-    assert captured["headers"]["Accept-Language"] == "en-US,en;q=0.9"
+    assert captured["headers"]["Accept-Language"] == "de-DE,de;q=0.9"
     assert captured["timeout"].connect_timeout == 10
     assert captured["timeout"].read_timeout == 20
     assert captured["retries"].redirect == 5

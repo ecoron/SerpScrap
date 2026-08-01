@@ -2,6 +2,7 @@
 
 from scrapcore.scraper.browser import BrowserSettings, RequestPolicy
 from serpscrap.exceptions import ConfigurationError
+from serpscrap.plugins.searchengines.registry import default_registry
 
 
 class ValidatorConfig:
@@ -32,8 +33,23 @@ class ValidatorConfig:
         engines = config.get("search_engines")
         if isinstance(engines, str):
             engines = [item.strip() for item in engines.split(",") if item.strip()]
-        if not engines or set(engines) - {"google"}:
-            raise ConfigurationError("Only the google search engine is currently supported")
+        supported = set(default_registry().ids())
+        if not engines or set(engines) - supported:
+            unknown = sorted(set(engines or ()) - supported)
+            raise ConfigurationError(
+                "Unsupported search engine(s): " + ", ".join(unknown or ["none"])
+            )
+        country_code = str(config.get("country_code", "DE"))
+        if len(country_code) != 2 or not country_code.isalpha() or country_code != country_code.upper():
+            raise ConfigurationError("country_code must be an uppercase ISO 3166-1 alpha-2 code")
+        try:
+            engine_workers = int(config.get("engine_workers", 1))
+        except (TypeError, ValueError) as exc:
+            raise ConfigurationError("engine_workers must be an integer") from exc
+        if engine_workers < 1:
+            raise ConfigurationError("engine_workers must be positive")
+        if not isinstance(config.get("engine_weights", {}), dict):
+            raise ConfigurationError("engine_weights must be a mapping")
 
         for key in ("num_pages_for_keyword", "num_workers", "num_results_per_page"):
             try:

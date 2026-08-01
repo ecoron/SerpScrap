@@ -11,6 +11,8 @@ converted to strings.
    [
        {
            'query': 'example',
+           'search_engine': 'google',
+           'country_code': 'DE',
            'query_num_results_total': 'About 42 results',
            'query_num_results_page': 10,
            'query_page_number': 1,
@@ -33,6 +35,13 @@ converted to strings.
            'screenshot': None,
        }
    ]
+
+Multi-engine searches add ``search_engine`` and uppercase ISO 3166-1
+``country_code`` to every row. Results that resolve to the same canonical URL
+are fused into one row with ``relevance_score``, ``engine_match_count``,
+``best_rank``, ``independent_provider_count``, and ``matched_engines``. The
+fusion report uses schema version 2 and records the active market-share
+snapshot and fallback weights in report metadata.
 
 Local JSON
 ----------

@@ -17,7 +17,14 @@ class Config:
         self.config: dict[str, Any] = {
             "use_own_ip": True,
             "search_engines": ["google"],
-            "supported_search_engines": ["google"],
+            "supported_search_engines": [
+                "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia",
+                "qwant", "startpage", "brave", "swisscows", "mojeek",
+            ],
+            "country_code": "DE",
+            "engine_workers": 1,
+            "engine_weights": {},
+            "other_market_share": 0.63,
             "num_pages_for_keyword": 1,
             "scrape_method": "selenium",
             "sel_browser": "chrome",

@@ -69,7 +69,7 @@ def configure_logging(level: str, log_format: str) -> None:
     show_default=True,
 )
 def main(log_level: str, log_format: str) -> None:
-    """Retrieve structured Google SERPs with headless Chrome."""
+    """Retrieve structured SERPs from configured search engines."""
 
     configure_logging(log_level, log_format)
 
@@ -86,6 +86,20 @@ def main(log_level: str, log_format: str) -> None:
 )
 @click.option("--pages", type=click.IntRange(min=1), default=1, show_default=True)
 @click.option("--workers", type=click.IntRange(min=1), default=1, show_default=True)
+@click.option(
+    "--engine",
+    "engines",
+    multiple=True,
+    help="Search engine ID; repeat for parallel engines (default: google).",
+)
+@click.option(
+    "--country",
+    "country_code",
+    type=click.STRING,
+    default="DE",
+    show_default=True,
+    help="ISO 3166-1 alpha-2 result market.",
+)
 @click.option(
     "--search-type",
     type=click.Choice(["normal", "image", "news", "shopping", "videos"]),
@@ -107,6 +121,8 @@ def search(
     keywords: tuple[str, ...],
     pages: int,
     workers: int,
+    engines: tuple[str, ...],
+    country_code: str,
     search_type: str,
     visible: bool,
     screenshots: bool,
@@ -116,7 +132,7 @@ def search(
     no_cache: bool,
     no_history: bool,
 ) -> None:
-    """Run one or more Google search queries and write JSON results to stdout."""
+    """Run one or more configured search queries and write JSON to stdout."""
 
     logger = logging.getLogger("serpscrap.cli")
     config = Config()
@@ -124,6 +140,8 @@ def search(
         {
             "num_pages_for_keyword": pages,
             "num_workers": workers,
+            "search_engines": list(engines) or ["google"],
+            "country_code": country_code.upper(),
             "search_type": search_type,
             "chrome_headless": not visible,
             "screenshot": screenshots,

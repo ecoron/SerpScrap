@@ -11,7 +11,7 @@ from typing import Any
 from serpscrap.config import Config
 from serpscrap.exceptions import ConfigurationError
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def _freeze(value: Any) -> Any:
@@ -97,9 +97,11 @@ class FailureRecord:
     retryable: bool
     correlation_id: str | None = None
     attempt_count: int = 1
+    country_code: str | None = None
+    plugin_version: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "query": self.query,
             "search_engine": self.search_engine,
             "page_number": self.page_number,
@@ -110,6 +112,11 @@ class FailureRecord:
             "correlation_id": self.correlation_id,
             "attempt_count": self.attempt_count,
         }
+        if self.country_code is not None:
+            payload["country_code"] = self.country_code
+        if self.plugin_version is not None:
+            payload["plugin_version"] = self.plugin_version
+        return payload
 
 
 @dataclass(slots=True)

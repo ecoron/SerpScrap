@@ -23,11 +23,18 @@ def test_config_defaults_are_cross_platform():
     assert Path(config["database_name"]).is_absolute()
 
 
-def test_validator_rejects_unsupported_engine():
+def test_validator_accepts_registered_alternative_engine():
     config = Config().get()
     config["search_engines"] = ["bing"]
 
-    with pytest.raises(ConfigurationError, match="google"):
+    ValidatorConfig().validate(config)
+
+
+def test_validator_rejects_unknown_engine():
+    config = Config().get()
+    config["search_engines"] = ["not-an-engine"]
+
+    with pytest.raises(ConfigurationError, match="Unsupported search engine"):
         ValidatorConfig().validate(config)
 
 

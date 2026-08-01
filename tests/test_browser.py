@@ -1,3 +1,4 @@
+import os
 from datetime import date
 from urllib.parse import parse_qs, urlparse
 
@@ -62,10 +63,13 @@ def test_identity_matches_detected_chrome_major_and_validates_overrides():
     provider = ChromeIdentityProvider(version_reader=lambda _binary: 155)
 
     assert "Chrome/155.0.0.0" in provider.resolve(None)
-    assert (
-        ChromeIdentityProvider(version_reader=lambda _binary: None).resolve(None)
-        == FALLBACK_CHROME_USER_AGENT
-    )
+    fallback = ChromeIdentityProvider(version_reader=lambda _binary: None).resolve(None)
+    expected_fallback = FALLBACK_CHROME_USER_AGENT
+    if os.name != "nt":
+        expected_fallback = expected_fallback.replace(
+            "Windows NT 10.0; Win64; x64", "X11; Linux x86_64"
+        )
+    assert fallback == expected_fallback
     with pytest.raises(BrowserConfigurationError, match="desktop"):
         provider.resolve("Mozilla/5.0 HeadlessChrome/155.0.0.0 Safari/537.36")
 

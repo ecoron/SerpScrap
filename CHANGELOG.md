@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Aligned the local documentation Makefile/navigation and removed the obsolete Jekyll configuration.
 - Added a dedicated CI job for the warning-as-error Sphinx HTML build.
 - Fixed Linux CI mypy validation for the Windows-only `winreg` browser detection path.
+- Made the browser identity fallback test platform-aware for Linux CI runners.
 - Completed Phase 5 production integration for the registered multi-engine plugins, including validated readiness/capability metadata, per-engine concurrency ceilings, versioned country-aware cache identities, atomic cache writes, and explainable deterministic fusion report metadata.
 - Added documentation examples for multi-engine searches capped at four concurrent requests.
 - CLI searches now inherit all omitted option values from ``serpscrap/config.py``; ``search -k`` no longer replaces configured defaults.

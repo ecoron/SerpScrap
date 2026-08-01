@@ -19,6 +19,7 @@ This file records the implementation work performed against
 ### CI compatibility fix
 
 - Isolated the Windows-only `winreg` API behind an explicit type cast so the Linux GitHub Actions mypy runner can validate the shared browser module without changing Windows runtime behavior.
+- Made the Chrome identity fallback assertion platform-aware so the offline browser tests accept the intentional Linux user-agent normalization in CI.
 
 ### Refactoring Phase 5 - planning
 

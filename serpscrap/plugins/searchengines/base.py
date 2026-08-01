@@ -75,6 +75,10 @@ class SearchEnginePlugin(ABC):
     supported_countries: frozenset[str] = frozenset()
     market_share: float | None = None
     provider_family: str | None = None
+    readiness: str = "enabled"
+    disable_reason: str | None = None
+    fixture_version: str = "1"
+    terms_review_date: str | None = None
 
     @property
     @abstractmethod
@@ -105,6 +109,25 @@ class SearchEnginePlugin(ABC):
         if any(token in lowered for token in ("too many requests", "rate limit", "429")):
             return "rate_limited"
         return None
+
+    @property
+    def enabled(self) -> bool:
+        return self.readiness == "enabled"
+
+    def metadata(self) -> dict[str, Any]:
+        """Return stable operational metadata without importing a transport."""
+        return {
+            "engine_id": self.engine_id,
+            "plugin_version": self.plugin_version,
+            "readiness": self.readiness,
+            "disable_reason": self.disable_reason,
+            "fixture_version": self.fixture_version,
+            "supported_countries": sorted(self.supported_countries),
+            "search_types": list(self.search_types),
+            "provider_family": self.provider_family,
+            "market_share": self.market_share,
+            "terms_review_date": self.terms_review_date,
+        }
 
 
 def _clean_text(value: str | None) -> str | None:

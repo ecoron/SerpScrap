@@ -3,6 +3,7 @@ import json
 from click.testing import CliRunner
 
 from serpscrap.cli import main
+from serpscrap.config import Config
 
 
 def test_cli_lists_click_commands():
@@ -68,3 +69,20 @@ def test_search_command_passes_json_output_options(monkeypatch, tmp_path):
     assert called["overwrite"] is True
     assert called["config"].get()["store_history"] is False
     assert called["config"].get()["search_type"] == "news"
+
+
+def test_search_command_uses_config_defaults_when_options_are_omitted(monkeypatch):
+    called = {}
+
+    def fake_search(self, keywords, **kwargs):
+        called.update(kwargs)
+        return []
+
+    monkeypatch.setattr("serpscrap.cli.SerpScrap.search", fake_search)
+    result = CliRunner().invoke(main, ["search", "-k", "Balkonkraftwerk"])
+
+    assert result.exit_code == 0
+    config = called["config"].get()
+    defaults = Config().get()
+    for key in ("search_engines", "country_code", "num_workers", "num_pages_for_keyword", "search_type", "do_caching", "store_history"):
+        assert config[key] == defaults[key]

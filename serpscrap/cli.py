@@ -84,8 +84,8 @@ def main(log_level: str, log_format: str) -> None:
     required=True,
     help="Query to run; repeat the option for multiple queries.",
 )
-@click.option("--pages", type=click.IntRange(min=1), default=1, show_default=True)
-@click.option("--workers", type=click.IntRange(min=1), default=1, show_default=True)
+@click.option("--pages", type=click.IntRange(min=1), default=None)
+@click.option("--workers", type=click.IntRange(min=1), default=None)
 @click.option(
     "--engine",
     "engines",
@@ -96,61 +96,68 @@ def main(log_level: str, log_format: str) -> None:
     "--country",
     "country_code",
     type=click.STRING,
-    default="DE",
-    show_default=True,
+    default=None,
     help="ISO 3166-1 alpha-2 result market.",
 )
 @click.option(
     "--search-type",
     type=click.Choice(["normal", "image", "news", "shopping", "videos"]),
-    default="normal",
-    show_default=True,
+    default=None,
 )
-@click.option("--visible", is_flag=True, help="Show the Chrome window.")
-@click.option("--screenshots", is_flag=True, help="Save diagnostic screenshots.")
-@click.option("--scrape-urls", is_flag=True, help="Also fetch parsed result pages.")
+@click.option("--visible", is_flag=True, default=None, help="Show the Chrome window.")
+@click.option("--screenshots", is_flag=True, default=None, help="Save diagnostic screenshots.")
+@click.option("--scrape-urls", is_flag=True, default=None, help="Also fetch parsed result pages.")
 @click.option(
     "--output",
     type=click.Path(path_type=str, dir_okay=False),
     help="Atomically save the result array to a local .json file.",
 )
-@click.option("--overwrite", is_flag=True, help="Replace an existing JSON output file.")
-@click.option("--no-cache", is_flag=True, help="Disable the local HTML cache.")
-@click.option("--no-history", is_flag=True, help="Disable persistent SQLite history.")
+@click.option("--overwrite", is_flag=True, default=False, help="Replace an existing JSON output file.")
+@click.option("--no-cache", is_flag=True, default=None, help="Disable the local HTML cache.")
+@click.option("--no-history", is_flag=True, default=None, help="Disable persistent SQLite history.")
 def search(
     keywords: tuple[str, ...],
-    pages: int,
-    workers: int,
+    pages: int | None,
+    workers: int | None,
     engines: tuple[str, ...],
-    country_code: str,
-    search_type: str,
-    visible: bool,
-    screenshots: bool,
-    scrape_urls: bool,
+    country_code: str | None,
+    search_type: str | None,
+    visible: bool | None,
+    screenshots: bool | None,
+    scrape_urls: bool | None,
     output: str | None,
     overwrite: bool,
-    no_cache: bool,
-    no_history: bool,
+    no_cache: bool | None,
+    no_history: bool | None,
 ) -> None:
     """Run one or more configured search queries and write JSON to stdout."""
 
     logger = logging.getLogger("serpscrap.cli")
     config = Config()
-    config.apply(
-        {
-            "num_pages_for_keyword": pages,
-            "num_workers": workers,
-            "search_engines": list(engines) or ["google"],
-            "country_code": country_code.upper(),
-            "search_type": search_type,
-            "chrome_headless": not visible,
-            "screenshot": screenshots,
-            "scrape_urls": scrape_urls,
-            "do_caching": not no_cache,
-            "store_history": not no_history,
-        }
-    )
-    logger.info("Starting %d query job(s) with %d worker(s)", len(keywords), workers)
+    overrides: dict[str, Any] = {}
+    if pages is not None:
+        overrides["num_pages_for_keyword"] = pages
+    if workers is not None:
+        overrides["num_workers"] = workers
+    if engines:
+        overrides["search_engines"] = list(engines)
+    if country_code is not None:
+        overrides["country_code"] = country_code.upper()
+    if search_type is not None:
+        overrides["search_type"] = search_type
+    if visible is not None:
+        overrides["chrome_headless"] = not visible
+    if screenshots is not None:
+        overrides["screenshot"] = screenshots
+    if scrape_urls is not None:
+        overrides["scrape_urls"] = scrape_urls
+    if no_cache:
+        overrides["do_caching"] = False
+    if no_history:
+        overrides["store_history"] = False
+    config.apply(overrides)
+    effective_workers = config.get().get("num_workers", 1)
+    logger.info("Starting %d query job(s) with %d worker(s)", len(keywords), effective_workers)
     scraper = SerpScrap()
     try:
         results = scraper.search(

@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Completed Phase 5 production integration for the registered multi-engine plugins, including validated readiness/capability metadata, per-engine concurrency ceilings, versioned country-aware cache identities, atomic cache writes, and explainable deterministic fusion report metadata.
+- Added documentation examples for multi-engine searches capped at four concurrent requests.
+- CLI searches now inherit all omitted option values from ``serpscrap/config.py``; ``search -k`` no longer replaces configured defaults.
 - Added the direct ``SerpScrap.search()`` API with canonical JSON-compatible ``list[dict]`` results.
 - Added atomic UTF-8 JSON file output and CLI ``--output``/``--overwrite`` options.
 - Made HTML caching and SQLite history independently optional.

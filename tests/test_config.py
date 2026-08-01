@@ -45,6 +45,7 @@ def test_validator_accepts_default_config():
 @pytest.mark.parametrize("search_type", ["normal", "image", "news", "shopping", "videos"])
 def test_validator_accepts_documented_google_search_types(search_type):
     config = Config().get()
+    config["search_engines"] = ["google"]
     config["search_type"] = search_type
 
     ValidatorConfig().validate(config)

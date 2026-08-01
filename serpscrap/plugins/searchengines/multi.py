@@ -67,6 +67,7 @@ class MultiEngineRunner:
         config = request.to_config()
         country = str(config.get("country_code", "DE")).upper()
         engines = tuple(config.get("search_engines") or ("google",))
+        self.registry.validate_selection(engines)
         pages = int(config.get("num_pages_for_keyword", 1))
         workers = int(config.get("num_workers", 1))
         jobs = [EngineJob(query, engine, country, page) for query in request.queries for engine in engines for page in range(1, pages + 1)]
@@ -75,8 +76,10 @@ class MultiEngineRunner:
         failures: list[FailureRecord] = []
         lock = Lock()
         limits: dict[str, Semaphore] = {}
+        per_engine = config.get("engine_workers_by_engine", {})
         for engine in engines:
-            limits[engine] = Semaphore(max(1, int(config.get("engine_workers", workers))))
+            limit = int(per_engine.get(engine, config.get("engine_workers", workers)))
+            limits[engine] = Semaphore(max(1, min(workers, limit)))
 
         def run_job(job: EngineJob):
             plugin = self.registry.get(job.engine)
@@ -144,10 +147,31 @@ class MultiEngineRunner:
         total = sum(active.values()) or 1.0
         active = {engine: value / total for engine, value in active.items()}
         families = {plugin.engine_id: plugin.provider_family for plugin in self.registry}
+        ranking = config.get("ranking", {})
+        if ranking:
+            from serpscrap.plugins.searchengines.fusion import FusionSettings
+
+            self.fusion = ResultFusion(FusionSettings(
+                rrf_k=int(ranking.get("rrf_k", 60)),
+                provider_family_cap=bool(ranking.get("provider_family_cap", False)),
+            ))
         ranked = self.fusion.fuse(rows, active, families)
         ranked.sort(key=lambda row: (str(row.get("query") or ""), int(row.get("best_rank") or 0), -float(row.get("relevance_score") or 0.0), str(row.get("serp_url") or "")))
         # Preserve query order while keeping fusion deterministic within each query.
         query_index = {query: index for index, query in enumerate(request.queries)}
         ranked.sort(key=lambda row: (query_index.get(str(row.get("query")), len(query_index)), -float(row.get("relevance_score") or 0.0), str(row.get("serp_url") or "")))
         stopped = datetime.now(timezone.utc)
-        return SearchReport(results=ranked, failures=failures, started_at=started, stopped_at=stopped)
+        return SearchReport(
+            results=ranked,
+            failures=sorted(failures, key=lambda item: (item.query, item.search_engine, item.page_number)),
+            started_at=started,
+            stopped_at=stopped,
+            report_metadata={
+                "fusion_version": self.fusion.version,
+                "fusion_snapshot_id": config.get("fusion_snapshot_id", "europe-2026-07"),
+                "market_share_weights": active,
+                "market_share_fallback": fallback,
+                "provider_families": families,
+                "plugin_metadata": self.registry.metadata(),
+            },
+        )

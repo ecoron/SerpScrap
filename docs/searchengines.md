@@ -1,8 +1,26 @@
-# Search Engines for Refactoring Phase 4
+# Search Engines for Refactoring Phase 5
 
 Last researched: 2026-08-01. Market snapshot: Europe, all devices, July 2026.
 
-This document is research input for the Phase 4 plugin registry and relevance model. It is not a promise that undocumented query parameters or CSS selectors are stable. Every engine must be enabled only after its URL, country mapping, pagination, response classification, and parsing behavior are frozen in sanitized offline fixtures.
+This document is the operational registry input for the Phase 5 plugin set. It is not a promise that undocumented query parameters or CSS selectors are stable. Every engine is independently disableable and is enabled only while its URL, country mapping, pagination, response classification, and parsing behavior remain covered by sanitized offline fixtures.
+
+## Phase 5 plugin status matrix
+
+| Engine | Readiness | Plugin version | Search types | Pagination | Provider family | Disable reason |
+|---|---|---:|---|---|---|---|
+| Google | enabled | 1 | normal, image, news, shopping, videos | offset | google | — |
+| Bing | enabled | 1 | normal | offset | bing | — |
+| Yandex | enabled | 1 | normal | page | yandex | — |
+| Yahoo | enabled | 1 | normal | offset | bing | — |
+| DuckDuckGo | enabled | 1 | normal | offset | bing | — |
+| Ecosia | enabled | 1 | normal | page | mixed | — |
+| Qwant | enabled | 1 | normal | provider-defined | bing | — |
+| Startpage | enabled | 1 | normal | provider-defined | google | — |
+| Brave | enabled | 1 | normal | offset | brave | — |
+| Swisscows | enabled | 1 | normal | page | bing | — |
+| Mojeek | enabled | 1 | normal | offset | mojeek | — |
+
+The matrix is also exposed through `default_registry().metadata()` for diagnostics. A provider can be switched to `experimental` or `disabled` without removing its importable plugin or fixtures.
 
 ## Selection Method
 

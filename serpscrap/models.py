@@ -129,6 +129,7 @@ class SearchReport:
     started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     stopped_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     schema_version: int = SCHEMA_VERSION
+    report_metadata: dict[str, Any] = field(default_factory=dict)
 
     def metadata(self) -> dict[str, Any]:
         return {
@@ -137,4 +138,5 @@ class SearchReport:
             "stopped_at": self.stopped_at.isoformat(),
             "failures": [failure.to_dict() for failure in self.failures],
             "related_keywords": [dict(item) for item in self.related_keywords],
+            **self.report_metadata,
         }

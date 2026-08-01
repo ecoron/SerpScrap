@@ -111,11 +111,28 @@ class SearchEngineRegistry:
         except KeyError as exc:
             raise ValueError(f"Unknown search engine: {engine_id}") from exc
 
+    def validate_selection(self, engine_ids: Iterable[str]) -> tuple[SearchEnginePlugin, ...]:
+        selected = tuple(engine_ids)
+        if len(set(selected)) != len(selected):
+            raise ValueError("duplicate search engine IDs are not allowed")
+        plugins = tuple(self.get(engine_id) for engine_id in selected)
+        disabled = [plugin.engine_id for plugin in plugins if not plugin.enabled]
+        if disabled:
+            reasons = ", ".join(
+                f"{plugin.engine_id}: {plugin.disable_reason or 'disabled'}"
+                for plugin in plugins if not plugin.enabled
+            )
+            raise ValueError(f"disabled search engine(s): {reasons}")
+        return plugins
+
     def ids(self) -> tuple[str, ...]:
         return tuple(self._plugins)
 
     def __iter__(self):
         return iter(self._plugins.values())
+
+    def metadata(self) -> list[dict[str, object]]:
+        return [plugin.metadata() for plugin in self._plugins.values()]
 
 
 def default_registry() -> SearchEngineRegistry:

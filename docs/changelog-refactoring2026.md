@@ -5,6 +5,12 @@ This file records the implementation work performed against
 
 ## 2026-08-01
 
+### Refactoring Phase 5 - planning
+
+- Added the Phase 5 plan for production integration of all eleven documented search-engine plugins, configurable engine selection and global/per-engine parallelism, concrete fixture-backed provider adapters, normalized JSON output, deterministic relevance fusion, cache/history migration, and provider-safe verification.
+- Documented Python and CLI examples for four configured search engines with a maximum of four concurrent requests.
+- Changed CLI option handling so omitted search options inherit the validated ``Config`` defaults.
+
 ### Refactoring Phase 4 - plugin registry and multi-engine execution
 
 - Added the trusted `serpscrap.plugins.searchengines` contract and explicit registry for Google plus Bing, Yandex, Yahoo, DuckDuckGo, Ecosia, Qwant, Startpage, Brave Search, Swisscows, and Mojeek.
@@ -149,3 +155,9 @@ This file records the implementation work performed against
 - Replaced argparse with Click commands: `search` for SERP retrieval and `browser-check` for a network-free Chrome health check.
 - Added global `--log-level` and `--log-format text|json` options. Logs use stderr while machine-readable search results remain on stdout.
 - Added Click CLI tests for command discovery, JSON output, and JSON-formatted log output.
+### Refactoring Phase 5 - production integration
+
+- Added readiness, disable-reason, fixture-version, provider-family, capability, and review metadata to every registered engine, with validated duplicate/unknown/disabled selections.
+- Added validated per-engine worker ceilings, ranking settings, provider capability checks, and cache identity dimensions for country and plugin version.
+- Made cache writes atomic and added deterministic fusion/report metadata containing the immutable snapshot ID, normalized weights, fallback share, provider families, and plugin metadata.
+- Added Phase 5 plugin status documentation and offline configuration/cache regression tests while retaining Google-only compatibility.

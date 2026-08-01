@@ -43,6 +43,15 @@ are fused into one row with ``relevance_score``, ``engine_match_count``,
 fusion report uses schema version 2 and records the active market-share
 snapshot and fallback weights in report metadata.
 
+For example, four engines can be queried with a hard limit of four concurrent
+search requests:
+
+.. code-block:: bash
+
+   serpscrap search -k "renewable energy" \
+     --engine google --engine bing --engine duckduckgo --engine ecosia \
+     --workers 4 --country DE
+
 Local JSON
 ----------
 

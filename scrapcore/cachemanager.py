@@ -2,6 +2,7 @@
 import hashlib
 import os
 import shutil
+import tempfile
 import time
 
 # import lxml.html
@@ -53,11 +54,15 @@ class CacheManager:
                          scrape_mode,
                          page_number):
         """Make a unique file name from the search engine search request."""
+        plugin_version = self.config.get('plugin_version', '1')
         unique = [
+            'phase5-cache-v3',
             keyword,
             search_engine,
             scrape_mode,
             page_number,
+            self.config.get('country_code', 'DE').upper(),
+            plugin_version,
             self.config.get('search_type', 'normal'),
             self.config.get('language', 'en'),
             int(self.config.get('num_results_per_page', 10)),
@@ -133,11 +138,18 @@ class CacheManager:
             )
             cache_dir = self.config.get('cachedir', self.CACHEDIR)
             path = os.path.join(cache_dir, file_name)
-            with open(path, 'w', encoding='utf-8') as fd:
-                if isinstance(html, bytes):
-                    fd.write(html.decode('utf-8', errors='replace'))
-                else:
-                    fd.write(str(html))
+            parent = os.path.dirname(path) or '.'
+            fd, temporary = tempfile.mkstemp(prefix='.cache-', dir=parent, text=True)
+            try:
+                with os.fdopen(fd, 'w', encoding='utf-8') as output:
+                    if isinstance(html, bytes):
+                        output.write(html.decode('utf-8', errors='replace'))
+                    else:
+                        output.write(str(html))
+                os.replace(temporary, path)
+            finally:
+                if os.path.exists(temporary):
+                    os.remove(temporary)
         finally:
             if db_lock:
                 db_lock.release()

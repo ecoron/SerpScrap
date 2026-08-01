@@ -33,6 +33,7 @@ def test_core_parses_and_persists_captured_pages(tmp_path):
     config.update(
         {
             "keywords": ["serpscrap example"],
+            "search_engines": ["google"],
             "database_name": str(tmp_path / "serpscrap"),
             "cachedir": str(tmp_path / "cache"),
             "do_caching": False,
@@ -54,6 +55,7 @@ def test_core_reuses_cached_result_without_browser(tmp_path):
     config.update(
         {
             "keywords": ["cached query"],
+            "search_engines": ["google"],
             "database_name": str(tmp_path / "serpscrap"),
             "cachedir": str(tmp_path / "cache"),
             "do_caching": True,
@@ -78,6 +80,7 @@ def test_core_persists_type_specific_result_fields(tmp_path):
     config.update(
         {
             "keywords": ["mixed query"],
+            "search_engines": ["google"],
             "database_name": str(tmp_path / "serpscrap"),
             "cachedir": str(tmp_path / "cache"),
             "do_caching": False,
@@ -101,6 +104,7 @@ def test_core_can_disable_persistent_sqlite_history(tmp_path):
     config.update(
         {
             "keywords": ["ephemeral query"],
+            "search_engines": ["google"],
             "database_name": str(database),
             "cachedir": str(tmp_path / "cache"),
             "do_caching": False,
@@ -125,6 +129,7 @@ def test_optional_history_failure_preserves_assembled_results(tmp_path):
     config.update(
         {
             "keywords": ["durable result"],
+            "search_engines": ["google"],
             "database_name": str(tmp_path / "history"),
             "cachedir": str(tmp_path / "cache"),
             "do_caching": False,

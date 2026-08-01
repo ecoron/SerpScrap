@@ -9,11 +9,15 @@ validated once for every independent request.
 Core settings
 -------------
 
-* ``search_engines``: currently ``['google']`` only.
+* ``search_engines``: ordered list of registered engines, for example
+  ``['google', 'bing', 'duckduckgo']``.
 * ``search_type``: ``normal``, ``image``, ``news``, ``shopping``, or ``videos``.
 * ``num_pages_for_keyword``: positive page count per query.
 * ``num_results_per_page``: positive value up to 100.
-* ``num_workers``: maximum concurrent Chrome instances.
+* ``num_workers``: maximum concurrent search-engine requests. Set it to ``4``
+  to cap a multi-engine run at four simultaneous requests.
+* ``engine_workers``: optional per-engine ceiling; it must not exceed
+  ``num_workers``. ``engine_workers_by_engine`` can provide individual limits.
 * ``chrome_headless``: use headless Chrome; defaults to ``True``.
 * ``chrome_binary``: optional explicit Chrome executable.
 * ``executable_path``: optional explicit ChromeDriver executable. Empty uses Selenium Manager.
@@ -58,6 +62,35 @@ Example
        screenshots=True,
        store_history=False,
    )
+
+Multiple search engines with at most four concurrent requests can be selected
+through ``Config``. The same settings are used by the Python API and the CLI;
+one failed provider does not discard successful results from the others.
+
+.. code-block:: python
+
+   from serpscrap import Config, SerpScrap
+
+   config = Config()
+   config.apply({
+       'search_engines': ['google', 'bing', 'duckduckgo', 'ecosia'],
+       'country_code': 'DE',
+       'num_pages_for_keyword': 1,
+       'num_results_per_page': 10,
+       'num_workers': 4,
+       'engine_workers': 1,
+   })
+
+   scraper = SerpScrap()
+   results = scraper.search(['privacy-friendly search'], config=config)
+
+The equivalent CLI invocation is:
+
+.. code-block:: bash
+
+   serpscrap search -k "privacy-friendly search" \
+     --engine google --engine bing --engine duckduckgo --engine ecosia \
+     --country DE --workers 4
 
 Cache, SQLite history, screenshots, and JSON output are independent. JSON
 output is selected with ``output=`` or ``save_json()`` rather than a Config

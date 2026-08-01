@@ -13,8 +13,9 @@ Run a query through the configured CLI entry point:
 
 .. code-block:: bash
 
-   docker run --rm serpscrap search --keyword "example keyword" --pages 1
+   docker run --rm serpscrap search --keyword "example keyword" --pages 1 --no-history
 
-Mount output directories when caching, databases, or screenshots must survive
-the container. The image health check starts and closes headless Chrome without
-accessing a search engine.
+Mount output directories when JSON results, caches, databases, or screenshots
+must survive the container. Use ``--output /output/results.json`` for local JSON
+and mount ``/output``. The image health check starts and closes headless Chrome
+without accessing a search engine.

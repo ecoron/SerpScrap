@@ -16,12 +16,11 @@ class CacheManager:
     CACHEDIR = '.serpscrap'
     CLEAN_CACHE_AFTER = 48
 
-    def __init__(self, config, logger, result_writer):
+    def __init__(self, config, logger):
         self.config = config
         self.logger = logger
         self.create_cache_dir()
         self.clean_cache()
-        self.result_writer = result_writer
 
     def create_cache_dir(self):
         if self.config.get('do_caching', True):
@@ -209,7 +208,6 @@ class CacheManager:
                 if num_cached % 200 == 0:
                     session.commit()
 
-                self.result_writer.store_serp_result(serp, self.config)
                 num_cached += 1
                 scrape_jobs.remove(job)
 

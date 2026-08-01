@@ -1,55 +1,10 @@
 
-import csv
-import json
 import os
 import threading
 from collections import namedtuple
 
 from scrapcore import database
-
-
-class JsonStreamWriter:
-    """Writes consecutive objects to an json output file."""
-
-    def __init__(self, filename):
-        self.file = open(filename, 'w')
-        self.file.write('[')
-        self.last_object = None
-
-    def write(self, obj):
-        if self.last_object:
-            self.file.write(',')
-        json.dump(obj, self.file, indent=2, sort_keys=True)
-        self.last_object = id(obj)
-
-    def end(self):
-        self.file.write(']')
-        self.file.close()
-
-
-class CsvStreamWriter:
-    """
-    Writes consecutive objects to an csv output file.
-    """
-    def __init__(self, filename, csv_fieldnames):
-        self.csv_fieldnames = csv_fieldnames
-        self.file = open(filename, 'w')
-        self.dict_writer = csv.DictWriter(
-            self.file,
-            fieldnames=csv_fieldnames,
-            delimiter=','
-        )
-        self.dict_writer.writeheader()
-
-    def write(self, data, serp):
-        for row in data['results']:
-            d = serp
-            d.update(row)
-            d = ({k: v if type(v) is str else v for k, v in d.items() if k in self.csv_fieldnames})
-            self.dict_writer.writerow(d)
-
-    def end(self):
-        self.file.close()
+from serpscrap.exceptions import ConfigurationError as ConfigurationError
 
 
 class ScrapeJobGenerator:
@@ -182,10 +137,6 @@ class ShowProgressQueue(threading.Thread):
 
 
 class Error(Exception):
-    pass
-
-
-class ConfigurationError(Exception):
     pass
 
 

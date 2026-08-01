@@ -13,7 +13,7 @@ from scrapcore.database import ScraperSearch, SearchEngineResultsPage, fixtures,
 from scrapcore.jobs import CapturedPage, ScrapeFailure, ScrapeJob, ScrapeJobResult
 from scrapcore.logger import Logger
 from scrapcore.parsing import Parsing
-from scrapcore.result_writer import ResultWriter
+from scrapcore.repository import SqliteHistoryRepository
 from scrapcore.scraper.scrape_worker_factory import ScrapeWorkerFactory
 from scrapcore.tools import Proxies, ScrapeJobGenerator
 from scrapcore.validator_config import ValidatorConfig
@@ -28,9 +28,14 @@ def utc_now_naive() -> datetime:
 class Core:
     """Main controller for a complete scrape operation."""
 
-    def __init__(self, worker_factory: ScrapeWorkerFactory | None = None):
+    def __init__(
+        self,
+        worker_factory: ScrapeWorkerFactory | None = None,
+        history_repository: SqliteHistoryRepository | None = None,
+    ):
         self.logger: logging.Logger | None = None
         self.worker_factory = worker_factory
+        self.history_repository = history_repository or SqliteHistoryRepository()
 
     def run(self, config: dict):
         ValidatorConfig().validate(config)
@@ -73,7 +78,7 @@ class Core:
                 pages=tuple(sorted(set(pages))),
                 proxy=next(proxy_cycle),
             )
-            for (query, engine), pages in sorted(pages_by_query.items())
+            for (query, engine), pages in pages_by_query.items()
         ]
 
     def _persist_page(
@@ -83,7 +88,6 @@ class Core:
         session,
         scraper_search: ScraperSearch,
         cache_manager: CacheManager,
-        result_writer: ResultWriter,
     ) -> SearchEngineResultsPage:
         parser_class = Parsing().get_parser_by_search_engine(captured.search_engine)
         parser = parser_class(config=config, query=captured.query)
@@ -106,7 +110,6 @@ class Core:
             "selenium",
             captured.page_number,
         )
-        result_writer.store_serp_result(serp, config)
         return serp
 
     @staticmethod
@@ -126,6 +129,7 @@ class Core:
         )
         serp.failure_url = failure.url
         serp.failure_retryable = failure.retryable
+        serp.correlation_id = failure.correlation_id
         scraper_search.serps.append(serp)
         session.add(serp)
         return serp
@@ -136,7 +140,7 @@ class Core:
         self._init_logger(config)
         assert self.logger is not None
 
-        keywords = sorted(set(config.get("keywords", [])))
+        keywords = list(dict.fromkeys(config.get("keywords", [])))
         if not keywords:
             raise ValueError("At least one keyword is required")
         engines = self._parse_search_engines(config)
@@ -144,10 +148,8 @@ class Core:
         pages = int(config.get("num_pages_for_keyword", 1))
         num_workers = int(config.get("num_workers", 1))
 
-        result_writer = ResultWriter()
-        result_writer.init_outfile(config, force_reload=True)
-        cache_manager = CacheManager(config, self.logger, result_writer)
-        session_factory = get_session(config)
+        cache_manager = CacheManager(config, self.logger)
+        session_factory = get_session(config, path=":memory:")
         session = session_factory()
         scraper_search = ScraperSearch(
             number_search_engines_used=len(engines),
@@ -192,7 +194,6 @@ class Core:
                         session,
                         scraper_search,
                         cache_manager,
-                        result_writer,
                     )
                 for failure in result.failures:
                     self._persist_failure(failure, session, scraper_search)
@@ -206,10 +207,16 @@ class Core:
                 list(serp.links)
                 list(serp.related_keywords)
             session.expunge_all()
+            scraper_search.persistence_failures = []
+            if config.get("store_history", True):
+                try:
+                    self.history_repository.persist(config, scraper_search)
+                except Exception as exc:
+                    self.logger.error("Optional SQLite history persistence failed: %s", exc)
+                    scraper_search.persistence_failures.append(str(exc))
             return scraper_search if return_results else None
         except Exception:
             session.rollback()
             raise
         finally:
-            result_writer.close_outfile()
             session.close()

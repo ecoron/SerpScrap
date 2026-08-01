@@ -27,7 +27,7 @@ Features
 * For each result, you get: domain, rank, rich snippet, site links, snippet, title, type, url, visible url
 * Optionally takes a diagnostic screenshot of each result page
 * Optionally scrapes the text content of each result URL
-* Results can be saved as CSV for analytics
+* Results are returned as JSON-compatible dictionaries and can be saved as JSON
 * Supports using your own proxy list
 * Only supports Google Chrome (headless)
 
@@ -45,7 +45,7 @@ To run a simple search:
 
 .. code-block:: bash
 
-   serpscrap search --keyword "example keyword"
+   serpscrap search --keyword "example keyword" --output results.json
 
 For more details, see the install and usage sections.
 
@@ -79,18 +79,16 @@ SerpScrap in your applications
 
    import serpscrap
    
-   keywords = ['one', 'two']
-   scrap = serpscrap.SerpScrap()
-   scrap.init(keywords=keywords)
-   result = scrap.scrap_serps()
+   scraper = serpscrap.SerpScrap()
+   results = scraper.search(['one', 'two'])
 
 More detailes in the `examples`_ section of the documentation.
 
 Supported OS
 ------------
 
-* SerpScrap should work on Linux, Windows and Mac OS with installed Python >= 3.4
-* SerpScrap requieres lxml
+* SerpScrap supports Linux, Windows, and macOS with Python >= 3.10
+* SerpScrap requires Google Chrome; Selenium Manager resolves ChromeDriver
 * Doesn't work on iOS
 
 Changes

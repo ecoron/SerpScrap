@@ -25,6 +25,12 @@ from sqlalchemy.orm import backref, declarative_base, relationship, scoped_sessi
 
 Base = declarative_base()
 
+
+def utc_now_naive():
+    """Return UTC without timezone information for the legacy SQLite schema."""
+
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
 scraper_searches_serps = Table(
     'scraper_searches_serps',
     Base.metadata,
@@ -42,7 +48,7 @@ class ScraperSearch(Base):
     used_search_engines = Column(String)
     number_proxies_used = Column(Integer)
     number_search_queries = Column(Integer)
-    started_searching = Column(DateTime, default=datetime.datetime.utcnow)
+    started_searching = Column(DateTime, default=utc_now_naive)
     stopped_searching = Column(DateTime)
 
     serps = relationship(
@@ -68,7 +74,7 @@ class SearchEngineResultsPage(Base):
     search_engine_name = Column(String)
     scrape_method = Column(String)
     page_number = Column(Integer)
-    requested_at = Column(DateTime, default=datetime.datetime.utcnow)
+    requested_at = Column(DateTime, default=utc_now_naive)
     requested_by = Column(String, default='127.0.0.1')
 
     num_results_for_query = Column(String, default='')
@@ -216,7 +222,7 @@ class Proxy(Base):
     online = Column(Boolean)
     status = Column(String)
     checked_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now_naive)
 
     city = Column(String)
     region = Column(String)

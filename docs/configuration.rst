@@ -2,8 +2,9 @@
 Configuration
 =============
 
-``Config`` retains dictionary access for compatibility. Values passed to
-``SerpScrap.init`` are merged over the defaults and validated before a scrape.
+``Config`` retains dictionary access for Phase 1 compatibility. New code can
+pass friendly options directly to ``SerpScrap.search``. Settings are copied and
+validated once for every independent request.
 
 Core settings
 -------------
@@ -23,7 +24,8 @@ Core settings
 * ``screenshot``: save diagnostic screenshots; defaults to ``False``.
 * ``dir_screenshot``: base directory for screenshots.
 * ``do_caching`` and ``cachedir``: enable and locate captured-HTML caching.
-* ``database_name``: SQLite database path without the ``.db`` suffix.
+* ``store_history``: persist SQLite run history; defaults to ``True``.
+* ``database_name``: SQLite history path without the ``.db`` suffix.
 * ``scrape_urls``: fetch the text content of parsed result URLs.
 
 Example
@@ -33,16 +35,19 @@ Example
 
    import serpscrap
 
-   config = serpscrap.Config()
-   config.apply({
-       'num_pages_for_keyword': 2,
-       'num_workers': 2,
-       'screenshot': True,
-   })
-
    scraper = serpscrap.SerpScrap()
-   scraper.init(config=config.get(), keywords=['example query'])
-   results = scraper.run()
+   results = scraper.search(
+       ['example query'],
+       pages=2,
+       workers=2,
+       screenshots=True,
+       store_history=False,
+   )
+
+Cache, SQLite history, screenshots, and JSON output are independent. JSON
+output is selected with ``output=`` or ``save_json()`` rather than a Config
+key. The removed ``output_filename`` and ``print_results`` settings raise a
+migration error.
 
 Proxy file
 ----------
@@ -57,4 +62,3 @@ line uses one of these formats:
 
 Authenticated proxies are rejected by the Chrome factory because they require
 an external extension. They are not silently started without authentication.
-

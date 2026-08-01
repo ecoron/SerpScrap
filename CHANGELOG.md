@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Added the direct ``SerpScrap.search()`` API with canonical JSON-compatible ``list[dict]`` results.
+- Added atomic UTF-8 JSON file output and CLI ``--output``/``--overwrite`` options.
+- Made HTML caching and SQLite history independently optional.
+- Moved optional SQLite history behind a post-assembly repository so persistence failures retain successful in-memory results.
+- Removed CSV output, duplicate result writers, and the unreachable legacy scraping workflow.
+
 ## [0.14.0] - 2025-10-26
 ### Changed
 - Removed support for Firefox and PhantomJS. Only Chrome is supported.

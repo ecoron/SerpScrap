@@ -70,3 +70,50 @@ def test_core_reuses_cached_result_without_browser(tmp_path):
     assert len(cached_search.serps) == 1
     assert cached_search.serps[0].page_number == 1
     assert cached_search.serps[0].search_engine_name == "google"
+
+
+def test_core_can_disable_persistent_sqlite_history(tmp_path):
+    config = Config().get()
+    database = tmp_path / "must-not-exist"
+    config.update(
+        {
+            "keywords": ["ephemeral query"],
+            "database_name": str(database),
+            "cachedir": str(tmp_path / "cache"),
+            "do_caching": False,
+            "store_history": False,
+        }
+    )
+
+    search = Core(worker_factory=FixtureWorkerFactory(FIXTURE.read_text(encoding="utf-8"))).run(
+        config
+    )
+
+    assert len(search.serps) == 1
+    assert not database.with_suffix(".db").exists()
+
+
+def test_optional_history_failure_preserves_assembled_results(tmp_path):
+    class BrokenHistory:
+        def persist(self, config, search):
+            raise OSError("history disk unavailable")
+
+    config = Config().get()
+    config.update(
+        {
+            "keywords": ["durable result"],
+            "database_name": str(tmp_path / "history"),
+            "cachedir": str(tmp_path / "cache"),
+            "do_caching": False,
+            "store_history": True,
+        }
+    )
+    core = Core(
+        worker_factory=FixtureWorkerFactory(FIXTURE.read_text(encoding="utf-8")),
+        history_repository=BrokenHistory(),
+    )
+
+    search = core.run(config)
+
+    assert len(search.serps[0].links) == 2
+    assert search.persistence_failures == ["history disk unavailable"]

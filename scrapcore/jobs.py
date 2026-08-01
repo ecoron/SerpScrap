@@ -45,6 +45,7 @@ class ScrapeFailure:
     category: str
     message: str
     retryable: bool
+    correlation_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,4 +55,3 @@ class ScrapeJobResult:
     job: ScrapeJob
     pages: tuple[CapturedPage, ...] = ()
     failures: tuple[ScrapeFailure, ...] = ()
-

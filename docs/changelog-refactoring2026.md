@@ -5,6 +5,40 @@ This file records the implementation work performed against
 
 ## 2026-08-01
 
+### Refactoring Phase 2 - public contract and architecture
+
+- Added deeply immutable, validated `SearchRequest` values and a `SearchApplication` boundary that returns a canonical `SearchReport` without exposing ORM, session, browser, or parser objects publicly.
+- Added the direct `SerpScrap.search()` API with friendly page, worker, visibility, screenshot, URL-scrape, output, and overwrite options; retained `init()`/`run()` and low-level `scrap()` as Phase 1 compatibility adapters.
+- Standardized successful Python results as a deterministic `list[dict]` containing native JSON types and stable ordering across queries, pages, result types, ranks, concurrency, and cache hits.
+- Separated structured page failures and related keywords from successful result rows through `get_failures()`, `get_related()`, and `SearchReport` metadata.
+- Propagated worker correlation IDs into persisted failure outcomes and retained successful rows for partial requests.
+- Added an injectable runner protocol so application behavior can be tested with in-memory fakes independently of Chrome, network access, SQLite, or filesystem output.
+- Isolated public exceptions and lazy-loaded the default composition root; importing `serpscrap` no longer imports Selenium or SQLAlchemy.
+
+### Refactoring Phase 2 - JSON persistence and cleanup
+
+- Added a single `JsonResultWriter` that writes UTF-8 JSON arrays with native types, Unicode preservation, automatic `.json` suffixes, parent-directory creation, temporary-file cleanup, atomic replacement, and explicit overwrite protection.
+- Added `SerpScrap.save_json()` and CLI `--output`/`--overwrite`; CLI stdout continues to contain the same JSON result array while logs remain on stderr.
+- Removed `CsvWriter`, `CsvStreamWriter`, `SerpScrap.as_csv()`, CSV output branches, and obsolete `output_filename`/`print_results` configuration. Legacy output settings and `.csv` paths now produce actionable migration errors.
+- Removed the duplicate `ResultWriter` and unreachable legacy `scrapcore.scraping` workflow after confirming there were no remaining imports.
+- Removed output side effects from `Core` and `CacheManager`; result serialization now happens once at the public boundary.
+- Added independently configurable SQLite history through `store_history`; disabling it uses an in-memory database while cache and JSON output remain independently selectable.
+- Moved SQLite history into a post-assembly repository adapter. Result parsing always uses an isolated in-memory session, and optional history failures are reported without discarding successful rows.
+
+### Refactoring Phase 2 - tests and documentation
+
+- Added contract tests for native JSON types, deterministic ordering, partial failures, correlation IDs, direct API use, exact file round trips, Unicode, extension validation, overwrite protection, removed CSV APIs, CLI output options, and history-free execution.
+- Migrated README, result/configuration/Docker documentation, and all examples to the direct API and JSON output; replaced the CSV example with `example_json.py`.
+- Preserved the Phase 1 offline suite and browser lifecycle guarantees while increasing deterministic offline coverage from 18 to 31 tests.
+
+### Refactoring Phase 2 - verification
+
+- Verified 31 deterministic offline tests locally; the browser/network smoke test remains opt-in.
+- Verified Ruff across application, infrastructure, tests, and examples with no findings.
+- Verified focused mypy checks for the six new Phase 2 public/application and repository modules with no findings.
+- Verified that a clean public package import loads neither Selenium nor SQLAlchemy.
+- Built the source distribution and wheel successfully without build isolation using the installed locked toolchain.
+
 ### Baseline and architecture
 
 - Audited the public API, CLI, configuration, cache, parser, database, worker factory, and Selenium implementation.

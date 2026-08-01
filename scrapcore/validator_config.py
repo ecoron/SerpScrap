@@ -1,7 +1,7 @@
 """Validation for the public dictionary configuration."""
 
 from scrapcore.scraper.browser import BrowserSettings
-from scrapcore.tools import ConfigurationError
+from serpscrap.exceptions import ConfigurationError
 
 
 class ValidatorConfig:
@@ -10,6 +10,15 @@ class ValidatorConfig:
     def validate(self, config: dict) -> None:
         if not isinstance(config, dict):
             raise ConfigurationError("Config is not a dict")
+        removed = {"output_filename", "print_results"}.intersection(config)
+        if removed:
+            names = ", ".join(sorted(removed))
+            raise ConfigurationError(
+                f"Removed output setting(s): {names}; use search(output='results.json')"
+            )
+        for key in ("do_caching", "store_history", "scrape_urls", "screenshot"):
+            if not isinstance(config.get(key), bool):
+                raise ConfigurationError(f"{key} must be a boolean")
         if config.get("scrape_method") != "selenium":
             raise ConfigurationError("Only the selenium scrape method is supported")
         if config.get("sel_browser") != "chrome":

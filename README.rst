@@ -27,7 +27,7 @@ Features
 * For each result, you get: domain, rank, rich snippet, site links, snippet, title, type, url, visible url
 * Takes a screenshot of each result page
 * Optionally scrapes the text content of each result URL
-* Results can be saved as CSV for analytics
+* Results are returned as ``list[dict]`` and can be saved as UTF-8 JSON
 * Supports using your own proxy list
 
 Quickstart Example (CLI)
@@ -44,7 +44,7 @@ This will show you the available CLI options. For a simple search, try:
 
 .. code-block:: bash
 
-   serpscrap search --keyword "example keyword"
+   serpscrap search --keyword "example keyword" --output results.json
 
 Use ``--log-level`` and ``--log-format`` before the command to control stderr
 logging independently from JSON results on stdout:
@@ -75,13 +75,9 @@ Usage in Python
   
   import serpscrap
   
-  keywords = ['example']
-  config = serpscrap.Config()
-  config.set('scrape_urls', False)
-  
-  scrap = serpscrap.SerpScrap()
-  scrap.init(config=config.get(), keywords=keywords)
-  results = scrap.run()
+  scraper = serpscrap.SerpScrap()
+  results = scraper.search(['example'])
+  scraper.save_json('results.json', overwrite=True)
   
   for result in results:
       print(result)

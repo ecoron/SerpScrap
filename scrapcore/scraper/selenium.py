@@ -110,6 +110,7 @@ class SelScrape:
             category=category,
             message=str(error),
             retryable=retryable,
+            correlation_id=self.job.correlation_id,
         )
 
     def retrieve(self) -> ScrapeJobResult:

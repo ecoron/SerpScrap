@@ -89,6 +89,14 @@ def main(log_level: str, log_format: str) -> None:
 @click.option("--visible", is_flag=True, help="Show the Chrome window.")
 @click.option("--screenshots", is_flag=True, help="Save diagnostic screenshots.")
 @click.option("--scrape-urls", is_flag=True, help="Also fetch parsed result pages.")
+@click.option(
+    "--output",
+    type=click.Path(path_type=str, dir_okay=False),
+    help="Atomically save the result array to a local .json file.",
+)
+@click.option("--overwrite", is_flag=True, help="Replace an existing JSON output file.")
+@click.option("--no-cache", is_flag=True, help="Disable the local HTML cache.")
+@click.option("--no-history", is_flag=True, help="Disable persistent SQLite history.")
 def search(
     keywords: tuple[str, ...],
     pages: int,
@@ -96,6 +104,10 @@ def search(
     visible: bool,
     screenshots: bool,
     scrape_urls: bool,
+    output: str | None,
+    overwrite: bool,
+    no_cache: bool,
+    no_history: bool,
 ) -> None:
     """Run one or more Google search queries and write JSON results to stdout."""
 
@@ -108,16 +120,31 @@ def search(
             "chrome_headless": not visible,
             "screenshot": screenshots,
             "scrape_urls": scrape_urls,
+            "do_caching": not no_cache,
+            "store_history": not no_history,
         }
     )
     logger.info("Starting %d query job(s) with %d worker(s)", len(keywords), workers)
     scraper = SerpScrap()
     try:
-        scraper.init(config=config.get(), keywords=list(keywords))
-        results = scraper.run()
+        results = scraper.search(
+            list(keywords),
+            config=config,
+            output=output,
+            overwrite=overwrite,
+        )
     except Exception as exc:
         logger.exception("Search failed")
         raise click.ClickException(str(exc)) from exc
+    for failure in scraper.get_failures():
+        logger.warning(
+            "Partial failure [%s] query=%r page=%s retryable=%s: %s",
+            failure["category"],
+            failure["query"],
+            failure["page_number"],
+            failure["retryable"],
+            failure["message"],
+        )
     logger.info("Search completed with %d parsed result(s)", len(results))
     click.echo(json.dumps(results, ensure_ascii=False, indent=2))
 

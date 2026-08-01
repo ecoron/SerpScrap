@@ -24,7 +24,7 @@ class BrowserConfigurationError(ValueError):
     """Raised when Chrome cannot be configured safely."""
 
 
-FALLBACK_CHROME_MAJOR = 151
+FALLBACK_CHROME_MAJOR = 150
 FALLBACK_CHROME_RELEASE_DATE = date(2026, 7, 22)
 FALLBACK_CHROME_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -220,7 +220,7 @@ class BrowserSettings:
     executable_path: str | None = None
     binary_location: str | None = None
     user_agent: str = FALLBACK_CHROME_USER_AGENT
-    language: str = "en-US"
+    language: str = "de-DE"
     window_width: int = 1366
     window_height: int = 900
     page_load_timeout: float = 30.0
@@ -241,7 +241,7 @@ class BrowserSettings:
             executable_path=config.get("executable_path") or None,
             binary_location=binary_location,
             user_agent=provider.resolve(config.get("user_agent") or None, binary_location),
-            language=str(config.get("language", "en-US")),
+            language=str(config.get("language", "de-DE")),
             window_width=int(config.get("window_width", 1366)),
             window_height=int(config.get("window_height", 900)),
             page_load_timeout=float(config.get("page_load_timeout", 30)),

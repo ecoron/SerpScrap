@@ -39,5 +39,14 @@ def test_current_release_interfaces_are_documented() -> None:
     assert "2.0.0-alpha.1" in readme
     for tool in ("start_search", "get_search_status", "list_results", "list_engines"):
         assert tool in mcp
+    for configuration_marker in (
+        "Claude Code",
+        '"mcpServers"',
+        '"type": "mcp"',
+        'model="gpt-5"',
+        '"model": "claude-sonnet-4-20250514"',
+        "OpenAI remote MCP",
+    ):
+        assert configuration_marker in mcp
     for option in ("--keyword", "--engine", "--search-type", "--output", "--diagnostic-html"):
         assert option in cli

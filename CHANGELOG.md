@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added MCP configuration examples for Claude Code, JSON-configured clients,
+  the OpenAI Responses API, and the Anthropic Messages API, including local
+  versus hosted transport and authentication caveats.
+
 - Reworked the Sphinx documentation into a complete user/developer structure
   with Python, CLI, Docker, MCP, configuration, results, and provider guides;
   updated the README for the `2.0.0-alpha.1` release and removed obsolete

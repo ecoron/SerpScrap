@@ -7,7 +7,12 @@ import pytest
 from selenium.common.exceptions import ElementNotInteractableException
 
 from serpscrap.diagnostics import DiagnosticArtifactStore, ProgressCoordinator
-from serpscrap.plugins.searchengines.base import BrowserInteraction, EnginePage, GenericHtmlPlugin, _clean_text
+from serpscrap.plugins.searchengines.base import (
+    BrowserInteraction,
+    EnginePage,
+    GenericHtmlPlugin,
+    _clean_text,
+)
 from serpscrap.plugins.searchengines.browser_flow import BrowserFlowError, HomepageSearchFlow
 from serpscrap.plugins.searchengines.registry import default_registry
 

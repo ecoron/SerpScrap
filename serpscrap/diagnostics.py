@@ -150,6 +150,9 @@ _SENSITIVE_VALUE = re.compile(
     r"(?i)(cookie|set-cookie|authorization|proxy-authorization|csrf|xsrf|session(?:id)?|api[_-]?key|secret|token)"
     r"(\s*[=:]\s*)([\"']?)([^\"'\s<;&]+)"
 )
+_SENSITIVE_ATTRIBUTE_VALUE = re.compile(
+    r"(?is)(\b(?:name|id)\s*=\s*[\"'](?:csrf|xsrf|session(?:id)?|token|secret)[\"'][^>]*\bvalue\s*=\s*[\"'])[^\"']*([\"'])"
+)
 
 
 class DiagnosticArtifactStore:
@@ -185,7 +188,8 @@ class DiagnosticArtifactStore:
         plus_encoded = quote_plus(query)
         if plus_encoded != query:
             redacted = redacted.replace(plus_encoded, "[REDACTED_QUERY]")
-        return _SENSITIVE_VALUE.sub(r"\1=[REDACTED]", redacted)
+        redacted = _SENSITIVE_VALUE.sub(r"\1=[REDACTED]", redacted)
+        return _SENSITIVE_ATTRIBUTE_VALUE.sub(r"\1[REDACTED]\2", redacted)
 
     @staticmethod
     def _safe_token(value: str) -> str:

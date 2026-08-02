@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Fixed CI regressions in Ruff formatting, documentation indentation, Bing fixture parsing, sensitive form redaction, text decoding, and malformed post-submit classification.
 - Closed Refactoring Phase 7 with the homepage-driven browser flow, provider contracts, diagnostics, typed outcomes, fixtures, tests, documentation, and practical-run status consolidated; Google/Ecosia live consent automation remains a documented future TODO.
 - Added default Google consent handling using stable dialog attributes; `consent_action=necessary` selects the privacy-preserving rejection action, with `reject` and `disabled` alternatives plus CLI support.
 - Waited for Google's asynchronous consent-dialog dismissal before locating and using the search field.

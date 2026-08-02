@@ -5,6 +5,12 @@ This file records the implementation work performed against
 
 ## 2026-08-02
 
+### CI compatibility corrections
+
+- Fixed Ruff import formatting, RST list indentation, Bing fixture parsing,
+  sensitive form-value redaction, mojibake normalization, and pre-submit URL
+  capture so the non-browser CI suite retains deterministic outcomes.
+
 ### Phase 7 - Abschluss
 
 - Marked Phase 7 complete after consolidating the homepage browser flow,

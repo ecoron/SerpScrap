@@ -229,9 +229,9 @@ def _clean_text(value: str | None) -> str | None:
     if not value:
         return None
     text = " ".join(unescape(value).split())
-    if any(marker in text for marker in ("Ã", "Â", "â€", "â€™", "â€“")):
+    if any(marker in text for marker in ("Ã", "Â", "â")):
         try:
-            repaired = text.encode("latin-1").decode("utf-8")
+            repaired = text.encode("cp1252").decode("utf-8")
             if repaired.count("�") <= text.count("�"):
                 text = repaired
         except (UnicodeEncodeError, UnicodeDecodeError):

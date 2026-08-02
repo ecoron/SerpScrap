@@ -317,12 +317,12 @@ class HomepageSearchFlow:
                 (element for element in self._elements(driver, spec.submit_selectors) if self._usable(element)),
                 None,
             )
+            submitted_url = getattr(driver, "current_url", "")
             emit("pre_submit", selector_key=spec.submit_selectors[0] if submit is not None else "keyboard-enter")
             if submit is not None:
                 submit.click()
             else:
                 field.send_keys(Keys.ENTER)
-            submitted_url = getattr(driver, "current_url", "")
             emit("navigation_started")
             emit("serp_waiting")
             self._wait_for_serp(driver, plugin, submitted_url=submitted_url)

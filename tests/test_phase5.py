@@ -9,8 +9,8 @@ from serpscrap.plugins.searchengines.registry import default_registry
 
 def test_registry_exposes_operational_metadata_for_all_phase5_engines():
     metadata = default_registry().metadata()
-    assert len(metadata) == 11
-    assert {item["readiness"] for item in metadata} == {"enabled"}
+    assert len(metadata) == 16
+    assert {item["readiness"] for item in metadata} == {"enabled", "disabled"}
     assert all(item["plugin_version"] for item in metadata)
 
 

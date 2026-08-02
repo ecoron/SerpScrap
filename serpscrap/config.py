@@ -16,11 +16,14 @@ class Config:
         temp_root = Path(gettempdir())
         self.config: dict[str, Any] = {
             "use_own_ip": True,
-            "search_engines": ["google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia",
-                "qwant", "startpage", "brave", "swisscows", "mojeek"],
+            "search_engines": [
+                "bing", "yandex", "yahoo", "duckduckgo", "startpage", "brave",
+                "swisscows", "mojeek", "good", "xprivo", "marginalia", "etools",
+            ],
             "supported_search_engines": [
-                "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia",
-                "qwant", "startpage", "brave", "swisscows", "mojeek",
+                "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia", "qwant",
+                "startpage", "brave", "swisscows", "mojeek", "metager", "good", "xprivo",
+                "marginalia", "etools",
             ],
             "country_code": "DE",
             "engine_workers": 1,

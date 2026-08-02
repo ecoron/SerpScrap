@@ -7,6 +7,17 @@ from scrapcore.validator_config import ValidatorConfig
 from serpscrap.config import Config
 
 
+def test_default_search_engines_activate_public_candidates_without_disabled_defaults():
+    config = Config().get()
+
+    assert config["search_engines"] == [
+        "bing", "yandex", "yahoo", "duckduckgo", "startpage", "brave",
+        "swisscows", "mojeek", "good", "xprivo", "marginalia", "etools",
+    ]
+    assert {"google", "ecosia", "qwant"}.isdisjoint(config["search_engines"])
+    assert set(config["search_engines"]).issubset(config["supported_search_engines"])
+
+
 def test_config_preserves_attribute_and_dictionary_access():
     config = Config()
     config.set("screenshot", True)

@@ -42,7 +42,8 @@ conditionals into `browser_flow.py`, `multi.py`, or `fusion.py`.
 5. Register the instance in `default_registry()` (or a separately composed
    `SearchEngineRegistry`) and run `validate_contract()` before using it.
    Duplicate IDs, invalid metadata, missing browser selectors, and unsupported
-   readiness values fail immediately.
+   readiness values fail immediately. The default registry also rejects
+   plugins declaring API-key or login authentication.
 6. Add sanitized homepage/SERP fixtures and contract tests covering URL
    encoding, pagination, normal parsing, empty/malformed pages, and provider
    control states. Keep raw pages, cookies, tokens, and user queries out of
@@ -85,6 +86,122 @@ fixture-covered but not ready for normal selection.
 - Organic results have stable ranks, normalized absolute URLs, and no ads,
   AI modules, navigation, or duplicate sitelinks.
 - Offline tests pass; browser smoke tests remain opt-in and low volume.
+
+## Phase 9.2 Candidate Expansion: Additional European Engines
+
+The following candidates are additional to the eleven engines in the Phase 7
+matrix. The research was refreshed on 2026-08-02. Every candidate below has a
+public web search surface that can be opened without an API key, login, or
+authentication. A candidate is not promoted
+to `enabled` merely because its homepage is reachable: its URL construction,
+country behavior, pagination, response state classification, and organic-card
+parser must first be proven with sanitized fixtures.
+
+### Selection scope and evidence
+
+The selection prioritizes European operators, European-hosted/open projects,
+and alternatives that add a different provider family or transport. It also
+requires an explicit instance profile for SearXNG because public instances
+control their own configuration. Kagi was not included in this
+European-operator cohort: its own documentation identifies Kagi Inc. as the
+operator, so it is a useful non-European comparison rather than a European
+provider.
+
+| Candidate | European basis | Provider/index model | Initial readiness | Search types | Transport |
+|---|---|---|---|---|---|
+| MetaGer | SUMA-EV, Germany | Metasearch over multiple indexes; open source | disabled (requires current MetaGer key) | normal; verify image/news/product | browser |
+| GOOD | Good Search UG, Berlin, Germany | Brave independent index; ad-free social enterprise | enabled | normal | browser |
+| xPrivo | European data-sovereignty provider; current 4.0 release | xPrivo crawl index plus European Search Perspective | enabled (search route) | normal; verify image/news/video | browser |
+| Marginalia | Independent project operating from Sweden | Own crawler/index focused on non-commercial and text-rich sites | enabled | normal | browser |
+| SearXNG | European open-source community/project and European instances | Configurable metasearch; instance controls upstream engines | experimental | normal; optionally image/news | browser/http |
+| eTools.ch | Comcepta AG, Switzerland | Public federated metasearch over Swiss/international sources | enabled | normal | http/browser |
+
+The sources support the operator/index distinctions: [MetaGer describes its
+metasearch model and source code](https://metager.org/en-US/search-engine),
+[GOOD documents its Berlin operator and current Brave-backed results](https://good-search.org/about/en/),
+[xPrivo documents its 4.0 European index release](https://www.xprivo.com/blog/en/xprivo-4/),
+[Marginalia documents its Swedish operation and independent project](https://about.marginalia-search.com/),
+[SearXNG documents its open metasearch and self-hosted instance model](https://docs.searxng.org/user/about.html), and
+[eTools.ch documents a public GET/POST form, supported parameters, and no credential requirement](https://www.etools.ch/pdf/eTools-HtmlForm-en.pdf).
+
+### Reconnaissance matrix
+
+The URLs and selectors below are discovery baselines. `fixture-discovery`
+means that no selector or pagination assumption may be promoted without a
+sanitized artifact and a passing selector-specific test.
+
+| Candidate | Baseline URL / query route | Pagination and locale | Homepage/input | SERP-ready / organic cards | Primary risks |
+|---|---|---|---|---|---|
+| MetaGer | `https://metager.org/meta/meta.ger3?eingabe={query}`; the documented browser-template form uses the `eingabe` parameter | Provider-defined; discover `page`/continuation and locale from fixtures | `https://metager.org/`; `input[name='eingabe']` is the documented widget candidate; submit/button fixture-discovery | Result container and organic title/link selectors fixture-discovery | metasearch provenance, keys/ad-free state, rate limits, consent/localization |
+| GOOD | `https://good-search.org/en/?q={query}`; current homepage redirects to the localized `?q=` route | query route is observed; pagination and locale fixture-discovery | `https://good-search.org/en/`; search input placeholder `Search the web…`, submit fixture-discovery | `div.margin-bottom--small.box` cards with `h4.result`; exclude subscription/login/navigation | subscription state, Brave provenance changes, route/hydration drift |
+| xPrivo | `https://www.xprivo.com/search/?q={query}`; use the dedicated search route, not the AI-chat homepage | pagination, locale, and search route fixture-discovery | dedicated search route and input fixture-discovery | result cards, AI overview, images/news modules fixture-discovery | young product, changing route, mixed EUSP/xPrivo provenance, access controls |
+| Marginalia | `https://marginalia-search.com/search?q={query}`; current public UI also links an old interface | page/locale behavior fixture-discovery | public search input fixture-discovery; no login or API key for the web UI | `main h2` result headings with linked organic titles | UI drift, small independent service, rate limits; do not use the API-key route |
+| SearXNG | configured trusted instance: `https://<instance>/search?q={query}&format=html` | `pageno`/instance settings require verification; language/locale are instance settings | HTTP form/API contract is preferred; browser selectors are instance/theme-specific | `article.result`/result-header candidates only after instance fixture verification | no single provider, instance trust/config drift, upstream blocks, limiter, public-instance availability |
+| eTools.ch | `https://www.etools.ch/searchSubmit.do?query={query}`; official form supports GET and POST | `country`, `language`, `dataSources`, and `safeSearch` are documented; pagination fixture-discovery | public form field `input[name='query']`; submit route is documented | result cards and source grouping fixture-discovery | federated upstream failures, abuse limits, result aggregation drift |
+
+### Candidate-specific implementation notes
+
+#### MetaGer
+
+Implement as a browser plugin first because the public widget exposes a stable
+GET form and the result HTML is provider-owned. Capture homepage, a normal
+SERP, empty state, rate-limit/challenge state, and a page-2 observation. Keep
+MetaGer’s upstream source/provenance out of the common result row unless the
+page exposes it unambiguously. The official browser-search documentation uses
+`https://metager.de/meta/meta.ger3?eingabe=%s`; the `metager.org` route must be
+verified as the preferred current host before enabling the plugin. The current
+public host presents a MetaGer-key requirement and no anonymous search field,
+so the plugin remains disabled for this no-auth cohort.
+
+#### GOOD
+
+Treat the current Brave-backed implementation as provider provenance, not as
+permission to reuse the Brave plugin. GOOD owns the user-facing route and may
+change its upstream index. The fixture must prove that cards are organic and
+that subscription/login overlays do not become an empty result page.
+
+#### xPrivo
+
+The plugin is enabled as a browser-only public route. Continued live-smoke
+observations must establish the actual search route, stable input,
+result-ready state, organic card selectors, and whether AI, news, image, or
+place modules appear ahead of web results.
+Record the xPrivo/EUSP index attribution only when rendered evidence exposes
+it; do not infer it from marketing text.
+
+#### Marginalia
+
+Use the public browser UI rather than Marginalia's API. The API requires an
+`API-Key` header, so it is explicitly out of scope for this no-auth cohort.
+Capture the current and old public UI, verify organic cards, page navigation,
+empty state, and rate-limit behavior, and keep the plugin browser-backed.
+
+#### SearXNG
+
+Do not register `searxng.org` as if it were one SERP provider. Register a
+configured instance profile containing the base URL, instance name, locale,
+enabled categories, privacy/trust review, and observation date. A self-hosted
+instance is preferred for deterministic tests. Public-instance operation must
+respect the instance limiter and terms; no instance rotation or CAPTCHA
+avoidance is allowed.
+
+#### eTools.ch
+
+Use the documented public HTML form. The official integration guide states
+that GET and POST are supported, `query` is required, and optional country,
+language, source, timeout, and safe-search parameters are available. Start
+with one normal web result fixture and explicitly preserve source/provider
+labels only when rendered in the result page.
+
+### Explicit exclusions from this no-auth cohort
+
+Marginalia's API is excluded because it requires an `API-Key` header even
+though a shared `public` key exists. OpenWebSearch.eu/OWI and EU Search are
+excluded because they do not currently expose a stable public end-user SERP;
+their research or future-launch status is not sufficient for a plugin.
+YaCy remains a self-hosted/decentralized software option rather than a single
+stable public provider endpoint. Kagi remains outside the European-operator
+cohort and also requires an account/subscription for normal use.
 
 Last researched: 2026-08-02. Market snapshot: Europe, all devices, July 2026.
 

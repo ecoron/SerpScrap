@@ -231,7 +231,7 @@ def test_selenium_page_capture_always_quits_driver(monkeypatch: pytest.MonkeyPat
 
 def test_all_registered_engines_expose_phase7_browser_contracts():
     plugins = tuple(default_registry())
-    assert len(plugins) == 11
+    assert len(plugins) == 16
     assert all(plugin.browser_interaction is not None for plugin in plugins)
     assert all(plugin.browser_interaction.homepage_url.startswith("https://") for plugin in plugins)
     assert all(plugin.metadata()["browser_interaction"]["observed_at"] == "2026-08-02" for plugin in plugins)

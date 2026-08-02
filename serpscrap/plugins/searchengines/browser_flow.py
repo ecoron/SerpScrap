@@ -343,6 +343,11 @@ class HomepageSearchFlow:
                 submit.click()
             else:
                 field.send_keys(Keys.ENTER)
+            if plugin.engine_id == "etools" and getattr(driver, "current_url", "") == submitted_url:
+                # eTools documents both POST and GET. Some browser sessions
+                # leave the POST form on the homepage; retry the documented
+                # GET URL before classifying the run as navigation_state.
+                driver.get(plugin.build_url(query, page, country_code, search_type))
             emit("navigation_started")
             emit("serp_waiting")
             self._wait_for_serp(driver, plugin, submitted_url=submitted_url)

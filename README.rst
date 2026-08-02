@@ -9,10 +9,6 @@ SerpScrap
     :target: http://serpscrap.readthedocs.io/en/latest/
     :alt: Documentation Status
 
-.. image:: https://github.com/ecoron/SerpScrap/actions/workflows/ci.yml/badge.svg
-    :target: https://github.com/ecoron/SerpScrap/actions/workflows/ci.yml
-    :alt: CI status
-
 .. image:: https://img.shields.io/docker/pulls/ecoron/serpscrap.svg
     :target: https://hub.docker.com/r/ecoron/serpscrap
 

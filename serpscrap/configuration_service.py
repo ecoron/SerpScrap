@@ -30,7 +30,13 @@ class SearchConfigurationService:
     def _default_payload(self) -> dict[str, Any]:
         defaults = Config().get()
         return {
-            "search_engines": [plugin.engine_id for plugin in self.registry if plugin.enabled],
+            # Keep the Docker/API configuration aligned with the public
+            # defaults from Config instead of silently enabling every plugin.
+            "search_engines": [
+                engine_id
+                for engine_id in defaults["search_engines"]
+                if self.registry.get(engine_id).enabled
+            ],
             "country_code": defaults["country_code"],
             "search_type": defaults["search_type"],
             "num_pages_for_keyword": defaults["num_pages_for_keyword"],

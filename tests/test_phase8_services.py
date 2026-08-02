@@ -8,6 +8,7 @@ from http.server import ThreadingHTTPServer
 
 from serpscrap.api_server import ApiHandler
 from serpscrap.api_service import SearchJobService
+from serpscrap.config import Config
 from serpscrap.configuration_service import SearchConfigurationService
 from serpscrap.history_store import SearchHistoryStore
 from serpscrap.mcp_server import TOOLS
@@ -89,7 +90,10 @@ def test_configuration_defaults_persist_and_explicit_search_selection_overrides(
 
     defaults = configuration.get()
     assert defaults["source"] == "defaults"
-    assert len(defaults["configuration"]["search_engines"]) == len(defaults["engines"])
+    assert defaults["configuration"]["search_engines"] == Config().get()["search_engines"]
+    assert {"metager", "good", "xprivo", "marginalia", "etools"}.issubset(
+        defaults["configuration"]["search_engines"]
+    )
 
     saved = configuration.save({"search_engines": ["bing", "google"]})
     assert saved["source"] == "persisted"

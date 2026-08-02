@@ -1917,3 +1917,64 @@ changes to orchestration, browser flow, result normalization, or fusion.
   verification status deterministically through existing diagnostics surfaces.
 - Existing engines retain their current parsed results and terminal outcome
   semantics, and the complete offline test suite remains green.
+
+## Phase 9.2 European Candidate Rollout Plan
+
+### Objective
+
+Evaluate and add further European search providers without weakening the
+plugin contract, provider-control safety, or result provenance. The candidate
+research and reconnaissance matrix is maintained in
+`docs/searchengines.md`; it is the source of truth for the information required
+before an engine is enabled.
+
+### Prioritization
+
+1. **Wave A — activated public no-auth browser candidates:** MetaGer, GOOD,
+   xPrivo, Marginalia, and eTools.ch are included in the default configuration
+   and remain covered by fixture/parser contracts.
+2. **Wave B — experimental public-instance candidate:** SearXNG, only through an explicitly
+   configured and reviewed public or self-hosted instance.
+3. API-only, login-protected, subscription-only, pre-launch, and research-only
+   candidates are excluded from this rollout. This explicitly excludes the
+   Marginalia API, OpenWebSearch.eu/OWI, EU Search, and Kagi.
+
+### Implementation steps
+
+1. Freeze the candidate metadata and verify each provider’s operator, index
+   family, current host, terms/usage constraints, and transport choice.
+2. Confirm that every selected endpoint is usable without API keys, login, or
+   authentication; fail the discovery slice if the provider introduces one.
+3. Implement MetaGer and GOOD as isolated browser adapters using sanitized
+   homepage/SERP fixtures. Verify search forms, organic cards, pagination,
+   consent/login states, empty pages, and upstream attribution.
+4. Implement xPrivo only after a dated artifact confirms its current route,
+   input, web-result cards, AI/module exclusions, pagination, and provenance.
+5. Implement Marginalia and eTools.ch as public browser/form adapters; do not
+   use their credentialed or API-key routes.
+6. Implement SearXNG as an instance-profile adapter, not a global provider.
+   Require explicit base URL/trust metadata, support self-hosted fixtures, and
+   classify limiter/upstream failures without rotating instances.
+7. Add contract tests per candidate for URL/query encoding, capabilities,
+   transport, parser schema, pagination, empty/malformed/control states,
+   deterministic metadata, and partial-result behavior.
+8. Update the engine matrix, verification timestamps, examples, diagnostics,
+   and changelog after each provider promotion. Run offline tests before any
+   opt-in live smoke observation.
+
+### Acceptance criteria
+
+- Every selected candidate has a documented operator/index model, baseline URL,
+  pagination/country assumptions, selector/API contract, risks, sanitized
+  fixtures, and a passing provider contract test.
+- Every selected endpoint is usable without an API key, login, or
+  authentication; credentialed alternatives are not silently used as fallback.
+- HTTP and browser plugins expose the same normalized result and typed failure
+  semantics; transport-specific concerns remain behind the plugin boundary.
+- Upstream provider provenance is never guessed or silently collapsed into the
+  plugin’s own identity.
+- SearXNG selection is instance-scoped and does not rotate public instances or
+  bypass limiters/CAPTCHAs.
+- SearXNG selection is instance-scoped and does not rotate public instances or
+  bypass limiters/CAPTCHAs.
+- Existing eleven-engine behavior and the complete offline suite remain green.

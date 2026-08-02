@@ -10,6 +10,26 @@ All notable changes to this project will be documented in this file.
   metadata, contract validation, registry registration/capability discovery,
   pre-navigation request validation, fixture-backed contract tests, and a
   developer guide for adding search engines.
+- Implemented publicly available, no-auth European plugins (GOOD, xPrivo,
+  Marginalia web UI, and eTools.ch) with URL builders, browser contracts,
+  sanitized fixtures, and parser contract tests; MetaGer remains registered but
+  disabled because its current public route requires a key.
+- Added an explicit SearXNG instance factory without a default public-instance
+  dependency, plus authentication metadata that prevents credentialed routes
+  from being treated as no-auth plugins.
+- Activated GOOD, xPrivo, Marginalia, and eTools.ch in the default
+  search-engine configuration; Google, Ecosia, Qwant, and MetaGer remain
+  supported or registered but are no longer part of the active defaults.
+- Updated the Docker/API configuration endpoint and UI to use the active
+  `Config` defaults, making the five new engines selectable without silently
+  selecting every registered plugin.
+- Hardened the Phase 9 live candidates: GOOD and Marginalia now parse their
+  current result-card layouts, xPrivo starts on its dedicated search route,
+  and eTools retries its documented GET endpoint when a POST remains on the
+  homepage. MetaGer is disabled until a public no-auth route is available
+  because the current service requires a MetaGer key.
+- Documented the six-candidate no-auth rollout, exclusions, provenance rules,
+  and readiness gates for Phase 9.2.
 - Implemented the Phase 9.1 consent foundation: semantic Google/Ecosia
   controls, explicit consent progress states, overlay-clear verification,
   removal of undocumented JavaScript consent shortcuts, and mocked-browser /

@@ -79,6 +79,12 @@ class _TemplatePlugin(GenericHtmlPlugin):
         family: str | None,
         browser_interaction: BrowserInteraction,
         card_selectors: tuple[str, ...],
+        *,
+        display_name: str | None = None,
+        readiness: str = "enabled",
+        disable_reason: str | None = None,
+        pagination_strategy: str = "provider",
+        authentication: str = "none",
     ):
         self._engine_id = engine_id
         self._base = base
@@ -88,6 +94,11 @@ class _TemplatePlugin(GenericHtmlPlugin):
         self.supported_countries = frozenset()
         self.browser_interaction = browser_interaction
         self.card_selectors = card_selectors
+        self.display_name = display_name or engine_id.replace("_", " ").title()
+        self.readiness = readiness
+        self.disable_reason = disable_reason
+        self.pagination_strategy = pagination_strategy
+        self.authentication = authentication
 
     @property
     def engine_id(self) -> str:
@@ -127,6 +138,11 @@ def _alternatives() -> list[SearchEnginePlugin]:
         _TemplatePlugin("brave", "https://search.brave.com", "https://search.brave.com/search?q={query}&source=web&offset={offset}", None, "brave", interaction("https://search.brave.com/", ("textarea#searchbox", "textarea[name='q']", "input[name='q']", "input[type='search']"), ("form button[type='submit']",), (".snippet",), (".snippet",)), (".snippet",)),
         _TemplatePlugin("swisscows", "https://swisscows.com", "https://swisscows.com/en/web?query={query}&page={page}", None, "bing", interaction("https://swisscows.com/en/web", ("input[name='query']", "input[type='search']"), ("form button[type='submit']",), ("article.item.web-page",), ("article.item.web-page",), (".swisscows-pro-popup .buttons button",)), ("article.item.web-page",)),
         _TemplatePlugin("mojeek", "https://www.mojeek.com", "https://www.mojeek.com/search?q={query}&s={offset}", None, "mojeek", interaction("https://www.mojeek.com/", ("input[name='q']", "input[placeholder*='Search']"), ("form button[type='submit']",), (".results-standard",), ("ul.results-standard > li[class^='r']",)), ("ul.results-standard > li[class^='r']",)),
+        _TemplatePlugin("metager", "https://metager.org", "https://metager.org/meta/meta.ger3?eingabe={query}", None, "metager", interaction("https://metager.org/", ("input[name='eingabe']",), ("form[action*='meta.ger3'] button[type='submit']",), ("main",), ("article", "li.result")), ("article", "li.result"), display_name="MetaGer", pagination_strategy="provider", readiness="disabled", disable_reason="public search currently requires a MetaGer key"),
+        _TemplatePlugin("good", "https://good-search.org", "https://good-search.org/en/?q={query}", None, "brave", interaction("https://good-search.org/en/", ("input[placeholder*='Search the web']", "input[name='q']", "input[type='search']"), ("form button[type='submit']",), ("main",), ("article", "li.result")), ("article", "li.result"), display_name="GOOD Search", pagination_strategy="none"),
+        _TemplatePlugin("xprivo", "https://www.xprivo.com", "https://www.xprivo.com/search/?q={query}&page={page}", None, "xprivo", interaction("https://www.xprivo.com/search/", ("input[name='q']", "input[type='search']", "textarea[placeholder*='Search']"), ("form button[type='submit']",), ("main", "[class*='result']", "article"), ("[class*='result']", "article")), ("[class*='result']", "article"), display_name="xPrivo", pagination_strategy="page"),
+        _TemplatePlugin("marginalia", "https://marginalia-search.com", "https://marginalia-search.com/search?q={query}&page={page}", None, "marginalia", interaction("https://marginalia-search.com/", ("input[name='query']", "input[name='q']", "input[type='search']"), ("form button[type='submit']",), ("main",), ("article", "li.result")), ("article", "li.result"), display_name="Marginalia", pagination_strategy="page"),
+        _TemplatePlugin("etools", "https://www.etools.ch", "https://www.etools.ch/searchSubmit.do?query={query}&country={country}", None, "etools", interaction("https://www.etools.ch/", ("input[name='query']",), ("form[action*='searchSubmit.do'] button[type='submit']", "form[action*='searchSubmit.do'] input[type='submit']"), ("#results", ".results", ".searchResult", ".result", "table.results", ".content h2"), ("#results .result", ".results .result", ".searchResult", ".result", "table.results tr")), ("#results .result", ".results .result", ".searchResult", ".result", "table.results tr"), display_name="eTools.ch", pagination_strategy="provider"),
     ]
     for plugin in plugins:
         if plugin.engine_id == "brave":
@@ -185,12 +201,55 @@ def _alternatives() -> list[SearchEnginePlugin]:
             plugin.title_selectors = ("h1.title", "h2", "h3", "[role='heading']")
             plugin.snippet_selectors = ("p.description", ".snippet", "p")
             plugin.empty_visible_markers = ("no results", "keine ergebnisse", "nothing found")
+        elif plugin.engine_id == "good":
+            plugin.card_selectors = ("div.margin-bottom--small.box",)
+            plugin.title_selectors = ("h4.result", "h2", "h3", "[role='heading']")
+            plugin.snippet_selectors = ("div.link--search p", ".snippet", "p")
+        elif plugin.engine_id == "marginalia":
+            # The current UI renders each result as a heading-led block rather
+            # than an article or li.result card.
+            plugin.card_selectors = ("main h2",)
+            plugin.title_selectors = ("h2",)
+            plugin.snippet_selectors = ("p",)
     return plugins
 
 
+def searxng_plugin(instance_url: str) -> SearchEnginePlugin:
+    """Create an auth-free plugin for one explicitly trusted SearXNG instance.
+
+    SearXNG is instance-scoped: the instance controls enabled engines, locale,
+    theme, limiter, and result markup. No public instance is selected by
+    default and no instance rotation is performed.
+    """
+
+    normalized = instance_url.rstrip("/")
+    return _TemplatePlugin(
+        "searxng",
+        normalized,
+        f"{normalized}/search?q={{query}}&format=html&pageno={{page}}",
+        None,
+        "searxng",
+        BrowserInteraction(
+            homepage_url=f"{normalized}/",
+            search_input_selectors=("input[name='q']", "input[type='search']"),
+            submit_selectors=("form[action='/'] button[type='submit']", "form button[type='submit']"),
+            serp_ready_selectors=("#results", "main", "article.result"),
+            organic_card_selectors=("article.result", ".result", ".result_header"),
+            observed_at=None,
+            verification_status="candidate",
+        ),
+        ("article.result", ".result"),
+        display_name="SearXNG instance",
+        readiness="experimental",
+        disable_reason="requires explicit trusted public instance and fixture verification",
+        pagination_strategy="page",
+    )
+
+
 class SearchEngineRegistry:
-    def __init__(self, plugins: Iterable[SearchEnginePlugin]):
+    def __init__(self, plugins: Iterable[SearchEnginePlugin], *, allow_authenticated: bool = False):
         self._plugins: dict[str, SearchEnginePlugin] = {}
+        self.allow_authenticated = allow_authenticated
         for plugin in plugins:
             self.register(plugin)
 
@@ -201,6 +260,11 @@ class SearchEngineRegistry:
         if errors:
             details = "; ".join(errors)
             raise ValueError(f"invalid plugin {plugin.engine_id!r}: {details}")
+        if plugin.authentication != "none" and not self.allow_authenticated:
+            raise ValueError(
+                f"plugin {plugin.engine_id!r} requires {plugin.authentication}; "
+                "the default registry accepts only no-auth plugins"
+            )
         if plugin.engine_id in self._plugins:
             raise ValueError(f"duplicate search-engine plugin ID: {plugin.engine_id}")
         self._plugins[plugin.engine_id] = plugin

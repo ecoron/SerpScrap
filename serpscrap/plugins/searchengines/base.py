@@ -144,6 +144,7 @@ class SearchEnginePlugin(ABC):
     search_types: tuple[str, ...] = ("normal",)
     pagination_strategy: str = "provider"
     transport: str = "browser"
+    authentication: str = "none"
     supported_countries: frozenset[str] = frozenset()
     market_share: float | None = None
     provider_family: str | None = None
@@ -280,6 +281,8 @@ class SearchEnginePlugin(ABC):
             errors.append("pagination_strategy is unsupported")
         if self.transport not in {"browser", "http", "hybrid"}:
             errors.append("transport must be browser, http, or hybrid")
+        if self.authentication not in {"none", "api_key", "login"}:
+            errors.append("authentication must be none, api_key, or login")
         if any(not country or country != country.upper() or len(country) != 2 for country in self.supported_countries):
             errors.append("supported_countries must contain ISO-3166 alpha-2 uppercase codes")
         if self.transport in {"browser", "hybrid"}:
@@ -313,6 +316,7 @@ class SearchEnginePlugin(ABC):
             "search_types": list(self.search_types),
             "pagination_strategy": self.pagination_strategy,
             "transport": self.transport,
+            "authentication": self.authentication,
             "capabilities": self.capabilities.to_dict(),
             "provider_family": self.provider_family,
             "market_share": self.market_share,

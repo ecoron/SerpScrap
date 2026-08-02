@@ -65,7 +65,7 @@ def test_registry_rejects_incomplete_plugin_contract():
 def test_existing_registry_plugins_expose_valid_capabilities():
     registry = default_registry()
 
-    assert len(registry.find_capable(search_type="normal", country_code="DE")) == 11
+    assert len(registry.find_capable(search_type="normal", country_code="DE")) == 15
     for plugin in registry:
         assert plugin.validate_contract() == ()
         assert plugin.metadata()["contract_version"] == "1"

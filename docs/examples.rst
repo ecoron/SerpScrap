@@ -1,107 +1,31 @@
 =============
-Example Usage
+Examples
 =============
 
-Direct Python API
------------------
+These examples use the public ``SerpScrap.search`` API and the current CLI.
+They are offline examples of invocation and output handling; a real search
+requires Chrome and network access.
 
-A normal search requires one method call and returns ``list[dict]``:
+Python package
+==============
 
-.. code-block:: python
-
-   import serpscrap
-
-   scraper = serpscrap.SerpScrap()
-   results = scraper.search(['seo tools', 'seo news'], pages=2, workers=2)
-
-   for result in results:
-       print(result['serp_rank'], result['serp_title'], result['serp_url'])
-
-The Phase 1 ``init()`` followed by ``run()`` remains available as a compatibility
-adapter. New code should use ``search()``.
-
-Save JSON locally
------------------
-
-.. code-block:: python
-
-   scraper = serpscrap.SerpScrap()
-   results = scraper.search('stellar')
-   output_path = scraper.save_json('/tmp/stellar-results', overwrite=True)
-
-You can also save during the request:
-
-.. code-block:: python
-
-   results = scraper.search(
-       'stellar',
-       output='/tmp/stellar-results.json',
-       overwrite=True,
-   )
-
-Image search
+Basic search
 ------------
 
-.. code-block:: python
-
-   results = serpscrap.SerpScrap().search(
-       'lost places',
-       search_type='image',
-   )
-
-Other Google verticals
-----------------------
-
-Use ``news``, ``shopping``, or ``videos`` in the same way. Mixed normal pages
-are also classified into their actual result types.
+``search`` accepts a string or an iterable of query strings and returns a
+JSON-compatible ``list[dict]``:
 
 .. code-block:: python
 
-   news = serpscrap.SerpScrap().search(
-       'renewable energy',
-       search_type='news',
-   )
+   from serpscrap import SerpScrap
 
-Result URL content
-------------------
+   scraper = SerpScrap()
+   results = scraper.search("privacy friendly search")
+   for row in results:
+       print(row["serp_rank"], row["serp_title"], row["serp_url"])
 
-.. code-block:: python
-
-   results = serpscrap.SerpScrap().search(
-       'blockchain',
-       scrape_urls=True,
-   )
-
-Related keywords and failures
------------------------------
-
-.. code-block:: python
-
-   scraper = serpscrap.SerpScrap()
-   results = scraper.search('example')
-   related = scraper.get_related()
-   failures = scraper.get_failures()
-
-CLI
----
-
-JSON results are written to stdout while logs remain on stderr. ``--output``
-saves the same JSON array locally.
-
-.. code-block:: bash
-
-   serpscrap search -k "seo tools" -k "seo news" --pages 2
-   serpscrap search -k "renewable energy" --search-type news
-   serpscrap search -k "seo tools" --output results.json --overwrite
-
-Use ``--no-cache`` or ``--no-history`` when those local artifacts are not
-desired.
-
-Configured multi-engine run
-----------------------------
-
-The Python API accepts the same settings as the CLI. This example limits the
-global concurrency to four requests and allows only one request per provider:
+Multiple queries, pages, and engines
+------------------------------------
 
 .. code-block:: python
 
@@ -109,46 +33,109 @@ global concurrency to four requests and allows only one request per provider:
 
    config = Config()
    config.apply({
-       'search_engines': ['bing', 'yandex', 'duckduckgo', 'mojeek'],
-       'country_code': 'DE',
-       'num_pages_for_keyword': 2,
-       'num_results_per_page': 10,
-       'num_workers': 4,
-       'engine_workers': 1,
-       'engine_workers_by_engine': {'bing': 1, 'mojeek': 1},
-       'store_history': False,
-       'do_caching': True,
+       "search_engines": ["google", "bing", "duckduckgo"],
+       "country_code": "DE",
+       "num_pages_for_keyword": 2,
+       "num_workers": 3,
+       "engine_workers": 1,
    })
 
    scraper = SerpScrap()
-   results = scraper.search(['preisfehler', 'herrenschuhe'], config=config)
-   failures = scraper.get_failures()
+   results = scraper.search(
+       ["seo tools", "seo news"],
+       config=config,
+       pages=2,
+       workers=3,
+   )
 
-Progress and rendered diagnostics
-----------------------------------
+Vertical searches
+------------------
 
-Progress is written to stderr, so stdout remains a valid result JSON stream.
-Rendered HTML capture is disabled unless explicitly requested:
+The supported search types are ``normal``, ``image``, ``news``, ``shopping``,
+and ``videos``:
+
+.. code-block:: python
+
+   news = SerpScrap().search("renewable energy", search_type="news")
+   images = SerpScrap().search("alpine lakes", search_type="image")
+   shopping = SerpScrap().search("mechanical keyboard", search_type="shopping")
+
+JSON files and URL enrichment
+-----------------------------
+
+Write results during a search or save the most recent result list afterward:
+
+.. code-block:: python
+
+   scraper = SerpScrap()
+   results = scraper.search(
+       "blockchain",
+       scrape_urls=True,
+       output="results/blockchain.json",
+       overwrite=True,
+   )
+   scraper.save_json("results/blockchain-copy.json", results, overwrite=True)
+
+``scrape_urls=True`` adds bounded metadata from result pages. It does not
+silently ignore HTTP failures; enrichment failures remain diagnosable.
+
+Failures and related searches
+-----------------------------
+
+Partial provider failures do not discard successful rows:
+
+.. code-block:: python
+
+   scraper = SerpScrap()
+   results = scraper.search(["first query", "second query"])
+   print(scraper.get_related())
+   for failure in scraper.get_failures():
+       print(failure["search_engine"], failure["category"], failure["message"])
+
+Configuration and diagnostics
+-----------------------------
+
+Use the same settings from Python that are available through the CLI:
+
+.. code-block:: python
+
+   config = Config()
+   config.apply({
+       "progress": True,
+       "progress_format": "jsonl",
+       "diagnostic_html": True,
+       "diagnostic_dir": "logs/diagnostics",
+       "consent_action": "necessary",
+       "store_history": False,
+       "do_caching": True,
+   })
+   results = SerpScrap().search("selector troubleshooting", config=config)
+
+Diagnostics contain redacted rendered HTML and should be treated as local,
+temporary troubleshooting data.
+
+Command line
+============
 
 .. code-block:: bash
 
-   serpscrap search -k "preisfehler" \
-     --engine brave --engine ecosia --workers 2 \
-     --progress --progress-format text \
-     --diagnostic-html --diagnostic-dir logs/phase7
+   serpscrap search -k "seo tools" -k "seo news" --pages 2 \
+     --engine google --engine bing --country DE --workers 2
 
-The run manifest is written below ``logs/phase7/<run_id>/manifest.json``. For
-machine processing, use JSON Lines and separate the streams:
+   serpscrap search -k "renewable energy" --search-type news \
+     --output results.json --overwrite
 
-.. code-block:: bash
-
-   serpscrap search -k "preisfehler" --progress-format jsonl \
+   serpscrap search -k "provider diagnosis" --engine xprivo \
+     --progress-format jsonl --diagnostic-html \
      > results.json 2> progress.jsonl
 
-The diagnostic artifacts are redacted and size-limited, but they still contain
-rendered third-party page content. Review them locally and remove them after
-selector analysis.
-Consent dialogs use the privacy-preserving default automatically. To make the
-choice explicit, use ``--consent-action necessary`` (equivalent to rejecting
-all optional cookies) or disable automation with ``--consent-action disabled``
-for diagnostic runs.
+See :doc:`cli` for the complete option reference and :doc:`results` for the
+result schema.
+
+MCP server
+==========
+
+Start the Compose MCP gateway and use an MCP client to call
+``start_search``, ``get_search_status``, and ``list_results``. The gateway also
+exposes history analytics, engine discovery, and validated configuration tools.
+See :doc:`mcp` for the JSON-RPC request examples and safety notes.

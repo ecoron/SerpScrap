@@ -18,10 +18,10 @@ def test_phase92_candidate_research_and_rollout_plan_are_documented():
         assert candidate in searchengines
 
     for section in (
-        "## Phase 9.2 Candidate Expansion: Additional European Engines",
-        "### Selection scope and evidence",
-        "### Reconnaissance matrix",
-        "### Candidate-specific implementation notes",
+        "## Active defaults",
+        "## Selecting engines",
+        "## Provider safety",
+        "## Adding a provider",
     ):
         assert section in searchengines
 

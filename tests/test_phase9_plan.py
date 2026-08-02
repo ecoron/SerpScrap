@@ -17,8 +17,9 @@ def test_phase9_plan_and_audience_split_are_documented():
     ):
         assert section in plan
 
-    assert "completely reworked" in readme
-    assert "not yet" in readme and "PyPI" in readme
-    assert "docker pull ecoron/serpscrap:<pre-release-tag>" in readme
+    assert "2.0.0-alpha.1" in readme
+    assert "Python package" in readme
+    assert "MCP server" in readme
+    assert "docker compose -f docker/compose.yml up --build" in readme
     assert (ROOT / "docs" / "docker.rst").is_file()
     assert (ROOT / "docs" / "development.rst").is_file()

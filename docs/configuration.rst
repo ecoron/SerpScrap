@@ -2,9 +2,9 @@
 Configuration
 =============
 
-``Config`` retains dictionary access for Phase 1 compatibility. New code can
-pass friendly options directly to ``SerpScrap.search``. Settings are copied and
-validated once for every independent request.
+``Config`` provides a dictionary-compatible configuration object. New code can
+also pass friendly options directly to ``SerpScrap.search``. Settings are
+copied and validated once for every independent request.
 
 Core settings
 -------------
@@ -48,15 +48,14 @@ Core settings
   for one machine-readable event per line on stderr.
 * ``diagnostic_html``: explicitly enable redacted rendered-HTML artifacts for
   selector/provider troubleshooting; defaults to ``False``.
-* ``diagnostic_dir``: artifact root, normally ``logs/phase7``.
+* ``diagnostic_dir``: artifact root, normally ``logs/diagnostics``.
 * ``diagnostic_max_bytes_per_file``, ``diagnostic_max_total_bytes``, and
   ``diagnostic_max_artifacts_per_job``: safety limits for diagnostic output.
 * ``consent_action``: provider consent handling. Defaults to ``necessary``
   and selects the privacy-preserving rejection action (Google's ``Alle
   ablehnen``); ``reject`` is an explicit alias and ``disabled`` preserves a
   ``consent_required`` failure.
-  Google and Ecosia consent controls are the Phase 9.1 live-browser scope. If the
-  provider does not expose an actionable control, the run safely remains
+  If the provider does not expose an actionable control, the run safely remains
   ``consent_required`` instead of bypassing or guessing at consent.
   Consent progress events use ``consent_not_present``, ``consent_visible``,
   ``consent_action_started``, and ``consent_cleared``; a failed verification
@@ -117,7 +116,7 @@ by Git and should be reviewed and deleted after troubleshooting:
        'progress': True,
        'progress_format': 'jsonl',
        'diagnostic_html': True,
-       'diagnostic_dir': 'logs/phase7',
+       'diagnostic_dir': 'logs/diagnostics',
        'diagnostic_max_bytes_per_file': 2 * 1024 * 1024,
        'diagnostic_max_total_bytes': 20 * 1024 * 1024,
        'diagnostic_max_artifacts_per_job': 10,
@@ -143,7 +142,7 @@ Show progress and capture rendered pages for a focused provider run:
    serpscrap search -k "preisfehler" \
      --engine bing --engine yandex --engine brave --engine ecosia \
      --country DE --workers 4 --progress --diagnostic-html \
-     --diagnostic-dir logs/phase7
+     --diagnostic-dir logs/diagnostics
 
 For machine processing, keep result JSON on stdout and progress JSONL on
 stderr:

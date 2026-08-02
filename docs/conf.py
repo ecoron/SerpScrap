@@ -27,6 +27,9 @@ todo_include_todos = True
 html_theme = "default"
 html_title = "SerpScrap Documentation"
 htmlhelp_basename = "SerpScrapdoc"
+html_sidebars = {
+    "**": ["globaltoc.html", "relations.html", "searchbox.html"],
+}
 
 latex_documents = [(master_doc, "SerpScrap.tex", "SerpScrap Documentation", author, "manual")]
 man_pages = [(master_doc, "serpscrap", "SerpScrap Documentation", [author], 1)]

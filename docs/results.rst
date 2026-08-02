@@ -70,8 +70,8 @@ The CLI uses the same serializer and keeps logs on stderr:
 
    serpscrap search -k "example" --output results.json --overwrite
 
-CSV output was removed in Refactoring Phase 2. Replace ``as_csv(path)`` with
-``save_json(path)``. Passing a ``.csv`` destination raises a migration error.
+JSON is the supported output format. Use ``save_json(path)`` or the CLI
+``--output`` option. Passing a ``.csv`` destination raises a migration error.
 
 Failures and related keywords
 -----------------------------

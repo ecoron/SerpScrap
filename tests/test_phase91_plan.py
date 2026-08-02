@@ -22,4 +22,6 @@ def test_phase91_plan_documents_provider_specific_safe_consent_strategy():
     assert "Custom Search JSON API" in document
     assert "consent_required" in document
     assert "undocumented provider JavaScript API" in document
-    assert "Phase 9.1 now owns this TODO" in searchengines
+    assert "Provider safety" in searchengines
+    assert "xPrivo" in searchengines
+    assert "Phase 9.1" not in searchengines

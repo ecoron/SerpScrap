@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Reworked the Sphinx documentation into a complete user/developer structure
+  with Python, CLI, Docker, MCP, configuration, results, and provider guides;
+  updated the README for the `2.0.0-alpha.1` release and removed obsolete
+  refactoring fragments from user-facing pages.
+
 - Fixed xPrivo browser input detection for its rendered `Privat suchen`
   placeholder, preventing false `selector_drift` failures before submission.
 - Updated xPrivo SERP readiness and organic-card selectors for its hydrated

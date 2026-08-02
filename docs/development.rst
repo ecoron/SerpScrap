@@ -1,59 +1,69 @@
------------
+===========
 Development
------------
+===========
 
-This guide is for contributors extending SerpScrap. Docker operators should
-use the :doc:`docker` guide instead.
+This guide is for contributors extending the Python package, CLI, API, UI,
+MCP gateway, provider plugins, and Docker deployment. Operators should start
+with :doc:`docker`; MCP client authors should start with :doc:`mcp`.
 
-Repository and local setup
-==========================
+Repository layout
+=================
 
-The project is developed in a Pipenv environment. From the repository root:
+* ``serpscrap/`` contains the public API, configuration, application services,
+  API server, MCP gateway, models, persistence, and plugin registry.
+* ``scrapcore/`` contains browser setup and lower-level scraping integration.
+* ``tests/`` contains deterministic unit, service, parser, fixture, and layout
+  tests. Browser/network checks are explicitly marked and opt-in.
+* ``docker/`` contains the app, UI, MCP Dockerfiles and Compose file.
+* ``docs/`` contains the user and developer documentation.
+
+Local environment
+=================
+
+The supported development workflow uses Pipenv from the repository root:
 
 .. code-block:: bash
 
    pipenv install --dev
    pipenv run python -m pip install -e .
 
-The main package and service/API code live under ``serpscrap/``; the scraping
-core and browser integration live under ``scrapcore/``. Tests are in
-``tests/``. Docker integration files are grouped under ``docker/``.
+The project targets Python 3.10 or newer. Documentation dependencies are in
+``docs/requirements.txt``.
 
 Validation
 ==========
 
-Run deterministic checks before submitting changes:
+Run the deterministic checks before submitting changes:
 
 .. code-block:: bash
 
-   pipenv run ruff check serpscrap scrapcore tests
-   pipenv run pytest -m "not browser"
+   pipenv run python -m ruff check serpscrap scrapcore tests
+   pipenv run python -m pytest -m "not browser"
    pipenv run python -m build --no-isolation
    pipenv run python -m sphinx -W --keep-going -b html docs docs/_build/html
 
-Browser and provider checks are opt-in because they require Chrome and network
-access. Keep provider behavior deterministic with fixtures and contract tests.
-
-Architecture and performance
-============================
-
-The application service owns scraping and persistence contracts. The UI and
-MCP gateway consume those contracts and must not duplicate scraping or history
-logic. Keep concurrency, polling, pagination, cache retention, and diagnostic
-artifacts bounded. Record reproducible measurements when changing a hot path.
-
-For a local capacity check, keep the workload offline and configure explicit
-limits rather than relying on host defaults:
+The browser smoke test requires Chrome and network access:
 
 .. code-block:: bash
 
-   $env:SERPSCRAP_MAX_ACTIVE_JOBS = "2"
-   $env:SERPSCRAP_MAX_QUEUED_JOBS = "4"
-   pipenv run pytest tests/test_phase9_services.py -q
+   SERPSCRAP_RUN_BROWSER=1 pipenv run python -m pytest -m browser
 
-For a focused CPU/memory investigation, use Python's standard profiler around
-an offline fixture or fake runner. Do not include live provider traffic in a
-repeatable benchmark or CI gate.
+Architecture
+============
 
-See :doc:`refactoring2026` for the active Phase 9 plan and acceptance
-criteria.
+The public ``SerpScrap`` facade creates validated requests. The application
+service runs configured plugins through shared browser, retry, normalization,
+fusion, history, and diagnostic contracts. The HTTP API and MCP gateway call
+the same service and must not duplicate scraping or persistence logic.
+
+Provider changes require a stable plugin ID, URL/interaction contract,
+sanitized fixture, parser tests, failure-state tests, and updated metadata.
+Provider-specific selectors stay in the provider registry; shared flow code
+must remain provider-neutral.
+
+Documentation changes
+=====================
+
+Keep user instructions current with the actual CLI help, public Python method
+signatures, Compose ports, and MCP tool schemas. The historical implementation
+plan is kept separately from these user-facing pages.

@@ -9,6 +9,8 @@ This file records the implementation work performed against
 
 - Resolved Ruff import-block failures in the Phase 8 service, MCP,
   normalization, and Docker-layout test modules.
+- Fixed the Phase 8.2 failure-persistence test fixture to provide all required
+  `FailureRecord` fields.
 
 ### Refactoring Phase 8.4 - implementation
 

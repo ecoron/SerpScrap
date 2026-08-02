@@ -12,7 +12,7 @@ def test_history_exposes_engine_attributed_failures(tmp_path):
         "run-1",
         SearchReport(
             results=[],
-            failures=[FailureRecord(query="example", search_engine="bing", category="timeout", message="timed out")],
+            failures=[FailureRecord(query="example", search_engine="bing", page_number=1, url=None, category="timeout", message="timed out", retryable=True)],
             started_at=datetime.now(timezone.utc),
             stopped_at=datetime.now(timezone.utc),
         ),

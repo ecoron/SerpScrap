@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 - Resolved CI Ruff import-block failures for the Phase 8 service, MCP,
   normalization, and Docker-layout test modules.
+- Fixed the Phase 8.2 failure-persistence test fixture to provide the complete
+  `FailureRecord` contract.
 - Implemented Phase 8.3: compact responsive result workspace, canonical URL
   grouping with all contributing engines, relevance-based ordering, and API/UI
   deletion controls for one search or the complete result archive.

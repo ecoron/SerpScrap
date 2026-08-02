@@ -18,13 +18,17 @@ With Docker Compose:
 The gateway uses ``SERPSCRAP_API_URL`` to locate the application API. For a
 local process, start the API first and then run:
 
+The Python gateway automatically loads a project-local ``.env`` file. Copy
+``.env.example`` to ``.env`` for local development; real tokens must remain
+uncommitted. Explicit process environment variables always take precedence.
+
 .. code-block:: bash
 
-   $env:SERPSCRAP_API_URL = "http://127.0.0.1:8000/api/v1"  # PowerShell
-   $env:MCP_HOST = "127.0.0.1"
    python -m serpscrap.mcp_server
 
-   SERPSCRAP_API_URL=http://127.0.0.1:8000/api/v1 MCP_HOST=127.0.0.1 python -m serpscrap.mcp_server  # POSIX
+   # Optional explicit PowerShell environment override:
+   $env:MCP_HOST = "127.0.0.1"
+   python -m serpscrap.mcp_server
 
 The optional ``MCP_HOST`` and ``MCP_PORT`` variables change the bind address
 and port. ``GET /healthz`` returns ``{"status": "ok"}``.
@@ -52,8 +56,8 @@ MCP configuration belongs to the client or API integration, not to a model
 name. The model is selected separately (for example, ``gpt-5`` or a Claude
 Sonnet model). The examples below assume that the gateway is available at
 ``http://127.0.0.1:8001``. Replace this with a trusted HTTPS URL when the
-model provider connects from the Internet. The gateway currently has no
-authentication layer; do not expose an unprotected local instance publicly.
+model provider connects from the Internet. Non-loopback deployments require
+``MCP_AUTH_TOKEN`` authentication.
 
 Claude Code
 -----------

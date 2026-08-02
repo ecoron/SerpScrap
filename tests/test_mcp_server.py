@@ -49,3 +49,21 @@ def test_non_loopback_bind_requires_authentication(monkeypatch):
     with pytest.raises(RuntimeError, match="MCP_AUTH_TOKEN is required"):
         mcp._validate_bind_security("0.0.0.0")
 
+
+def test_dotenv_loads_values_without_overriding_environment(monkeypatch, tmp_path):
+    dotenv = tmp_path / ".env"
+    dotenv.write_text(
+        "MCP_HOST=127.0.0.1\n"
+        "export MCP_PORT=9001\n"
+        "QUOTED=\"value with spaces\"\n"
+        "INVALID-NAME=ignored\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("MCP_HOST", raising=False)
+    monkeypatch.setenv("MCP_PORT", "already-set")
+    monkeypatch.delenv("QUOTED", raising=False)
+    mcp._load_dotenv(dotenv)
+    assert mcp.os.environ["MCP_HOST"] == "127.0.0.1"
+    assert mcp.os.environ["MCP_PORT"] == "already-set"
+    assert mcp.os.environ["QUOTED"] == "value with spaces"
+    assert "INVALID-NAME" not in mcp.os.environ

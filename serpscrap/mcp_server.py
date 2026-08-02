@@ -9,11 +9,39 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import secrets
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
+
+_ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _load_dotenv(path: str | Path = ".env") -> None:
+    """Load simple KEY=VALUE entries without overriding real environment vars."""
+    dotenv_path = Path(path)
+    if not dotenv_path.is_file():
+        return
+    for raw_line in dotenv_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].lstrip()
+        name, separator, value = line.partition("=")
+        name = name.strip()
+        if not separator or not _ENV_NAME.fullmatch(name):
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        os.environ.setdefault(name, value)
+
+
+_load_dotenv()
 
 SCHEMA_VERSION = "1.0"
 MAX_OUTPUT_BYTES = int(os.getenv("MCP_MAX_OUTPUT_BYTES", "100000"))

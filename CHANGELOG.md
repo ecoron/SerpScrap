@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
   JSON-RPC error classification, and non-loopback authentication safeguards.
 - Secured the Compose MCP deployment by requiring ``MCP_AUTH_TOKEN`` and
   documented loopback-only unauthenticated local startup.
+- Added project-local ``.env`` loading for direct MCP startup, with explicit
+  process environment variables taking precedence and a safe ``.env.example``.
 
 - Added the Phase 10.1 MCP server best-practice hardening plan covering
   agent-oriented tool schemas, versioned structured responses, asynchronous

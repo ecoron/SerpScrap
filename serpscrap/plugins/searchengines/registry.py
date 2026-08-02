@@ -29,8 +29,10 @@ class _GooglePlugin(SearchEnginePlugin):
         organic_card_selectors=("div.MjjYud", "#search a h3"),
         observed_at="2026-08-02",
         consent_button_selectors=(
-            "div[role='dialog'][aria-modal='true'] button#W0wltc",
+            "div.GzLjMd button#W0wltc",
+            "button#W0wltc",
             "div[role='dialog'][aria-modal='true'] button",
+            "div[role='dialog'][aria-modal='true'] [role='button']",
         ),
     )
     homepage_consent_selectors = ("div[role='dialog'][aria-modal='true']",)
@@ -145,10 +147,23 @@ def _alternatives() -> list[SearchEnginePlugin]:
             plugin.browser_interaction = replace(
                 plugin.browser_interaction,
                 consent_button_selectors=(
+                    "#didomi-notice-disagree-button",
                     "#didomi-host button",
                     "#didomi-host [role='button']",
                     "[data-testid*='consent'] button",
                     "[role='dialog'][aria-modal='true'] button",
+                    "[role='dialog'][aria-modal='true'] [role='button']",
+                ),
+                consent_reject_labels=(
+                    "reject",
+                    "reject all",
+                    "ablehnen",
+                    "alle ablehnen",
+                    "nicht essenzielle cookies ablehnen",
+                    "necessary",
+                    "notwendig",
+                    "nur notwendige",
+                    "refuse",
                 ),
             )
         elif plugin.engine_id == "mojeek":

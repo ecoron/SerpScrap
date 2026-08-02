@@ -106,16 +106,29 @@ The latest diagnostic run is recorded in `docs/phase7.log`; its manifest and
 rendered HTML are stored below `logs/phase7/<run_id>/` when diagnostic capture
 is enabled. The current findings are:
 
-Google consent dialogs are detected with `div[role="dialog"][aria-modal="true"]`.
+Google consent dialogs are detected with
+`div[role="dialog"][aria-modal="true"]` where available. The latest rendered
+artifact also exposes the rejection control as `div.GzLjMd button#W0wltc`; the
+Google contract keeps this selector as a scoped, artifact-backed fallback.
 The default `consent_action="necessary"` selects the privacy-preserving
 `Alle ablehnen` action. `reject` is an explicit alias; `disabled` leaves the
 dialog untouched and reports `consent_required`.
 
-Known TODO for a later phase: Google and Ecosia consent controls are loaded or
-exposed dynamically in the current browser environment. If the configured
-action cannot be confirmed and the dialog remains present, the safe terminal
-state is `consent_required`; the flow does not continue with an ambiguous
-search.
+For Ecosia, the rendered Didomi notice exposes the privacy-preserving action as
+`#didomi-notice-disagree-button` with the visible label `Nicht essenzielle
+Cookies ablehnen`. The adapter keeps this provider-specific selector ahead of
+the broader Didomi fallbacks and still requires semantic label matching.
+
+Phase 9.1 now owns this TODO. The implementation uses an artifact-backed,
+provider-specific consent state machine using visible semantic controls and
+explicit waits. Undocumented provider JavaScript APIs and guessed cookies are
+not accepted as the default path. The observed Google button fallback still
+requires the visible `Alle ablehnen`/equivalent rejection label. If the
+configured action cannot be confirmed
+and the dialog remains present, the safe terminal state is `consent_required`;
+the flow does not continue with an ambiguous search. See the Phase 9.1 plan in
+`docs/refactoring2026.md` for the research findings, alternatives, and
+acceptance criteria.
 
 | Engine | Current status | Next adapter action |
 |---|---|---|

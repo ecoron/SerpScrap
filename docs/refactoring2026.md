@@ -1,3 +1,159 @@
+# Refactoring Phase 9.1 - Google and Ecosia Consent and Browser-Flow Completion
+
+### Status
+
+Implementation in progress. The semantic consent contract, provider-specific
+selectors, explicit verification, fixture coverage, and mocked-browser tests
+are implemented. The dated live-smoke evidence remains open. This phase keeps
+provider protections intact: SerpScrap must
+not bypass CAPTCHA, rate limits, access controls, or a consent decision that
+cannot be verified through the rendered browser state.
+
+### Implementation Status
+
+- [x] Semantic, provider-scoped consent labels and selectors
+- [x] Explicit consent progress states and overlay-clear verification
+- [x] Removal of undocumented Google/Ecosia JavaScript consent shortcuts from
+  the default success path; Google's artifact-backed `W0wltc` fallback remains
+  scoped and requires the visible rejection label
+- [x] Sanitized Google/Ecosia consent fixtures and mocked-browser regression tests
+- [ ] Dated low-volume live smoke evidence for Google and Ecosia
+
+### Research Findings
+
+- Google's official Custom Search JSON API is not a general replacement for
+  the public Google SERP. It requires an API key and a configured Programmable
+  Search Engine, and Google's current documentation says the API is closed to
+  new customers with existing customers transitioning by 1 January 2027.
+  See the [official overview](https://developers.google.com/custom-search/v1/overview)
+  and [REST reference](https://developers.google.com/custom-search/v1/reference/rest).
+- Ecosia documents that results may come from Bing, Google, or EUSP depending
+  on region, device, and cookie/privacy permissions. Its provider setting is
+  only exposed when multiple providers are available and after cookie
+  preferences are set. See Ecosia's [provider documentation](https://support.ecosia.org/article/579-search-results-providers)
+  and [settings documentation](https://support.ecosia.org/article/349-ecosia-settings).
+- Selenium's supported approach is explicit, observable waiting for visibility,
+  state changes, and interaction readiness. Consent work must use these waits,
+  not fixed sleeps. See Selenium's [expected conditions guide](https://www.selenium.dev/documentation/webdriver/support_features/expected_conditions/).
+  A dedicated Chrome profile is technically supported, but profile/cookie
+  reuse must remain isolated, opt-in, and user-controlled; see the [ChromeDriver
+  profile documentation](https://developer.chrome.com/docs/chromedriver/capabilities).
+
+### Objective
+
+Complete and verify the Google and Ecosia homepage flows for the supported
+privacy-preserving consent action. The implementation must recognize consent
+as a stateful provider interaction, confirm that the overlay is gone before
+search input, preserve a typed `consent_required` outcome when confirmation is
+not possible, and record enough sanitized evidence to diagnose selector drift.
+
+### Solution Decision
+
+| Option | Decision | Rationale |
+| --- | --- | --- |
+| Visible, semantic consent controls with explicit waits | **Preferred** | Follows the rendered user flow and can be fixture-tested without relying on private provider APIs. |
+| Isolated reusable Chrome profile or pre-seeded consent state | Conditional fallback | May reduce repeated prompts, but must be opt-in, disposable, documented, and never commit cookies or user data. |
+| Google Custom Search JSON API | Not part of 9.1 | It does not provide the public SERP contract and is closed to new customers. Evaluate only as a separate future integration for configured Programmable Search Engines. |
+| Ecosia provider/API shortcut | Rejected for 9.1 | Ecosia's documented provider selection depends on region, device, and consent; no stable public search API contract was found. |
+| Continue after an unverified overlay | Rejected | It would make result provenance and privacy behavior ambiguous. Return `consent_required` instead. |
+
+Undocumented element IDs, private JavaScript consent APIs, and guessed cookie
+names may be retained only as quarantined diagnostic observations. The
+artifact-backed Google `W0wltc` selector is an explicit exception: it is
+scoped to the observed consent button and still requires a visible semantic
+rejection label plus overlay-clear verification. It must not silently alter
+consent state.
+
+### Provider-Specific Implementation Plan
+
+#### Google
+
+1. Capture a new, low-volume, opt-in artifact for each supported country/
+   language combination where the consent overlay appears. Record URL, dialog
+   role, accessible name, button text/ARIA label, frame/shadow-root location,
+   and the post-action URL/state without query text or cookies.
+2. Define ordered, semantic consent candidates scoped to the active dialog:
+   reject/necessary actions first, then a documented locale mapping. Use
+   visibility, enabled state, clickability, and overlay disappearance as the
+   success contract; do not treat a click alone as success.
+3. Handle consent pages reached through `consent.google.*` as a bounded state
+   transition back to the configured Google homepage/SERP route. Stop with
+   `consent_required` when the transition or overlay-cleared check times out.
+4. Keep search input and SERP readiness separate from consent handling. A
+   successful consent action must still pass the existing homepage, submit,
+   URL/state-change, and organic-card contracts.
+
+#### Ecosia
+
+1. Capture consent overlays for the relevant region/device combinations and
+   identify whether the controls are in the main DOM, an iframe, or a shadow
+   root. Promote only sanitized, date-stamped evidence.
+2. Implement a visible-control flow for necessary-only consent, including a
+   bounded `Manage cookies` step when the provider requires a preference page.
+   Verify both overlay removal and the persisted state needed for the next
+   navigation; do not call an undocumented Didomi method as the primary path.
+3. After consent, detect the actual result route and organic cards. Preserve
+   the Ecosia engine ID while recording an optional provider-family/source
+   attribution only when the page exposes it unambiguously.
+4. Treat a missing provider choice, changed provider family, or unavailable
+   consent control as an observable diagnostic outcome, not as evidence that
+   Ecosia is equivalent to Bing or Google.
+
+### Shared State Machine and Safety Rules
+
+- Model `consent_not_present`, `consent_visible`, `consent_action_started`,
+  `consent_cleared`, and `consent_required` as explicit states.
+- Scope selectors to the observed dialog/frame/root and keep locale variants
+  in provider metadata rather than broadening to arbitrary page buttons.
+- Use explicit Selenium waits for element visibility/clickability, frame or
+  shadow-root availability, URL transitions, and overlay disappearance.
+- Keep consent action, browser profile path, cookie state, and provider source
+  out of normalized result rows unless they are safe, typed metadata.
+- Never persist real user profiles, authentication cookies, raw consent
+  payloads, query text, or third-party page content in fixtures or CI artifacts.
+- Preserve partial-success semantics: one unresolved provider consent state
+  must not discard results from other engines.
+
+### Implementation Slices
+
+1. Refresh the Google/Ecosia artifact matrix with sanitized, dated,
+   opt-in observations and explicit country/device assumptions.
+2. Extend the browser interaction contract with provider-specific consent
+   states, locale labels, frame/shadow-root metadata, and verification rules.
+3. Replace undocumented consent shortcuts as primary paths with semantic,
+   explicit-wait handlers and a typed fallback outcome.
+4. Add isolated-profile support only if artifacts show that it is necessary;
+   document lifecycle, cleanup, opt-in configuration, and cookie safety.
+5. Add offline DOM fixtures and mocked-WebDriver tests for every consent state,
+   timeout, frame/root variation, post-action transition, and partial failure.
+6. Run one low-volume live smoke per provider and supported market, compare
+   result/provenance metadata, and record selector decisions in the changelog.
+
+### Test and Acceptance Strategy
+
+- Unit tests cover locale label matching, selector scoping, state transitions,
+  explicit wait timeouts, overlay disappearance, and redaction.
+- Mocked Selenium tests prove that consent is handled before input, success is
+  not declared before verification, drivers are closed, and unresolved states
+  become `consent_required`.
+- Fixture tests cover normal, consent-present, consent-cleared, blocked,
+  rate-limited, empty, and malformed Google/Ecosia pages.
+- Live browser checks remain opt-in, low-volume, dated, and outside the default
+  CI gate. They must not bypass provider controls.
+
+### Acceptance Criteria
+
+- Google and Ecosia each have a documented, fixture-backed consent contract
+  with explicit success and safe failure states.
+- No undocumented provider JavaScript API or guessed cookie is required for
+  the default success path.
+- Consent actions are verified by rendered state and do not leak user data.
+- Ecosia result provenance remains honest when its upstream provider changes.
+- Existing provider, parser, partial-success, diagnostic-redaction, and
+  browser-cleanup tests remain green.
+- The live TODO is closed only after dated smoke evidence and changelog entries
+  are recorded; otherwise the provider remains explicitly `consent_required`.
+
 # Refactoring Phase 9 - Project Quality, Performance, and Documentation Structure
 
 ### Status

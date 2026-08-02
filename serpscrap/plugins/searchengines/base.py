@@ -82,6 +82,19 @@ class BrowserInteraction:
     verification_status: str = "candidate"
     dismiss_selectors: tuple[str, ...] = ()
     consent_button_selectors: tuple[str, ...] = ()
+    consent_manage_selectors: tuple[str, ...] = ()
+    consent_reject_labels: tuple[str, ...] = (
+        "reject",
+        "reject all",
+        "ablehnen",
+        "alle ablehnen",
+        "necessary",
+        "notwendig",
+        "nur notwendige",
+        "nicht essenzielle cookies ablehnen",
+        "non-essential cookies",
+        "refuse",
+    )
 
     def metadata(self) -> dict[str, Any]:
         return {
@@ -94,6 +107,8 @@ class BrowserInteraction:
             "verification_status": self.verification_status,
             "dismiss_selectors": list(self.dismiss_selectors),
             "consent_button_selectors": list(self.consent_button_selectors),
+            "consent_manage_selectors": list(self.consent_manage_selectors),
+            "consent_reject_labels": list(self.consent_reject_labels),
         }
 
 

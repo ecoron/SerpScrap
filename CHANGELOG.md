@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Implemented the Phase 9.1 consent foundation: semantic Google/Ecosia
+  controls, explicit consent progress states, overlay-clear verification,
+  removal of undocumented JavaScript consent shortcuts, and mocked-browser /
+  fixture regression tests.
+- Fixed consent verification to ignore hidden post-click dialog nodes and use
+  the rendered browser state for Google/Ecosia overlay clearance.
+- Added the artifact-backed Google `div.GzLjMd button#W0wltc` consent fallback,
+  still gated by the visible rejection label and post-click verification.
+- Added the artifact-backed Ecosia `#didomi-notice-disagree-button` fallback,
+  gated by the visible `Nicht essenzielle Cookies ablehnen` label.
+- Added the Phase 9.1 plan for artifact-backed Google and Ecosia consent
+  handling, explicit waits, provider provenance, and safe `consent_required`
+  fallbacks.
 - Implemented Phase 9 service hardening: bounded API job capacity, database
   readiness checks, graceful service shutdown, bounded result pagination, and
   deterministic regression tests.

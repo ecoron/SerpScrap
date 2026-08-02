@@ -139,81 +139,90 @@ class HomepageSearchFlow:
                 except WebDriverException:
                     continue
 
-    @staticmethod
-    def _apply_consent(driver: Any, plugin: SearchEnginePlugin, action: str) -> bool:
+    def _apply_consent(
+        self,
+        driver: Any,
+        plugin: SearchEnginePlugin,
+        action: str,
+        *,
+        progress: Callable[..., Any] | None = None,
+    ) -> bool:
         spec = plugin.browser_interaction
         assert spec is not None
         if action == "disabled":
             return False
-        labels = ("ablehnen", "reject", "necessary", "notwendig", "nur notwendige", "refuse")
+        labels = tuple(label.lower() for label in spec.consent_reject_labels)
+
+        if progress is not None:
+            progress("consent_action_started")
 
         def consent_cleared(_: Any) -> bool:
-            return plugin.classify_homepage(
-                getattr(driver, "current_url", ""),
-                html=getattr(driver, "page_source", "") or "",
-                visible_text=HomepageSearchFlow._visible_text(driver),
-            ) != "consent_required"
+            current_url = getattr(driver, "current_url", "")
+            visible_text = HomepageSearchFlow._visible_text(driver)
+            # Do not use raw homepage HTML for post-click verification: Google
+            # and consent managers can leave a hidden dialog in the DOM after
+            # the visible control has successfully closed it.
+            if plugin.classify_homepage(
+                current_url,
+                html="",
+                visible_text=visible_text,
+            ) == "consent_required":
+                return False
+            for selector in plugin.homepage_consent_selectors:
+                if any(self._usable(element) for element in driver.find_elements(By.CSS_SELECTOR, selector)):
+                    return False
+            return True
 
         def wait_until_cleared() -> bool:
             try:
-                WebDriverWait(driver, 10).until(consent_cleared)
+                WebDriverWait(driver, self.timeout).until(consent_cleared)
             except TimeoutException:
                 return False
             return True
-
-        execute_script = getattr(driver, "execute_script", None)
-        if execute_script is not None and plugin.engine_id == "google":
-            if execute_script(
-                "const b = document.getElementById('W0wltc');"
-                "if (b) { b.click(); return true; } return false;"
-            ) and wait_until_cleared():
-                return True
-        if execute_script is not None and plugin.engine_id == "ecosia":
-            if execute_script(
-                "const d = window.Didomi;"
-                "if (d && typeof d.setUserDisagreeToAll === 'function') { d.setUserDisagreeToAll(); return true; } return false;"
-            ) and wait_until_cleared():
-                return True
 
         def locate(_: Any) -> Any:
             for selector in spec.consent_button_selectors:
                 for element in driver.find_elements(By.CSS_SELECTOR, selector):
                     try:
-                        text = str(getattr(element, "text", "") or "").lower()
-                        aria_label = str(element.get_attribute("aria-label") or "").lower()
-                        semantic_match = any(label in f"{text} {aria_label}" for label in labels)
-                        artifact_fallback = selector.endswith("button#W0wltc")
-                        if (semantic_match or artifact_fallback) and HomepageSearchFlow._usable(element):
+                        text = " ".join(str(getattr(element, "text", "") or "").lower().split())
+                        aria_label = " ".join(
+                            str(element.get_attribute("aria-label") or "").lower().split()
+                        )
+                        semantic_text = f"{text} {aria_label}".strip()
+                        semantic_match = any(label in semantic_text for label in labels)
+                        if semantic_match and HomepageSearchFlow._usable(element):
                             return element
                     except WebDriverException:
                         continue
             return False
 
         try:
-            element = WebDriverWait(driver, 15).until(locate)
-            element.click()
+            element = WebDriverWait(driver, self.timeout).until(locate)
         except (TimeoutException, WebDriverException):
-            # Google occasionally exposes the consent dialog in the rendered
-            # DOM before WebDriver returns its button collection. Keep this
-            # fallback scoped to the observed rejection button.
-            try:
-                direct = driver.find_elements(By.ID, "W0wltc")
-                if direct and HomepageSearchFlow._usable(direct[0]):
-                    direct[0].click()
-                    element = direct[0]
-                else:
-                    raise WebDriverException("Google consent button not available by id")
-            except WebDriverException:
-                element = None
-            execute_script = getattr(driver, "execute_script", None)
+            element = None
+            for selector in spec.consent_manage_selectors:
+                for manage in driver.find_elements(By.CSS_SELECTOR, selector):
+                    try:
+                        if HomepageSearchFlow._usable(manage):
+                            manage.click()
+                            element = WebDriverWait(driver, self.timeout).until(locate)
+                            break
+                    except (TimeoutException, WebDriverException):
+                        continue
+                if element is not None:
+                    break
             if element is None:
-                if execute_script is None or not execute_script(
-                    "const b = document.getElementById('W0wltc');"
-                    "if (b) { b.click(); return true; } return false;"
-                ):
-                    return False
+                return False
+        try:
+            element.click()
+        except WebDriverException:
+            return False
+        if plugin.engine_id == "google" and "consent.google." in str(getattr(driver, "current_url", "")):
+            driver.get(spec.homepage_url)
         if not wait_until_cleared():
             return False
+        if progress is not None:
+            progress("consent_cleared")
         return True
 
     def _wait_for_serp(self, driver: Any, plugin: SearchEnginePlugin, *, submitted_url: str) -> None:
@@ -266,7 +275,15 @@ class HomepageSearchFlow:
 
         def emit(state: str, *, selector_key: str | None = None, terminal: bool = False, error_category: str | None = None, result_count: int | None = None) -> None:
             artifact_path = None
-            if artifact_store is not None and state in {"homepage_ready", "pre_submit", "serp_ready", "failure"}:
+            if artifact_store is not None and state in {
+                "homepage_ready",
+                "consent_visible",
+                "consent_action_started",
+                "consent_cleared",
+                "pre_submit",
+                "serp_ready",
+                "failure",
+            }:
                 artifact_path = artifact_store.capture(
                     html=getattr(driver, "page_source", "") or "",
                     query=query,
@@ -294,13 +311,16 @@ class HomepageSearchFlow:
             driver.get(spec.homepage_url)
             homepage_state = self._classify(driver, plugin, homepage=True)
             if homepage_state == "consent_required":
-                if not self._apply_consent(driver, plugin, consent_action):
+                emit("consent_visible")
+                if not self._apply_consent(driver, plugin, consent_action, progress=emit):
                     raise BrowserFlowError(
                         "consent_required",
                         f"provider homepage returned consent_required for {plugin.engine_id}",
                         url=getattr(driver, "current_url", None),
-                    )
+                )
                 homepage_state = self._classify(driver, plugin, homepage=True)
+            elif homepage_state is None:
+                emit("consent_not_present")
             if homepage_state in {"blocked", "consent_required", "rate_limited"}:
                 raise BrowserFlowError(
                     homepage_state,

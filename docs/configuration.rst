@@ -55,9 +55,12 @@ Core settings
   and selects the privacy-preserving rejection action (Google's ``Alle
   ablehnen``); ``reject`` is an explicit alias and ``disabled`` preserves a
   ``consent_required`` failure.
-  Google and Ecosia consent controls remain a known live-browser TODO. If the
+  Google and Ecosia consent controls are the Phase 9.1 live-browser scope. If the
   provider does not expose an actionable control, the run safely remains
   ``consent_required`` instead of bypassing or guessing at consent.
+  Consent progress events use ``consent_not_present``, ``consent_visible``,
+  ``consent_action_started``, and ``consent_cleared``; a failed verification
+  never continues into search input handling.
 * ``retryable_engine_categories``: bounded retry categories for engine jobs;
   the default is ``['timeout', 'navigation_state', 'network']``. Provider
   controls and parser/selector failures are not retried by default.

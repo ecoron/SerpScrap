@@ -372,3 +372,23 @@ This file records the implementation work performed against
 - Added persistence health checks, readiness responses, graceful shutdown, and
   bounded result pagination.
 - Added deterministic service tests and Docker operator lifecycle guidance.
+
+# Phase 9.1 plan
+
+- Researched current Google and Ecosia consent/provider constraints and added
+  the Phase 9.1 implementation plan with a semantic-control-first solution.
+
+# Phase 9.1 implementation
+
+- Added semantic Google/Ecosia consent selectors and locale-aware rejection
+  labels to the browser contract.
+- Added explicit consent progress states and verified overlay-clear handling.
+- Removed undocumented Google ID and Ecosia JavaScript consent shortcuts from
+  the default success path.
+- Added sanitized Google consent coverage plus mocked-browser regression tests.
+- Fixed post-click verification to distinguish hidden consent DOM nodes from a
+  visible overlay.
+- Added the rendered-artifact Google `div.GzLjMd button#W0wltc` fallback while
+  retaining semantic label and overlay-clear checks.
+- Added the rendered-artifact Ecosia `#didomi-notice-disagree-button` fallback
+  for the visible `Nicht essenzielle Cookies ablehnen` action.

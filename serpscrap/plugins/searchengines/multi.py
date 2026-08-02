@@ -22,6 +22,7 @@ from serpscrap.plugins.searchengines.base import EnginePage, SearchEnginePlugin
 from serpscrap.plugins.searchengines.browser_flow import BrowserFlowError, HomepageSearchFlow
 from serpscrap.plugins.searchengines.fusion import ResultFusion
 from serpscrap.plugins.searchengines.registry import SearchEngineRegistry, default_registry
+from serpscrap.result_normalizer import normalize_result_url
 
 
 class PageCapture(Protocol):
@@ -105,6 +106,12 @@ class MultiEngineRunner:
         else:
             sink = NullProgressSink()
         progress = ProgressCoordinator(run_id, total_jobs, sink)
+
+        def emit_progress(*, state: str, **kwargs: Any) -> None:
+            progress.emit(state=state, **kwargs)
+            callback = config.get("_progress_callback")
+            if callback is not None:
+                callback({"total_jobs": progress.total_jobs, "completed_jobs": progress.completed_jobs, "state": state, **kwargs})
         artifact_store = None
         if config.get("diagnostic_html"):
             artifact_store = DiagnosticArtifactStore(
@@ -133,7 +140,7 @@ class MultiEngineRunner:
                 job_config.update({
                     "_correlation_id": job.correlation_id,
                     "_artifact_store": artifact_store,
-                    "_progress_callback": lambda state, **kwargs: progress.emit(
+                    "_progress_callback": lambda state, **kwargs: emit_progress(
                         correlation_id=job.correlation_id,
                         engine=job.engine,
                         page=job.page,
@@ -141,7 +148,7 @@ class MultiEngineRunner:
                         **kwargs,
                     ),
                 })
-                progress.emit(
+                emit_progress(
                     correlation_id=job.correlation_id,
                     engine=job.engine,
                     page=job.page,
@@ -161,7 +168,7 @@ class MultiEngineRunner:
                 category = "empty" if plugin.classify_empty(
                     page.url, page.html, visible_text=page.visible_text
                 ) else "malformed"
-                progress.emit(
+                emit_progress(
                     correlation_id=job.correlation_id,
                     engine=job.engine,
                     page=job.page,
@@ -187,7 +194,7 @@ class MultiEngineRunner:
             ]
             for value in values:
                 value["query_num_results_page"] = len(parsed)
-            progress.emit(
+            emit_progress(
                 correlation_id=job.correlation_id,
                 engine=job.engine,
                 page=job.page,
@@ -195,7 +202,7 @@ class MultiEngineRunner:
                 url=page.url,
                 result_count=len(parsed),
             )
-            progress.emit(
+            emit_progress(
                 correlation_id=job.correlation_id,
                 engine=job.engine,
                 page=job.page,
@@ -237,7 +244,7 @@ class MultiEngineRunner:
                             result_count=getattr(exc, "result_count", None),
                             url=failure_url,
                         )
-                    progress.emit(
+                    emit_progress(
                         correlation_id=job.correlation_id,
                         engine=job.engine,
                         page=job.page,
@@ -268,7 +275,7 @@ class MultiEngineRunner:
                             result_count=len(values),
                             url=page_url,
                         )
-                    progress.emit(
+                    emit_progress(
                         correlation_id=job.correlation_id,
                         engine=job.engine,
                         page=job.page,
@@ -308,6 +315,13 @@ class MultiEngineRunner:
                 provider_family_cap=bool(ranking.get("provider_family_cap", False)),
             ))
         ranked = self.fusion.fuse(rows, active, families)
+        for row in ranked:
+            url_info = normalize_result_url(row.get("serp_url"), row.get("serp_type"))
+            row["source_url"] = url_info["source_url"]
+            row["canonical_url"] = url_info["canonical_url"]
+            row["serp_url"] = url_info["canonical_url"]
+            row["result_kind"] = url_info["result_kind"]
+            row["relevance"] = float(row.get("relevance_score") or 0.0)
         ranked.sort(key=lambda row: (str(row.get("query") or ""), int(row.get("best_rank") or 0), -float(row.get("relevance_score") or 0.0), str(row.get("serp_url") or "")))
         # Preserve query order while keeping fusion deterministic within each query.
         query_index = {query: index for index, query in enumerate(request.queries)}

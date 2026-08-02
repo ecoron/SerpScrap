@@ -6,6 +6,40 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Implemented Phase 8.3: compact responsive result workspace, canonical URL
+  grouping with all contributing engines, relevance-based ordering, and API/UI
+  deletion controls for one search or the complete result archive.
+- Implemented Phase 8.4: persisted search progress, visible progress/ETA
+  status, and independently scrollable result panels with initial results kept
+  in the viewport.
+- Fixed History action-column overflow and enabled cross-origin DELETE
+  requests for individual and bulk result deletion.
+- Fixed History column sizing and disabled historical deletion until a search
+  is explicitly selected.
+- Added the Phase 8.2 implementation plan for separate current and historical
+  result views, engine-attributed failures, fixed result-column ordering, and
+  canonical destination URL handling.
+- Implemented Phase 8.2 result normalization, run-scoped current and historical
+  views, canonical destination URLs, typed image exclusion, relevance values,
+  and engine-attributed failure display.
+- Implemented Phase 8.1: registry-backed all-engine defaults, persisted and
+  validated UI configuration with reset support, configuration/engine APIs,
+  MCP configuration tools, registry-driven engine selection, and automatic
+  result/history refresh with bounded polling.
+- Added the Phase 8.1 implementation plan for all-enabled default engine
+  searches, registry-backed UI selection, persisted configuration, and
+  automatic result refresh.
+- Grouped Docker-specific files under `docker/`: app, UI, and MCP Dockerfiles,
+  `compose.yml`, and Docker layout documentation; updated CI and all Compose
+  mount/build paths accordingly.
+- Implemented the initial Phase 8 multicontainer runtime: shared search API,
+  persistent job/result/failure history, PostgreSQL-compatible storage with
+  SQLite fallback, functional UI, MCP-compatible gateway, Compose topology,
+  local mounts, health checks, and service/API tests.
+- Added the Phase 8 concept for a four-container SerpScrap deployment with a
+  shared application/API layer, PostgreSQL persistence, functional UI, MCP
+  access, explicit local mounts, historical analysis, and a deterministic
+  container test strategy.
 - Fixed CI regressions in Ruff formatting, documentation indentation, Bing fixture parsing, sensitive form redaction, text decoding, and malformed post-submit classification.
 - Closed Refactoring Phase 7 with the homepage-driven browser flow, provider contracts, diagnostics, typed outcomes, fixtures, tests, documentation, and practical-run status consolidated; Google/Ecosia live consent automation remains a documented future TODO.
 - Added default Google consent handling using stable dialog attributes; `consent_action=necessary` selects the privacy-preserving rejection action, with `reject` and `disabled` alternatives plus CLI support.

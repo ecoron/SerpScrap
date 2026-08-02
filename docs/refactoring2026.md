@@ -1,5 +1,502 @@
 # SerpScrap Refactoring Plan 2026
 
+## Refactoring Phase 8 - Multicontainer Application and Search Archive Analysis
+
+### Status
+
+Initial implementation completed. The API, persistent job service, UI,
+MCP gateway, Compose topology, local mounts, and deterministic service tests
+are available. PostgreSQL migrations, production authentication, and full
+Compose smoke coverage remain follow-up hardening work.
+
+### Implementation Status
+
+- [x] Shared versioned HTTP API for search submission, status, results, history,
+  analytics, health, and readiness
+- [x] Asynchronous job service with persistent run, result, and failure records
+- [x] SQLAlchemy history store with SQLite offline fallback and PostgreSQL URL
+  support
+- [x] Functional static UI container for starting searches and inspecting
+  results and history analytics
+- [x] MCP-compatible JSON-RPC gateway delegating to the shared API
+- [x] Four-service Docker Compose topology with documented local mounts
+- [x] Focused service and API tests without browser or network access
+- [ ] Production authentication, migrations, backup/restore automation, and
+  full container smoke tests
+
+### Objective
+
+SerpScrap will run as a flexible multicontainer application. The central
+SerpScrap application container retains the search and interaction logic. A
+separate database container stores search history durably, a user-interface
+container provides an intuitive workflow, and an MCP server container exposes
+the same capabilities to MCP-compatible clients. The UI and MCP server must
+not duplicate scraping or persistence logic; both use the same application and
+repository layers.
+
+The result must run locally with Docker Compose and in a small server
+environment. Users can start searches, monitor them continuously, view
+results, and filter, compare, and aggregate historical searches and hits.
+
+### Architecture and Responsibilities
+
+The target topology consists of four containers connected through a shared
+internal Compose network:
+
+| Container | Responsibility | Exposure |
+| --- | --- | --- |
+| `serpscrap-app` | HTTP API, job orchestration, browser/provider integration, result normalization, and domain services | Internal API network only; optional administrative health port |
+| `serpscrap-db` | PostgreSQL database for searches, jobs, hits, failure states, and analysis indexes | Internal database network only |
+| `serpscrap-ui` | User interface for searches, run status, result lists, details, and historical analysis | Operator-configurable host port |
+| `serpscrap-mcp` | MCP transport and tools/resources for searches, status, results, and historical analysis | Internal by default; optionally published separately |
+
+The application container is the only place that executes the existing
+scraping pipeline and provider adapters. The database is connected through a
+configurable PostgreSQL URL. Existing SQLite history remains available for
+local/offline CLI and library use; container deployments use versioned
+PostgreSQL migrations.
+
+The first release does not introduce a fifth queue or cache database
+container. Running jobs are managed by the application service and persisted
+in PostgreSQL with status, progress, correlation ID, and timestamps. A later
+move to an external queue must remain possible without changing the UI or MCP
+contracts.
+
+### Shared Application and API Contract
+
+Interaction logic is modeled as a versioned service contract (`/api/v1`). The
+UI and MCP server use the same endpoints or service methods:
+
+- Start a search with a query, engines, search type, page count, and optional
+  runtime options (`POST /searches`).
+- Retrieve run status, progress, partial results, and structured failures by
+  job ID and correlation ID (`GET /searches/{id}` and
+  `GET /searches/{id}/events`).
+- Load paginated and sorted results with engine and outcome filters
+  (`GET /results`).
+- Filter historical runs by time range, query, engine, outcome, and result
+  count (`GET /history/searches`).
+- Analyze historical hits by frequency, engine comparison, success/failure
+  distribution, time trends, duplicates, and top domains
+  (`GET /history/analytics`).
+- Provide health and readiness checks for the application and database.
+
+All responses retain the existing normalized result contract, structured
+provider outcomes, partial-success behavior, and safe failure details. API and
+MCP schemas are derived from typed models and versioned. Browser diagnostics
+and sensitive inputs remain redacted and opt-in.
+
+### User Interface
+
+The UI must be usable without knowledge of the CLI or internal containers. The
+first version includes:
+
+- a search form with sensible defaults, engine selection, search type, page
+  count, and validation feedback;
+- a live run view with status, progress, correlation ID, partial results, and
+  understandable provider failures;
+- a paginated result list with engine/outcome filters, title, URL, snippet,
+  rank, timestamp, and a detail view;
+- a history page with run, time-range, and query filters plus comparable
+  result and failure metrics;
+- empty, failed, blocked, and running states with responsive and accessible
+  forms.
+
+The UI communicates only with the application API service. Robust polling with
+backoff is planned initially; a later move to SSE/WebSocket must not require a
+data-model change. Authentication, CORS, rate limits, and an optional reverse
+proxy are deployment security configuration, not UI domain logic.
+
+### MCP Server
+
+The MCP container provides a small, stable tool surface based on the API
+contract. Planned tools/resources are `start_search`, `get_search_status`,
+`list_results`, `list_search_history`, and `analyze_history`. Tool inputs are
+validated like API inputs; large result sets are paginated and sensitive
+diagnostic content is never returned unfiltered. The server remains
+stateless: job and result state live in the application and database.
+Transport, authentication, and enabled MCP tools are configured through
+environment variables.
+
+### Persistence and Local Mounts
+
+All durable data is retained through explicit, documented mounts from the
+project or deployment directory. The Compose file uses no anonymous volumes
+for domain data:
+
+| Local directory | Container path | Contents |
+| --- | --- | --- |
+| `./data/postgres` | `/var/lib/postgresql/data` | PostgreSQL data and migration state |
+| `./data/cache` | `/var/lib/serpscrap/cache` | Versioned HTML/result caches |
+| `./data/diagnostics` | `/var/lib/serpscrap/diagnostics` | Opt-in, redacted diagnostic artifacts only |
+| `./data/exports` | `/var/lib/serpscrap/exports` | User-requested JSON and analysis exports |
+| `./logs` | `/var/log/serpscrap` | Structured app/UI/MCP logs as configured |
+
+Directories are created at startup with appropriate permissions. Secrets,
+passwords, and tokens are not committed to images, Compose files, or mounts;
+they are injected through environment or secret mechanisms. PostgreSQL backup
+and restore are documented operational procedures; caches and diagnostic
+artifacts can be cleaned independently.
+
+### Docker and Operations Design
+
+- A slim, reproducible application image serves as the base for the app and
+  MCP containers; UI dependencies are built separately.
+- `docker/compose.yml` defines health checks,
+  startup dependencies, restart policy, resource limits, non-root execution
+  where compatible with Chrome, and internal networks.
+- The app and MCP server wait for database readiness and exit with a clear
+  message when configuration is invalid.
+- Provider access, Chrome resources, concurrency, and diagnostic limits remain
+  configurable; provider protections are never bypassed.
+- Container logs are JSONL by default and do not expose search terms or URLs
+  that should be protected by the existing redaction rules.
+
+### Implementation Slices
+
+1. Extract an API/service layer from the existing application and repository
+   logic; define versioned job, result, and history models.
+2. Add the PostgreSQL adapter, migrations, indexes, and idempotent startup
+   checks while protecting SQLite offline mode and existing CLI contracts.
+3. Build the application container with Chrome, cache/diagnostic mounts, and
+   health checks.
+4. Build the UI container with search, status, result, and analysis views and
+   test it against the API contract.
+5. Build the MCP container with validated tools, pagination, and access
+   controls.
+6. Complete the Compose setup, local directories, example environment,
+   backup/restore procedure, and operations documentation.
+7. Run integration and smoke tests in CI; live provider searches remain opt-in
+   and are not part of deterministic tests.
+
+### Test and Acceptance Strategy
+
+- API contract tests cover validation, job lifecycle, polling/event data,
+  pagination, partial success, and structured failures without a browser or
+  network.
+- Repository tests cover the PostgreSQL schema, migrations, indexes,
+  transaction boundaries, restart behavior, and analysis queries; SQLite
+  regression coverage remains in place.
+- UI tests cover search, loading/error/empty states, filters, historical
+  analysis, and accessible interaction against a mocked API service.
+- MCP tests cover tool schemas, delegation to shared application logic,
+  pagination, and sensitive-data redaction.
+- Compose smoke tests start all four containers, wait for health checks, run a
+  deterministic stub search, read results through the UI/API and MCP, and
+  verify restart persistence through the PostgreSQL mount.
+- Mount, secret, non-root, port, and network checks prevent data from being
+  written accidentally to the container layer or database ports from being
+  exposed publicly.
+
+### Acceptance Criteria
+
+- `docker compose -f docker/compose.yml up` starts the app, database, UI, and
+  MCP containers reproducibly and reports the correct readiness state.
+- A search can be started through the UI and MCP; both paths produce the same
+  job/result contract and history.
+- Run status, partial results, provider outcomes, and failures are clearly
+  visible and remain in the database after an application restart.
+- Historical hits can be filtered, paginated, and analyzed using defined
+  metrics.
+- Cache, diagnostics, exports, logs, and PostgreSQL data reside in the
+  documented local directories and survive container restarts.
+- Offline tests require neither Chrome nor network access; Compose tests use
+  stubs and are deterministic. An opt-in browser smoke test remains separate.
+- The API, UI, and MCP server contain no duplicated scraping or persistence
+  logic; Phase 7 security and provider-protection rules remain effective.
+
+## Refactoring Phase 8.1 - Persisted Engine Configuration and Automatic Result Refresh
+
+### Status
+
+Implementation completed. This phase extends the Phase-8 runtime with a
+persisted user configuration, complete available-engine defaults, a
+configuration page, MCP configuration tools, and automatic result refresh. It
+does not introduce a second scraping path or move provider selection into the
+UI.
+
+### Implementation Status
+
+- [x] Registry-backed engine metadata and all-enabled default selection
+- [x] Versioned database configuration record with atomic save and reset
+- [x] Explicit-search, persisted-configuration, and default precedence
+- [x] Configuration, reset, and engine-discovery API endpoints
+- [x] UI configuration page with accessible engine selection and safe defaults
+- [x] Automatic result/history refresh with bounded polling and request locking
+- [x] MCP configuration and engine-discovery tools
+- [x] Service and API regression tests for defaults, persistence, validation,
+  and explicit overrides
+
+### Objective
+
+Make the default search behavior cover every currently available and enabled
+search-engine plugin. Let users select a subset of those engines through a
+dedicated configuration page, store that selection in the database, and use
+the persisted selection for later searches. If no configuration exists, the
+application must use the SerpScrap defaults, with the effective engine list
+derived from the trusted registry rather than duplicated in frontend code.
+
+Search results and job status must refresh automatically in the UI while a
+search is running and after new results are persisted. Manual refresh remains
+available as a fallback, but users should not need to reload the page to see
+new results.
+
+### Source of Truth and Default Semantics
+
+The `default_registry()` and its enabled plugin metadata are the authoritative
+source for available engines. The configuration service must expose stable
+engine IDs, display names, enabled/disabled state, disable reasons, supported
+search types, and provider metadata to the UI.
+
+The effective engine selection follows this precedence:
+
+1. An explicit engine list in the current search request, if valid.
+2. A persisted user configuration for the active configuration scope.
+3. The SerpScrap default configuration, filtered to currently available and
+   enabled registry plugins.
+
+An empty persisted selection is invalid for normal searches and must be
+rejected with a clear validation message. A provider disabled in the registry
+cannot be re-enabled by the UI. Engines removed from or disabled in the
+registry are excluded from the effective selection even if an old database
+configuration still contains their IDs.
+
+### Persisted Configuration Model
+
+Add a versioned configuration record to the application database. The first
+version should contain:
+
+- configuration scope/key and schema version;
+- selected engine IDs in deterministic registry order;
+- search defaults that are safe for the UI, including country code, search
+  type, page count, and result-page size;
+- created/updated timestamps;
+- optional optimistic-concurrency revision.
+
+The record must be stored as structured, validated data rather than an
+unbounded frontend blob. Sensitive values, proxy credentials, browser paths,
+and diagnostic secrets are not editable through this page and are never
+stored in the UI configuration record. The existing `Config` defaults remain
+the fallback and library/CLI behavior remains backward compatible.
+
+Configuration writes must be atomic. Invalid engine IDs, duplicate IDs,
+disabled engines, unsupported search types, and invalid numeric values return
+structured validation errors without replacing the last valid configuration.
+
+### API Contract
+
+Extend `/api/v1` with configuration endpoints:
+
+- `GET /configuration` returns the effective configuration, its source
+  (`persisted` or `defaults`), revision, and available engine metadata.
+- `PUT /configuration` validates and atomically persists the selected engines
+  and UI-safe defaults.
+- `POST /configuration/reset` removes the persisted override and returns the
+  complete registry-based defaults.
+- `GET /engines` exposes the available registry metadata independently for
+  UI and MCP clients.
+
+Search submission must resolve omitted engine options through this service.
+The response should include the effective engine list and configuration
+revision used by the job so historical runs remain explainable after a later
+configuration change.
+
+The configuration endpoints use the same validation and service layer for the
+UI, CLI integrations, and MCP. MCP should expose `get_configuration`,
+`update_configuration`, `reset_configuration`, and `list_engines` only after
+the same authorization boundary is applied as the HTTP API.
+
+### Configuration Page
+
+Add a dedicated configuration view to the UI:
+
+- list every available registry engine with a stable label and current state;
+- select or deselect enabled engines using accessible checkboxes;
+- mark disabled engines as unavailable with a non-editable reason;
+- show the active source, current revision, and effective engine count;
+- edit safe search defaults such as country, type, pages, and page size;
+- save atomically, display validation errors, and preserve the last valid
+  state on failure;
+- provide a reset-to-defaults action with confirmation;
+- reflect a successful configuration change in the next search without a full
+  browser reload.
+
+The search form must load its engine choices from `/configuration` or
+`/engines`, not from a hardcoded JavaScript list. By default, all available
+enabled engines are selected. The user may narrow the selection for an
+individual search, while the persisted configuration remains unchanged unless
+the user saves it explicitly on the configuration page.
+
+### Automatic Result Refresh
+
+The UI must refresh active jobs and result/history views automatically:
+
+- poll the job status and event endpoint with bounded backoff while a job is
+  queued or running;
+- refresh result rows when the persisted result count or job revision changes;
+- refresh the history summary after a terminal job state;
+- stop polling on completion, failure, cancellation, or a bounded timeout;
+- avoid duplicate requests when manual refresh and polling overlap;
+- retain the current filter, selected engine, pagination, and scroll position
+  when rows are replaced.
+
+The initial implementation may use HTTP polling. The API contract should
+retain a revision or event cursor so a later SSE/WebSocket implementation can
+replace polling without changing UI semantics. Polling errors must be visible
+but must not erase already displayed results.
+
+### Implementation Slices
+
+1. Add a registry metadata service and explicit default-selection resolver.
+2. Add the versioned configuration table/repository, validation, atomic update,
+   reset behavior, and configuration-source metadata.
+3. Apply persisted configuration during API search submission and include the
+   effective engine list/revision in job records and responses.
+4. Add configuration and engine API endpoints plus API contract tests.
+5. Add the UI configuration page, accessible engine selection, safe defaults,
+   save/reset flows, and validation feedback.
+6. Replace the current one-shot UI refresh with bounded automatic polling and
+   result/history refresh while preserving filters and active job context.
+7. Add MCP configuration tools and registry discovery backed by the same
+   service, then update Compose/API/UI documentation and examples.
+
+### Test and Acceptance Strategy
+
+- Registry tests verify that all enabled plugins are discoverable and disabled
+  plugins cannot be selected.
+- Configuration repository tests verify defaults, persistence, atomic writes,
+  reset behavior, schema versioning, and restart persistence using SQLite;
+  PostgreSQL integration coverage uses the Compose database.
+- API tests verify precedence of explicit request, persisted configuration,
+  and defaults; validation errors must leave the previous valid record intact.
+- UI tests verify complete default engine selection, individual selection,
+  disabled-engine display, save/reset behavior, and accessible error states.
+- Refresh tests verify polling backoff, terminal stop conditions, revision-
+  based result updates, filter preservation, and no duplicate concurrent
+  refresh requests.
+- MCP tests verify configuration-tool schemas and delegation to the shared
+  configuration service without duplicating validation.
+- A deterministic Compose smoke test starts with no configuration, confirms
+  that all available engines are selected, persists a reduced selection,
+  restarts the app, and confirms that the selection and search behavior remain
+  available from both UI/API and MCP.
+
+### Acceptance Criteria
+
+- A fresh installation searches all currently available and enabled registry
+  engines when no persisted configuration exists.
+- The UI configuration page lists registry-backed engines and allows users to
+  save a valid subset without editing source code.
+- Persisted configuration survives app/container restarts and is used by
+  searches that omit an explicit engine list.
+- Explicit per-search engine selection overrides persisted defaults only for
+  that search.
+- Disabled, unknown, duplicate, or empty selections are rejected safely.
+- Configuration changes are visible in the next search and are explainable in
+  job/history records through the effective engine list and revision.
+- Active jobs and result/history views refresh automatically, stop polling at a
+  terminal state, and preserve the user's current filters.
+- API, UI, MCP, SQLite, and PostgreSQL paths use one shared configuration and
+  registry service; no engine list is duplicated in frontend code.
+
+## Refactoring Phase 8.2 - Current and Historical Result Views with Canonical URLs
+
+### Status
+
+Implemented. This phase improves result presentation and normalization without
+changing the provider adapters' safety rules.
+
+### Objective
+
+Provide two clear result views: results from the current search and results
+from historical searches. Every displayed failure must identify the affected
+search engine. Result tables must use the order `Title`, `URL`, `Relevance`,
+`Engine`.
+
+Displayed URLs must be canonical destination URLs. Provider redirect wrappers,
+tracking parameters, search-result routes, and image-detail URLs must not be
+presented as if they were the destination page. Image results must either be
+shown in a separate typed view or excluded from the standard web-result table.
+
+### Implementation Steps
+
+1. Extend the normalized result contract with `canonical_url`, `source_url`,
+   `result_kind`, and an explicit relevance value while retaining the raw
+   provider URL for diagnostics.
+2. Add one shared URL normalizer that unwraps known provider redirect formats,
+   removes tracking parameters safely, validates the destination scheme/host,
+   and never guesses when the target cannot be proven.
+3. Classify image, news, video, shopping, and organic results explicitly;
+   prevent image-detail URLs from entering the standard organic-results view.
+4. Extend history/API queries with `current` and `historical` scopes,
+   run/query/engine filters, and structured engine-attributed failures.
+5. Add separate UI views/tabs for the active search and historical archive.
+   Render the standard table in the fixed order Title, URL, Relevance, Engine;
+   keep snippets and diagnostics in an optional detail view.
+6. Refresh only the current-search view while a job is active, then move the
+   completed run into the historical view without losing its engine/failure
+   attribution.
+
+### Test and Acceptance Criteria
+
+- Current and historical results are separate, selectable views with stable
+  filters and pagination.
+- Every failure row or failure summary names its search engine and retains the
+  provider category/message.
+- The standard table columns appear exactly as Title, URL, Relevance, Engine.
+- Provider redirects and tracking wrappers resolve to the canonical target URL
+  where the target is unambiguous; raw URLs remain available only in details.
+- Image-detail URLs are excluded from organic results and covered by fixtures.
+- Offline fixtures cover redirect wrappers, tracking parameters, canonical
+  URLs, image results, malformed URLs, and engine-specific failures.
+- API, UI, and persistence tests verify current/history separation and stable
+  result ordering without browser or network access.
+
+### Implementation Notes
+
+- Result payloads retain `source_url` and expose a validated `canonical_url`,
+  typed `result_kind`, and rank-derived `relevance` value.
+- Google, DuckDuckGo, and Bing-style redirect wrappers are unwrapped only when
+  their destination is explicit; tracking parameters are removed from the
+  displayed URL while raw provider URLs remain available for diagnostics.
+- The API exposes run-scoped results and failures, and the UI provides current
+  and historical views with engine-attributed failure tables and the fixed
+  `Title`, `URL`, `Relevance`, `Engine` result order.
+
+## Refactoring Phase 8.3 - Compact Result Workspace and Result Retention Controls
+
+### Status
+
+Implemented. The UI now uses a compact responsive workspace, groups results by
+canonical URL, lists all contributing engines, and provides explicit deletion
+controls for individual searches or the complete result archive.
+
+### Implementation Notes
+
+- Desktop views use a fixed viewport shell with independently scrollable data
+  panels; narrow screens fall back to natural page flow for accessibility.
+- Results are grouped by canonical URL in the UI. The displayed engine column
+  contains the sorted set of all engines contributing that URL.
+- Group ordering uses the maximum stored relevance value per URL, preserving
+  the relevance values produced by SerpScrap's ranking and fusion pipeline.
+- The API and history store support deleting one search run, its results and
+  failures, or all persisted search runs atomically from the application's
+  perspective.
+
+## Refactoring Phase 8.4 - Search Progress and Visible Result Panels
+
+### Status
+
+Implemented. Active searches now expose persisted progress metadata and the UI
+renders a visible progress bar with job counts, current engine, elapsed-time
+based remaining-time estimates, and a terminal state.
+
+The result panels use a grid/flex layout with normal document flow. Current and
+historical result tables remain visible in their containers, and long result
+sets extend the page naturally. The browser's vertical scrollbar is the only
+scroll mechanism on desktop, avoiding nested scrollbars or clipped content;
+narrow screens retain the same accessible behavior.
+
 ## Phase 7 - Abschlussstatus
 
 Phase 7 ist abgeschlossen. Die homepage-basierte Selenium-Suche, die

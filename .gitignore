@@ -65,6 +65,7 @@ docs/_build/
 
 # Local Phase-7 diagnostic artifacts
 logs/
+data/
 
 # PyBuilder
 target/

@@ -5,6 +5,100 @@ This file records the implementation work performed against
 
 ## 2026-08-02
 
+### Refactoring Phase 8.4 - implementation
+
+- Persisted job progress totals, completed jobs, active engine, and state in
+  the search status response.
+- Added a visible UI progress bar with completion counts and an estimated
+  remaining time while a search is running.
+- Corrected the desktop grid/flex overflow behavior so current and historical
+  result panels remain visible and their tables scroll independently.
+- Followed up by allowing normal page growth and vertical scrolling, removing
+  nested table scrollbars and preventing history/result content from being
+  clipped by the viewport height.
+- Fixed the History action column so View buttons stay within the analysis
+  container and added the required DELETE CORS method permission for Chrome.
+- Tuned History column widths for narrow analysis panels and synchronized the
+  historical delete action with the selected run state.
+
+### Refactoring Phase 8.3 - implementation
+
+- Reworked the UI into a compact responsive workspace with fixed desktop
+  viewport usage and internal result-panel scrolling.
+- Grouped displayed results by canonical URL, listed all contributing engines,
+  and ordered groups by the stored SerpScrap relevance value.
+- Added deletion endpoints and UI controls for one search run or the complete
+  persisted search archive, including its result and failure records.
+
+### Refactoring Phase 8.2 - planning
+
+- Added the short English implementation plan for current versus historical
+  result views, engine-specific failure attribution, fixed table ordering, and
+  canonical URL/image-result normalization.
+
+### Refactoring Phase 8.2 - implementation
+
+- Added shared provider URL normalization with explicit redirect unwrapping,
+  safe tracking-parameter removal, canonical URL validation, result-kind
+  classification, and rank-derived relevance.
+- Added run-scoped result and failure API queries while retaining raw provider
+  URLs for diagnostics and attributing every persisted failure to its engine.
+- Added separate current-search and historical-result UI views with the fixed
+  `Title`, `URL`, `Relevance`, `Engine` table order; image results are excluded
+  from the standard organic table.
+- Added offline normalization and persistence tests covering redirect wrappers,
+  tracking parameters, malformed URLs, image results, and engine failures.
+
+### Refactoring Phase 8.1 - implementation
+
+- Implemented registry-backed default engine resolution, persisted validated
+  configuration with revisions, atomic updates, reset behavior, and explicit
+  per-search overrides.
+- Added `/configuration`, `/configuration/reset`, and `/engines` API
+  endpoints plus MCP configuration and engine-discovery tools.
+- Replaced hardcoded UI engine choices with registry metadata, added the
+  configuration page, and implemented bounded automatic result/history refresh
+  with duplicate-request protection.
+- Added service and API regression tests for default selection, persistence,
+  validation, reset/override semantics, and registry discovery.
+
+### Refactoring Phase 8.1 - planning
+
+- Added the English Phase 8.1 implementation plan for registry-backed engine
+  defaults, persisted UI configuration, configuration/reset APIs, MCP tools,
+  and automatic result refresh with bounded polling.
+- Documented configuration precedence, validation, atomic persistence,
+  restart behavior, revision tracking, UI acceptance criteria, and
+  deterministic API/UI/MCP/Compose tests.
+
+### Refactoring Phase 8 - Docker layout
+
+- Grouped the app, UI, and MCP Dockerfiles plus the Compose definition under
+  `docker/`.
+- Updated repository-root build contexts, `../` persistence mounts, CI,
+  Docker documentation, and the new Docker layout guide.
+
+### Refactoring Phase 8 - initial implementation
+
+- Implemented the shared versioned HTTP API, asynchronous job service, and
+  persistent search-run, result, and failure records.
+- Added the SQLAlchemy history store with SQLite offline fallback and
+  PostgreSQL URL support, plus focused API and service tests.
+- Added the functional UI container, MCP-compatible JSON-RPC gateway,
+  four-service Docker Compose topology, health checks, and documented local
+  mounts.
+- Recorded remaining hardening work: production authentication, migration and
+  backup automation, and full Compose smoke coverage.
+
+### Refactoring Phase 8 - planning
+
+- Added the Phase 8 concept for a four-container deployment: shared
+  SerpScrap application logic/API, PostgreSQL database, functional UI, and
+  MCP server.
+- Documented the versioned interaction contract, local persistence mounts,
+  historical-result analysis, container operations, security boundaries, and
+  API/UI/MCP/Compose acceptance tests.
+
 ### CI compatibility corrections
 
 - Fixed Ruff import formatting, RST list indentation, Bing fixture parsing,

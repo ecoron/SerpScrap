@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Any, Protocol
 
 from serpscrap.models import FailureRecord, SearchReport, SearchRequest
+from serpscrap.result_normalizer import normalize_result_url, relevance_for_rank
 
 
 class SearchRunner(Protocol):
@@ -90,6 +91,7 @@ class SearchApplication:
                 serp.links,
                 key=lambda item: (str(item.link_type or ""), int(item.rank or 0), item.link or ""),
             ):
+                url_info = normalize_result_url(link.link, link.link_type)
                 results.append(
                     {
                         "query_num_results_total": serp.num_results_for_query or "",
@@ -98,7 +100,11 @@ class SearchApplication:
                         "query": serp.query,
                         "serp_rank": int(link.rank or 0),
                         "serp_type": link.link_type,
-                        "serp_url": link.link,
+                        "serp_url": url_info["canonical_url"],
+                        "canonical_url": url_info["canonical_url"],
+                        "source_url": url_info["source_url"],
+                        "result_kind": url_info["result_kind"],
+                        "relevance": relevance_for_rank(int(link.rank or 0)),
                         "serp_rating": link.rating,
                         "serp_title": link.title,
                         "serp_domain": link.domain,

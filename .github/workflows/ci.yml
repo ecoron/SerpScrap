@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build --tag serpscrap:test .
+      - run: docker build --file docker/app/Dockerfile --tag serpscrap:test .
       - run: >-
           docker run --rm --entrypoint python serpscrap:test -c
           "from scrapcore.scraper.browser import ChromeDriverFactory;

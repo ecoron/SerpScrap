@@ -140,7 +140,7 @@ def _alternatives() -> list[SearchEnginePlugin]:
         _TemplatePlugin("mojeek", "https://www.mojeek.com", "https://www.mojeek.com/search?q={query}&s={offset}", None, "mojeek", interaction("https://www.mojeek.com/", ("input[name='q']", "input[placeholder*='Search']"), ("form button[type='submit']",), (".results-standard",), ("ul.results-standard > li[class^='r']",)), ("ul.results-standard > li[class^='r']",)),
         _TemplatePlugin("metager", "https://metager.org", "https://metager.org/meta/meta.ger3?eingabe={query}", None, "metager", interaction("https://metager.org/", ("input[name='eingabe']",), ("form[action*='meta.ger3'] button[type='submit']",), ("main",), ("article", "li.result")), ("article", "li.result"), display_name="MetaGer", pagination_strategy="provider", readiness="disabled", disable_reason="public search currently requires a MetaGer key"),
         _TemplatePlugin("good", "https://good-search.org", "https://good-search.org/en/?q={query}", None, "brave", interaction("https://good-search.org/en/", ("input[placeholder*='Search the web']", "input[name='q']", "input[type='search']"), ("form button[type='submit']",), ("main",), ("article", "li.result")), ("article", "li.result"), display_name="GOOD Search", pagination_strategy="none"),
-        _TemplatePlugin("xprivo", "https://www.xprivo.com", "https://www.xprivo.com/search/?q={query}&page={page}", None, "xprivo", interaction("https://www.xprivo.com/search/", ("input[name='q']", "input[type='search']", "textarea[placeholder*='Search']"), ("form button[type='submit']",), ("main", "[class*='result']", "article"), ("[class*='result']", "article")), ("[class*='result']", "article"), display_name="xPrivo", pagination_strategy="page"),
+        _TemplatePlugin("xprivo", "https://www.xprivo.com", "https://www.xprivo.com/search/?q={query}&page={page}", None, "xprivo", interaction("https://www.xprivo.com/search/", ("input[placeholder*='Privat suchen']", "input[placeholder*='Search privately']", "input[name='q']", "input[type='search']", "textarea[placeholder*='Search']"), ("form button[type='submit']",), ("main", "[class*='result']", "article"), ("[class*='result']", "article")), ("[class*='result']", "article"), display_name="xPrivo", pagination_strategy="page"),
         _TemplatePlugin("marginalia", "https://marginalia-search.com", "https://marginalia-search.com/search?q={query}&page={page}", None, "marginalia", interaction("https://marginalia-search.com/", ("input[name='query']", "input[name='q']", "input[type='search']"), ("form button[type='submit']",), ("main",), ("article", "li.result")), ("article", "li.result"), display_name="Marginalia", pagination_strategy="page"),
         _TemplatePlugin("etools", "https://www.etools.ch", "https://www.etools.ch/searchSubmit.do?query={query}&country={country}", None, "etools", interaction("https://www.etools.ch/", ("input[name='query']",), ("form[action*='searchSubmit.do'] button[type='submit']", "form[action*='searchSubmit.do'] input[type='submit']"), ("#results", ".results", ".searchResult", ".result", "table.results", ".content h2"), ("#results .result", ".results .result", ".searchResult", ".result", "table.results tr")), ("#results .result", ".results .result", ".searchResult", ".result", "table.results tr"), display_name="eTools.ch", pagination_strategy="provider"),
     ]
@@ -205,6 +205,19 @@ def _alternatives() -> list[SearchEnginePlugin]:
             plugin.card_selectors = ("div.margin-bottom--small.box",)
             plugin.title_selectors = ("h4.result", "h2", "h3", "[role='heading']")
             plugin.snippet_selectors = ("div.link--search p", ".snippet", "p")
+        elif plugin.engine_id == "xprivo":
+            # The current client renders organic results as links inside
+            # ``div.group`` cards; no ``main`` or result-named class is
+            # present on the hydrated SERP.
+            plugin.card_selectors = ("div.group", "article", "[class*='result']")
+            plugin.title_selectors = ("h3", "h2", "[role='heading']")
+            plugin.snippet_selectors = ("p.text-sm", ".snippet", "p")
+            assert plugin.browser_interaction is not None
+            plugin.browser_interaction = replace(
+                plugin.browser_interaction,
+                serp_ready_selectors=("a.block.py-3", "div.group h3", "h2"),
+                organic_card_selectors=("a.block.py-3", "div.group", "article"),
+            )
         elif plugin.engine_id == "marginalia":
             # The current UI renders each result as a heading-led block rather
             # than an article or li.result card.

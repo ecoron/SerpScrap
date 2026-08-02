@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Fixed xPrivo browser input detection for its rendered `Privat suchen`
+  placeholder, preventing false `selector_drift` failures before submission.
+- Updated xPrivo SERP readiness and organic-card selectors for its hydrated
+  `div.group` / `a.block.py-3` result layout, preventing post-submit state
+  classification failures.
+
 - Updated stale registry and configuration expectations to include the new
   plugins while keeping disabled MetaGer out of active defaults.
 

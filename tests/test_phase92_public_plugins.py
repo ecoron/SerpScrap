@@ -49,6 +49,16 @@ def test_public_candidate_urls_encode_queries_and_use_no_credentials():
         assert plugin.metadata()["authentication"] == "none"
 
 
+def test_xprivo_contract_covers_the_rendered_search_placeholder():
+    plugin = default_registry().get("xprivo")
+    interaction = plugin.browser_interaction
+
+    assert interaction is not None
+    assert "input[placeholder*='Privat suchen']" in interaction.search_input_selectors
+    assert "a.block.py-3" in interaction.serp_ready_selectors
+    assert "div.group" in plugin.card_selectors
+
+
 def test_searxng_requires_explicit_instance_and_remains_auth_free():
     plugin = searxng_plugin("https://public.example/searxng")
 

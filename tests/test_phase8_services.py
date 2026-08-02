@@ -1,3 +1,5 @@
+# ruff: noqa: I001
+
 import json
 import threading
 import urllib.request
@@ -8,8 +10,8 @@ from serpscrap.api_server import ApiHandler
 from serpscrap.api_service import SearchJobService
 from serpscrap.configuration_service import SearchConfigurationService
 from serpscrap.history_store import SearchHistoryStore
-from serpscrap.models import SearchReport, SearchRequest
 from serpscrap.mcp_server import TOOLS
+from serpscrap.models import SearchReport, SearchRequest
 
 
 def _request() -> SearchRequest:

@@ -1,5 +1,7 @@
 """Minimal MCP-compatible JSON-RPC gateway backed by the application API."""
 
+# ruff: noqa: I001
+
 from __future__ import annotations
 
 import json

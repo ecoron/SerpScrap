@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Resolved CI Ruff import-block failures for the Phase 8 service, MCP,
+  normalization, and Docker-layout test modules.
 - Implemented Phase 8.3: compact responsive result workspace, canonical URL
   grouping with all contributing engines, relevance-based ordering, and API/UI
   deletion controls for one search or the complete result archive.

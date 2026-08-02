@@ -1,5 +1,7 @@
 """Normalize provider result URLs without hiding the original provider value."""
 
+# ruff: noqa: I001
+
 from __future__ import annotations
 
 import base64

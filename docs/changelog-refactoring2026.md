@@ -5,6 +5,11 @@ This file records the implementation work performed against
 
 ## 2026-08-02
 
+### CI maintenance
+
+- Resolved Ruff import-block failures in the Phase 8 service, MCP,
+  normalization, and Docker-layout test modules.
+
 ### Refactoring Phase 8.4 - implementation
 
 - Persisted job progress totals, completed jobs, active engine, and state in

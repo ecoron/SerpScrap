@@ -1,5 +1,7 @@
 """Registry-backed, database-persisted UI and search configuration."""
 
+# ruff: noqa: I001
+
 from __future__ import annotations
 
 import re
@@ -7,7 +9,7 @@ from typing import Any
 
 from serpscrap.config import Config
 from serpscrap.history_store import SearchHistoryStore
-from serpscrap.plugins.searchengines.registry import SearchEngineRegistry, default_registry
+from serpscrap.plugins.searchengines.registry import default_registry, SearchEngineRegistry
 
 
 SAFE_KEYS = ("country_code", "search_type", "num_pages_for_keyword", "num_results_per_page")

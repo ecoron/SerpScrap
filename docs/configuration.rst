@@ -42,6 +42,26 @@ Core settings
 * ``store_history``: persist SQLite run history; defaults to ``True``.
 * ``database_name``: SQLite history path without the ``.db`` suffix.
 * ``scrape_urls``: fetch the text content of parsed result URLs.
+* ``progress``: emit correlated per-engine progress events; the CLI enables it
+  by default, while library callers can keep it disabled.
+* ``progress_format``: ``text`` for human-readable stderr output or ``jsonl``
+  for one machine-readable event per line on stderr.
+* ``diagnostic_html``: explicitly enable redacted rendered-HTML artifacts for
+  selector/provider troubleshooting; defaults to ``False``.
+* ``diagnostic_dir``: artifact root, normally ``logs/phase7``.
+* ``diagnostic_max_bytes_per_file``, ``diagnostic_max_total_bytes``, and
+  ``diagnostic_max_artifacts_per_job``: safety limits for diagnostic output.
+* ``consent_action``: provider consent handling. Defaults to ``necessary``
+  and selects the privacy-preserving rejection action (Google's ``Alle
+  ablehnen``); ``reject`` is an explicit alias and ``disabled`` preserves a
+  ``consent_required`` failure.
+
+Google and Ecosia consent controls remain a known live-browser TODO. If the
+provider does not expose an actionable control, the run safely remains
+``consent_required`` instead of bypassing or guessing at consent.
+* ``retryable_engine_categories``: bounded retry categories for engine jobs;
+  the default is ``['timeout', 'navigation_state', 'network']``. Provider
+  controls and parser/selector failures are not retried by default.
 * ``url_connect_timeout`` and ``url_read_timeout``: URL-enrichment network
   timeout settings.
 * ``url_max_redirects`` and ``url_max_response_bytes``: enrichment response
@@ -84,6 +104,28 @@ one failed provider does not discard successful results from the others.
    scraper = SerpScrap()
    results = scraper.search(['privacy-friendly search'], config=config)
 
+Diagnostic mode is opt-in because rendered pages can contain third-party
+content. The artifact manifest contains correlation IDs, states, result counts,
+and host/path information without query parameters. Raw artifacts are ignored
+by Git and should be reviewed and deleted after troubleshooting:
+
+.. code-block:: python
+
+   config.apply({
+       'progress': True,
+       'progress_format': 'jsonl',
+       'diagnostic_html': True,
+       'diagnostic_dir': 'logs/phase7',
+       'diagnostic_max_bytes_per_file': 2 * 1024 * 1024,
+       'diagnostic_max_total_bytes': 20 * 1024 * 1024,
+       'diagnostic_max_artifacts_per_job': 10,
+       'consent_action': 'necessary',
+       'retryable_engine_categories': ['timeout', 'navigation_state', 'network'],
+   })
+
+   scraper = SerpScrap()
+   results = scraper.search('selector troubleshooting', config=config)
+
 The equivalent CLI invocation is:
 
 .. code-block:: bash
@@ -91,6 +133,23 @@ The equivalent CLI invocation is:
    serpscrap search -k "privacy-friendly search" \
      --engine google --engine bing --engine duckduckgo --engine ecosia \
      --country DE --workers 4
+
+Show progress and capture rendered pages for a focused provider run:
+
+.. code-block:: bash
+
+   serpscrap search -k "preisfehler" \
+     --engine bing --engine yandex --engine brave --engine ecosia \
+     --country DE --workers 4 --progress --diagnostic-html \
+     --diagnostic-dir logs/phase7
+
+For machine processing, keep result JSON on stdout and progress JSONL on
+stderr:
+
+.. code-block:: bash
+
+   serpscrap search -k "herrenschuhe" --progress-format jsonl \
+     > results.json 2> progress.jsonl
 
 Cache, SQLite history, screenshots, and JSON output are independent. JSON
 output is selected with ``output=`` or ``save_json()`` rather than a Config

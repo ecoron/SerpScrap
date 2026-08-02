@@ -3,6 +3,80 @@
 This file records the implementation work performed against
 `docs/refactoring2026.md`.
 
+## 2026-08-02
+
+### Phase 7 - Abschluss
+
+- Marked Phase 7 complete after consolidating the homepage browser flow,
+  selector contracts, provider-state handling, diagnostics, partial-result
+  behavior, fixtures, tests, configuration documentation, and practical-run
+  findings.
+- Recorded Google/Ecosia consent automation as a safe, explicit TODO for a
+  later phase because the current live Selenium environment does not expose
+  their dynamic controls reliably.
+
+### Refactoring Phase 7.3 - Google consent handling
+
+- Added stable Google consent-dialog detection via `role="dialog"` and `aria-modal="true"`.
+- Added privacy-preserving consent automation enabled by default: `necessary` (and explicit alias `reject`) selects `Alle ablehnen`; `disabled` preserves the typed `consent_required` outcome.
+- Waited for the asynchronous Google consent-dialog state transition after the action before continuing with search-field interaction.
+- Added a scoped Google rejection-button fallback (`button#W0wltc` within the stable dialog attributes) for Selenium renders where the button's visible text is unavailable.
+- Added delayed Didomi consent-button discovery for Ecosia and a Google DOM-script fallback limited to the observed rejection button.
+- Extended delayed consent discovery to 15 seconds and added direct Google `By.ID`/DOM lookup for `W0wltc`.
+- Added provider-specific consent fallbacks: Google DOM click and Ecosia Didomi `setUserDisagreeToAll`, both followed by consent-state verification.
+- Exposed `--consent-action` and documented the library configuration and behavior, with regression tests for validation and button selection.
+
+### Refactoring Phase 7.3 - overlay and text corrections
+
+- Removed the unnecessary search-field click so provider autocomplete overlays cannot intercept Google input; declarative dismiss selectors now close the observed Swisscows Pro popup before interaction.
+- Added conservative repair of common UTF-8-as-Windows-1252 mojibake in normalized result text and regression coverage for overlay dismissal and text normalization.
+
+### Refactoring Phase 7.3 - latest run corrections
+
+- Hardened search-field interaction against visible but temporarily non-interactable Selenium elements by focusing, retrying alternate candidates, and reporting typed selector drift when no candidate accepts the query; this covers the Google homepage failure observed in the latest `docs/phase7.log` run.
+- Made final CLI JSON output resilient on Windows consoles with legacy code pages while preserving UTF-8 JSON output where the stream supports reconfiguration.
+- Added regression tests for search-field fallback behavior and non-ASCII CLI result output.
+
+### Refactoring Phase 7.3 - implementation
+
+- Added explicit empty-result classification and prevented zero-card parses from being reported as successful populated jobs; Mojeek now distinguishes a recognized empty state from malformed/selector-drift evidence.
+- Hardened the shared browser flow with post-submit navigation/state events, typed `navigation_state`/`malformed` outcomes, deterministic empty-state waits, and preserved terminal URL/result metadata.
+- Added terminal outcome summaries and category counts to multi-engine reports, configurable retryable engine categories, and regression coverage for empty results, post-submit route failures, and partial-result-safe failure handling.
+- Applied the latest artifact-backed corrections: Brave `textarea#searchbox`, Qwant HTTP-403 blocking, Startpage `.w-gl > .result`, Swisscows `article.item.web-page`, and Mojeek `ul.results-standard > li[class^='r']` parsing contracts with sanitized fixtures.
+- Applied the follow-up run corrections: Brave `.snippet` title/content extraction, Startpage `a.result-title` readiness/cards, and Swisscows organic-card readiness instead of the empty `.web-results` wrapper.
+
+### Refactoring Phase 7.2 - planning
+
+- Added the Phase 7.2 plan based on the latest rendered artifacts: provider-state precedence, visible-text classification, Brave/Ecosia pre-input challenge handling, Bing/Yandex false-positive correction, Qwant/Startpage/Swisscows diagnostics, and end-to-end correlation propagation.
+
+### Refactoring Phase 7.2 - implementation
+
+- Changed provider-state classification to use URL and visible DOM text while excluding scripts, styles, embedded payloads, and generic privacy-footer text from operational decisions; rate-limit evidence now has deterministic precedence over generic consent text.
+- Added pre-input homepage challenge/consent classification for Brave and Ecosia, visible-SERP safeguards for Bing and Yandex, and artifact-derived regression fixtures for the observed provider states.
+- Propagated engine-job correlation IDs into `FailureRecord`, CLI diagnostics, progress events, and terminal artifact-manifest entries; progress output now includes correlation IDs, result counts, and failure categories.
+- Updated configuration and examples for progress text/JSONL output, opt-in rendered HTML diagnostics, artifact limits, multi-engine concurrency, and separated stdout/stderr usage.
+
+### Refactoring Phase 7.1 - planning
+
+- Added the Phase 7.1 plan for correlated progress events, thread-safe CLI/JSONL progress output, opt-in rendered HTML diagnostics, redaction and artifact limits, selector-drift investigation, and safe analysis of blocked, consent, and rate-limited provider states observed in `docs/phase7.log`.
+
+### Refactoring Phase 7 - planning
+
+- Added the Phase 7 plan for homepage-driven browser interaction, per-engine form submission and SERP readiness, selector contracts, fixture-backed adapter verification, provider-safety classification, and offline/opt-in smoke-test boundaries.
+- Extended `docs/searchengines.md` with a Phase 7 homepage, search-input, submit, SERP-ready, and organic-card selector baseline for all eleven registered engines, including selector status and drift-verification rules.
+
+### Refactoring Phase 7 - implementation
+
+- Added the declarative `BrowserInteraction` contract to the search-engine plugin registry, including homepage URLs, ordered input/submit/readiness/card selectors, observation dates, and operational metadata.
+- Replaced direct multi-engine SERP navigation with a shared homepage-driven Selenium flow that waits for the search field, enters and verifies the keyword, submits via the documented control or Enter fallback, waits for SERP readiness, classifies provider blocks, and always closes the driver.
+- Added deterministic Phase 7 contract tests for normal flow, SERP timeout, Enter fallback, registry coverage, and driver cleanup; typed browser-flow URLs are now retained in structured failures.
+
+### Refactoring Phase 7.1 - implementation
+
+- Added correlated progress events with sequence/completion counters, interactive text output, and JSON Lines output on stderr so concurrent engine jobs remain visible without corrupting result JSON.
+- Added opt-in rendered HTML diagnostics with atomic files, per-file/total/per-job limits, redacted query and sensitive values, run manifests, and `.gitignore` protection for local `logs/` artifacts.
+- Integrated progress and snapshots into the homepage/SERP browser flow and recorded the Phase-7.1 coordinator, artifact-store, redaction, and limit tests.
+
 ## 2026-08-01
 
 ### Refactoring Phase 6 - planning

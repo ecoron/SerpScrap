@@ -42,6 +42,15 @@ def test_validator_accepts_default_config():
     ValidatorConfig().validate(Config().get())
 
 
+def test_consent_action_defaults_to_necessary_and_rejects_invalid_values():
+    config = Config().get()
+    assert config["consent_action"] == "necessary"
+    config["consent_action"] = "invalid"
+
+    with pytest.raises(ConfigurationError, match="consent_action"):
+        ValidatorConfig().validate(config)
+
+
 @pytest.mark.parametrize("search_type", ["normal", "image", "news", "shopping", "videos"])
 def test_validator_accepts_documented_google_search_types(search_type):
     config = Config().get()

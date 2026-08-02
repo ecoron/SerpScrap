@@ -1,6 +1,7 @@
 """Standardized search-engine plugins and multi-engine result fusion."""
 
 from serpscrap.plugins.searchengines.base import (
+    BrowserInteraction,
     EnginePage,
     EngineResult,
     SearchEnginePlugin,
@@ -11,6 +12,7 @@ from serpscrap.plugins.searchengines.registry import SearchEngineRegistry, defau
 __all__ = [
     "EnginePage",
     "EngineResult",
+    "BrowserInteraction",
     "ResultFusion",
     "SearchEnginePlugin",
     "SearchEngineRegistry",

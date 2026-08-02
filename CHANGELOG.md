@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Closed Refactoring Phase 7 with the homepage-driven browser flow, provider contracts, diagnostics, typed outcomes, fixtures, tests, documentation, and practical-run status consolidated; Google/Ecosia live consent automation remains a documented future TODO.
+- Added default Google consent handling using stable dialog attributes; `consent_action=necessary` selects the privacy-preserving rejection action, with `reject` and `disabled` alternatives plus CLI support.
+- Waited for Google's asynchronous consent-dialog dismissal before locating and using the search field.
+- Added a scoped Google consent-button fallback for Selenium renders that expose no button text.
+- Added delayed Didomi consent-button discovery for Ecosia and a scoped Google DOM fallback.
+- Extended consent discovery to 15 seconds and added direct Google ID/DOM lookup for the observed rejection control.
+- Added Google DOM and Ecosia Didomi API fallbacks for privacy-preserving consent rejection with post-action verification.
+- Fixed Google and Swisscows overlay interference by avoiding an unnecessary input click and dismissing the observed Swisscows popup through the browser contract; normalized common result-text mojibake.
+- Fixed the latest Google homepage run by retrying visible but temporarily non-interactable search fields and added typed selector-drift handling plus regression coverage.
+- Made CLI JSON output safe for non-ASCII result data on legacy Windows console encodings.
+- Implemented Phase 7.3 provider-state hardening: explicit empty/malformed outcomes, post-submit navigation classification, terminal outcome summaries, configurable retry categories, and regression tests for zero-result and route-state handling.
+- Corrected Phase 7.3 selectors and provider classification from the latest rendered artifacts for Brave, Qwant, Startpage, Swisscows, and Mojeek; added sanitized parser fixtures and regression tests.
+- Refined the current-run SERP handling for Brave, Startpage, and Swisscows with artifact-backed card/readiness selectors and additional parser fixtures.
+- Implemented Phase 7.2 provider-state hardening, visible-DOM classification, Brave/Ecosia pre-input handling, Bing/Yandex false-positive protection, correlation propagation, and updated configuration examples.
+- Added the Phase 7.2 plan for artifact-driven provider-state classification, selector correction, correlation propagation, and Bing/Yandex false-positive handling.
+- Implemented Phase 7.1 correlated progress reporting, JSONL stderr output, opt-in redacted rendered-HTML artifacts with bounded manifests, and diagnostic safety tests.
+- Added the Phase 7.1 plan for visible correlated progress, opt-in redacted rendered-HTML diagnostics, bounded artifact storage, and selector-drift analysis based on the practical Phase-7 run.
+- Implemented Phase 7 homepage-driven Selenium search flow with declarative per-engine selector contracts, submit/readiness handling, typed provider failures, lifecycle cleanup, and contract tests.
+- Added the Phase 7 refactoring plan and documented the homepage-driven search flow plus per-engine selector baselines and verification rules.
 - Added the Phase 6 plan for reproducible Read-the-Docs documentation builds and Sphinx configuration alignment.
 - Added a root-level Read the Docs version-2 build configuration, reproducible Sphinx requirements, MyST Markdown support, and warning-clean build settings.
 - Aligned the local documentation Makefile/navigation and removed the obsolete Jekyll configuration.

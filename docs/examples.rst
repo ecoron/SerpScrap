@@ -96,3 +96,59 @@ saves the same JSON array locally.
 
 Use ``--no-cache`` or ``--no-history`` when those local artifacts are not
 desired.
+
+Configured multi-engine run
+----------------------------
+
+The Python API accepts the same settings as the CLI. This example limits the
+global concurrency to four requests and allows only one request per provider:
+
+.. code-block:: python
+
+   from serpscrap import Config, SerpScrap
+
+   config = Config()
+   config.apply({
+       'search_engines': ['bing', 'yandex', 'duckduckgo', 'mojeek'],
+       'country_code': 'DE',
+       'num_pages_for_keyword': 2,
+       'num_results_per_page': 10,
+       'num_workers': 4,
+       'engine_workers': 1,
+       'engine_workers_by_engine': {'bing': 1, 'mojeek': 1},
+       'store_history': False,
+       'do_caching': True,
+   })
+
+   scraper = SerpScrap()
+   results = scraper.search(['preisfehler', 'herrenschuhe'], config=config)
+   failures = scraper.get_failures()
+
+Progress and rendered diagnostics
+----------------------------------
+
+Progress is written to stderr, so stdout remains a valid result JSON stream.
+Rendered HTML capture is disabled unless explicitly requested:
+
+.. code-block:: bash
+
+   serpscrap search -k "preisfehler" \
+     --engine brave --engine ecosia --workers 2 \
+     --progress --progress-format text \
+     --diagnostic-html --diagnostic-dir logs/phase7
+
+The run manifest is written below ``logs/phase7/<run_id>/manifest.json``. For
+machine processing, use JSON Lines and separate the streams:
+
+.. code-block:: bash
+
+   serpscrap search -k "preisfehler" --progress-format jsonl \
+     > results.json 2> progress.jsonl
+
+The diagnostic artifacts are redacted and size-limited, but they still contain
+rendered third-party page content. Review them locally and remove them after
+selector analysis.
+Consent dialogs use the privacy-preserving default automatically. To make the
+choice explicit, use ``--consent-action necessary`` (equivalent to rejecting
+all optional cookies) or disable automation with ``--consent-action disabled``
+for diagnostic runs.

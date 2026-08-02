@@ -2,14 +2,24 @@
 
 from __future__ import annotations
 
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from threading import Lock, Semaphore
 from typing import Any, Protocol
+from uuid import uuid4
 
+from serpscrap.diagnostics import (
+    DiagnosticArtifactStore,
+    JsonLinesProgressSink,
+    LoggingProgressSink,
+    NullProgressSink,
+    ProgressCoordinator,
+)
 from serpscrap.models import FailureRecord, SearchReport, SearchRequest
 from serpscrap.plugins.searchengines.base import EnginePage, SearchEnginePlugin
+from serpscrap.plugins.searchengines.browser_flow import BrowserFlowError, HomepageSearchFlow
 from serpscrap.plugins.searchengines.fusion import ResultFusion
 from serpscrap.plugins.searchengines.registry import SearchEngineRegistry, default_registry
 
@@ -24,18 +34,23 @@ class SeleniumPageCapture:
     def __call__(self, plugin, query, country_code, page, config):
         from scrapcore.scraper.browser import ChromeDriverFactory
 
-        url = plugin.build_url(query, page, country_code, str(config.get("search_type", "normal")))
         driver = None
         try:
             driver = ChromeDriverFactory.from_config(config).create()
-            driver.get(url)
-            return EnginePage(
-                url=driver.current_url or url,
-                html=driver.page_source or "",
-                query=query,
-                engine=plugin.engine_id,
-                country_code=country_code,
-                page=page,
+            callback = config.get("_progress_callback")
+            if callback is not None:
+                callback("driver_created", elapsed_ms=0)
+            return HomepageSearchFlow(float(config.get("wait_timeout", 15))).capture(
+                driver,
+                plugin,
+                query,
+                country_code,
+                page,
+                str(config.get("search_type", "normal")),
+                correlation_id=config.get("_correlation_id"),
+                progress=callback,
+                artifact_store=config.get("_artifact_store"),
+                consent_action=str(config.get("consent_action", "necessary")),
             )
         finally:
             if driver is not None:
@@ -48,6 +63,7 @@ class EngineJob:
     engine: str
     country_code: str
     page: int
+    correlation_id: str
 
 
 class MultiEngineRunner:
@@ -70,10 +86,37 @@ class MultiEngineRunner:
         self.registry.validate_selection(engines)
         pages = int(config.get("num_pages_for_keyword", 1))
         workers = int(config.get("num_workers", 1))
-        jobs = [EngineJob(query, engine, country, page) for query in request.queries for engine in engines for page in range(1, pages + 1)]
+        jobs = [
+            EngineJob(query, engine, country, page, uuid4().hex[:16])
+            for query in request.queries
+            for engine in engines
+            for page in range(1, pages + 1)
+        ]
         started = datetime.now(timezone.utc)
+        run_id = uuid4().hex[:16]
+        total_jobs = len(jobs)
+        if config.get("progress"):
+            progress_format = str(config.get("progress_format", "text"))
+            sink = (
+                JsonLinesProgressSink()
+                if progress_format == "jsonl"
+                else LoggingProgressSink(logging.getLogger("serpscrap.progress"))
+            )
+        else:
+            sink = NullProgressSink()
+        progress = ProgressCoordinator(run_id, total_jobs, sink)
+        artifact_store = None
+        if config.get("diagnostic_html"):
+            artifact_store = DiagnosticArtifactStore(
+                config.get("diagnostic_dir", "logs/phase7"),
+                run_id,
+                max_bytes_per_file=int(config.get("diagnostic_max_bytes_per_file", 2 * 1024 * 1024)),
+                max_total_bytes=int(config.get("diagnostic_max_total_bytes", 20 * 1024 * 1024)),
+                max_artifacts_per_job=int(config.get("diagnostic_max_artifacts_per_job", 10)),
+            )
         rows: list[dict[str, Any]] = []
         failures: list[FailureRecord] = []
+        terminal_summaries: list[dict[str, Any]] = []
         lock = Lock()
         limits: dict[str, Semaphore] = {}
         per_engine = config.get("engine_workers_by_engine", {})
@@ -86,8 +129,26 @@ class MultiEngineRunner:
             if plugin.supported_countries and job.country_code not in plugin.supported_countries:
                 raise ValueError(f"{job.engine} does not support country {job.country_code}")
             with limits[job.engine]:
-                page = self.capture(plugin, job.query, job.country_code, job.page, config)
-            state = plugin.classify(page.url, page.html)
+                job_config = dict(config)
+                job_config.update({
+                    "_correlation_id": job.correlation_id,
+                    "_artifact_store": artifact_store,
+                    "_progress_callback": lambda state, **kwargs: progress.emit(
+                        correlation_id=job.correlation_id,
+                        engine=job.engine,
+                        page=job.page,
+                        state=state,
+                        **kwargs,
+                    ),
+                })
+                progress.emit(
+                    correlation_id=job.correlation_id,
+                    engine=job.engine,
+                    page=job.page,
+                    state="job_started",
+                )
+                page = self.capture(plugin, job.query, job.country_code, job.page, job_config)
+            state = plugin.classify(page.url, page.html, visible_text=page.visible_text)
             if state:
                 raise RuntimeError(f"{state}: {job.engine} rejected the request")
             parsed = plugin.parse(
@@ -96,6 +157,25 @@ class MultiEngineRunner:
                 page=job.page,
                 search_type=str(config.get("search_type", "normal")),
             )
+            if not parsed:
+                category = "empty" if plugin.classify_empty(
+                    page.url, page.html, visible_text=page.visible_text
+                ) else "malformed"
+                progress.emit(
+                    correlation_id=job.correlation_id,
+                    engine=job.engine,
+                    page=job.page,
+                    state="state_classified",
+                    url=page.url,
+                    error_category=category,
+                    result_count=0,
+                )
+                raise BrowserFlowError(
+                    category,
+                    f"no organic results parsed for {job.engine}",
+                    url=page.url,
+                    result_count=0,
+                )
             values = [
                 item.to_dict(
                     query=job.query,
@@ -107,7 +187,22 @@ class MultiEngineRunner:
             ]
             for value in values:
                 value["query_num_results_page"] = len(parsed)
-            return values
+            progress.emit(
+                correlation_id=job.correlation_id,
+                engine=job.engine,
+                page=job.page,
+                state="state_classified",
+                url=page.url,
+                result_count=len(parsed),
+            )
+            progress.emit(
+                correlation_id=job.correlation_id,
+                engine=job.engine,
+                page=job.page,
+                state="results_parsed",
+                result_count=len(parsed),
+            )
+            return values, page.url
 
         with ThreadPoolExecutor(max_workers=max(1, min(workers, len(jobs) or 1)), thread_name_prefix="serpscrap-engine") as executor:
             futures = {executor.submit(run_job, job): job for job in jobs}
@@ -118,23 +213,80 @@ class MultiEngineRunner:
                 except Exception as exc:
                     message = str(exc)
                     category, _, detail = message.partition(": ")
+                    failure_url = getattr(exc, "url", None)
                     failure = FailureRecord(
                         query=job.query,
                         search_engine=job.engine,
                         page_number=job.page,
-                        url=None,
+                        url=failure_url,
                         category=category or "plugin",
                         message=detail or message,
-                        retryable=category in {"timeout", "rate_limited", "network"},
+                        retryable=category in set(config.get("retryable_engine_categories", ("timeout", "navigation_state", "network"))),
                         attempt_count=1,
                         country_code=job.country_code,
                         plugin_version=self.registry.get(job.engine).plugin_version,
+                        correlation_id=job.correlation_id,
+                    )
+                    if artifact_store is not None:
+                        artifact_store.record_terminal(
+                            engine=job.engine,
+                            page=job.page,
+                            correlation_id=job.correlation_id,
+                            state="failed",
+                            error_category=category or "plugin",
+                            result_count=getattr(exc, "result_count", None),
+                            url=failure_url,
+                        )
+                    progress.emit(
+                        correlation_id=job.correlation_id,
+                        engine=job.engine,
+                        page=job.page,
+                        state="job_failed",
+                        error_category=category or "plugin",
+                        result_count=getattr(exc, "result_count", None),
+                        terminal=True,
                     )
                     with lock:
                         failures.append(failure)
+                        terminal_summaries.append({
+                            "engine": job.engine,
+                            "page": job.page,
+                            "state": "failed",
+                            "category": category or "plugin",
+                            "result_count": getattr(exc, "result_count", None),
+                            "url": failure_url,
+                            "correlation_id": job.correlation_id,
+                        })
                 else:
+                    values, page_url = values
+                    if artifact_store is not None:
+                        artifact_store.record_terminal(
+                            engine=job.engine,
+                            page=job.page,
+                            correlation_id=job.correlation_id,
+                            state="completed",
+                            result_count=len(values),
+                            url=page_url,
+                        )
+                    progress.emit(
+                        correlation_id=job.correlation_id,
+                        engine=job.engine,
+                        page=job.page,
+                        state="job_completed",
+                        result_count=len(values),
+                        terminal=True,
+                    )
                     with lock:
                         rows.extend(values)
+                        terminal_summaries.append({
+                            "engine": job.engine,
+                            "page": job.page,
+                            "state": "completed",
+                            "category": None,
+                            "result_count": len(values),
+                            "url": page_url,
+                            "correlation_id": job.correlation_id,
+                        })
 
         weights = {plugin.engine_id: float(plugin.market_share or 0.0) for plugin in self.registry}
         configured = config.get("engine_weights") or {}
@@ -173,5 +325,16 @@ class MultiEngineRunner:
                 "market_share_fallback": fallback,
                 "provider_families": families,
                 "plugin_metadata": self.registry.metadata(),
+                "run_id": run_id,
+                "progress_completed_jobs": progress.completed_jobs,
+                "diagnostic_manifest": str(artifact_store.manifest_path) if artifact_store else None,
+                "terminal_summaries": sorted(
+                    terminal_summaries,
+                    key=lambda item: (item["engine"], item["page"]),
+                ),
+                "outcome_counts": {
+                    category: sum(1 for item in terminal_summaries if (item["category"] or item["state"]) == category)
+                    for category in sorted({item["category"] or item["state"] for item in terminal_summaries})
+                },
             },
         )

@@ -29,6 +29,8 @@ class ValidatorConfig:
             raise ConfigurationError(
                 "search_type must be one of: normal, image, news, shopping, videos"
             )
+        if config.get("consent_action") not in {"necessary", "reject", "disabled"}:
+            raise ConfigurationError("consent_action must be one of: necessary, reject, disabled")
 
         engines = config.get("search_engines")
         if isinstance(engines, str):
@@ -71,6 +73,19 @@ class ValidatorConfig:
                 raise ConfigurationError(f"engine worker limit for {engine} must be between 1 and num_workers")
         if not isinstance(config.get("engine_weights", {}), dict):
             raise ConfigurationError("engine_weights must be a mapping")
+        retryable_categories = config.get("retryable_engine_categories", [])
+        if isinstance(retryable_categories, str) or not isinstance(retryable_categories, (list, tuple, set)):
+            raise ConfigurationError("retryable_engine_categories must be a sequence")
+        allowed_categories = {
+            "timeout", "navigation_state", "network", "webdriver", "malformed", "empty",
+            "selector_drift", "blocked", "consent_required", "rate_limited",
+        }
+        unknown_retry_categories = set(retryable_categories) - allowed_categories
+        if unknown_retry_categories:
+            raise ConfigurationError(
+                "unsupported retryable engine category(ies): "
+                + ", ".join(sorted(unknown_retry_categories))
+            )
         ranking = config.get("ranking", {})
         if not isinstance(ranking, dict):
             raise ConfigurationError("ranking must be a mapping")

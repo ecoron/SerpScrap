@@ -15,7 +15,7 @@ def test_cli_lists_click_commands():
 
 
 def test_search_command_writes_results_and_logs(monkeypatch):
-    expected = [{"query": "example", "serp_url": "https://example.com"}]
+    expected = [{"query": "example", "title": "Solarenergie – Überblick", "serp_url": "https://example.com"}]
     monkeypatch.setattr("serpscrap.cli.SerpScrap.search", lambda self, *args, **kwargs: expected)
 
     result = CliRunner().invoke(

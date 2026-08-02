@@ -1,5 +1,458 @@
 # SerpScrap Refactoring Plan 2026
 
+## Phase 7 - Abschlussstatus
+
+Phase 7 ist abgeschlossen. Die homepage-basierte Selenium-Suche, die
+engine-spezifischen Browser-Verträge, sichtbare Fortschrittsmeldungen,
+korrelierte Diagnoseartefakte, typed Provider-/Empty-/Malformed-Outcomes,
+partielle Ergebnisse und die artefaktgestützten Selector-Korrekturen sind
+implementiert und dokumentiert.
+
+Der praktische Lauf bestätigt stabile erfolgreiche Pfade für Bing, Yahoo,
+DuckDuckGo, Startpage, Brave, Swisscows und Mojeek. Yandex und Qwant werden
+als blockiert erkannt. Die automatische Consent-Ausführung für Google und
+Ecosia bleibt ein bewusst dokumentiertes TODO für eine spätere Phase: Die
+Provider liefern die Consent-Struktur dynamisch beziehungsweise über
+nachgelagerte Komponenten, die im aktuellen Selenium-Lauf nicht zuverlässig
+interagierbar sind. Das Verhalten bleibt deshalb sicher als
+`consent_required` klassifiziert.
+
+### Abschluss-Checkliste
+
+- [x] Homepage-zu-SERP-Flow mit per Engine dokumentierten Verträgen
+- [x] Fortschritt, Korrelation, redigierte HTML-Artefakte und Manifeste
+- [x] Provider-Zustände, Empty-/Malformed-Semantik und Terminal-Summaries
+- [x] Fixture- und Regressionstests für die Phase-7-Korrekturen
+- [x] Konfiguration, CLI-Beispiele und Changelogs aktualisiert
+- [ ] Google-/Ecosia-Consent-Automation in einer späteren Phase stabilisieren
+
+## Refactoring Phase 7.3 - Produktionsreife Provider-Zustände und Browser-Flow-Härtung
+
+### Objective
+
+Turn the artifact findings from the latest Phase-7 run into deterministic,
+provider-aware terminal behavior. Phase 7.3 closes the gap between what the
+rendered browser page shows and what the public result/failure contract
+reports: a valid SERP must remain parseable, an explicit provider control must
+remain a typed failure, an empty or malformed response must not look like a
+successful populated search, and a post-submit navigation problem must expose
+its actual state instead of becoming an unexplained timeout.
+
+This phase is an implementation-hardening phase. It keeps provider controls
+non-bypassable, keeps diagnostic capture opt-in, preserves partial results
+from healthy engines, and makes engine-specific behavior configurable without
+weakening the shared flow or broadening selectors globally.
+
+### Implementation Status
+
+The first implementation slice is complete: the shared flow now exposes
+post-submit navigation/state events, recognized empty pages are terminal
+`empty` outcomes, unrecognized zero-card pages are `malformed`, terminal
+category summaries are included in reports, and retryable engine categories
+are validated through configuration. Provider-specific fixture promotion and
+the remaining live-state corrections continue to be verified through the
+focused Phase-7 test suite.
+
+The subsequent artifact review also promoted current selectors for Brave,
+Startpage, Swisscows, and Mojeek and added explicit Qwant HTTP-403 blocking;
+each change is backed by a sanitized fixture and a parser/classifier
+regression test.
+
+### Evidence and Scope from the Latest Run
+
+- Bing, Yahoo, and DuckDuckGo completed with 2, 7, and 12 parsed results;
+  progress, terminal artifacts, result counts, and correlation IDs are now
+  available for these successful paths.
+- Yandex was correctly observed at `/showcaptcha` and reported as `blocked`.
+- Mojeek reached a SERP-ready state but produced zero parsed cards and was
+  still reported as a successful job. This must become an explicit `empty` or
+  `malformed` outcome according to fixture evidence.
+- Brave and Ecosia still ended as `selector_drift` before a usable input was
+  found. The next step is provider-specific DOM/URL evidence, not broader
+  input selectors: Brave must be distinguished between a real challenge and a
+  normal localized homepage, while Ecosia's consent overlay must be detected
+  even when its text is not exposed through Selenium body text.
+- Qwant and Startpage reached or retained their post-submit routes but ended
+  in timeouts; Swisscows also timed out despite the known rate-limit/privacy
+  mixture. Their state transitions and wait predicates are not yet explicit
+  enough for reliable terminal classification.
+- The current run produced 14 results across ten jobs. Phase 7.3 must retain
+  this partial-success behavior while making the six non-populated outcomes
+  individually actionable.
+
+### Production Principles
+
+- Use a finite, observable browser state machine: homepage requested, homepage
+  ready, input available, submitted, navigation observed, SERP/empty state
+  ready, classified failure, parsed, and terminal.
+- Evaluate provider-specific URL and DOM evidence before generic timeout or
+  selector-drift fallbacks. Do not infer a block or rate limit from hidden
+  scripts, metadata, privacy footers, or unrelated localized text.
+- Treat `blocked`, `consent_required`, `rate_limited`, `empty`, `malformed`,
+  `selector_drift`, and `timeout` as distinct public outcomes with stable
+  retry policy. A zero-result page is never a populated success.
+- Keep all access-control responses non-bypassable. The implementation may
+  report, stop, or apply a configured bounded retry policy, but it must not
+  solve challenges, evade rate limits, or invent consent interaction.
+- Keep provider-specific contracts in registry metadata and fixtures. Shared
+  flow code may orchestrate states and diagnostics, but must not accumulate
+  provider-specific selector exceptions.
+
+### 1. Introduce an Explicit Provider-State Machine
+
+- Define the allowed lifecycle states and transitions for one engine/page job,
+  including the distinction between waiting for a state and classifying a
+  state.
+- Add a typed terminal outcome carrying category, final URL host/path,
+  result count, selector key, elapsed time, and correlation ID. Keep the
+  existing normalized result rows and public JSON shape compatible.
+- Make wait predicates observe three independent signals: URL transition,
+  provider-specific DOM readiness/empty markers, and visible rendered state.
+  A timeout is emitted only after these signals have been checked and the
+  last observed state is recorded.
+- Emit a final `state_classified` event before `results_parsed` or failure, so
+  progress and manifests explain why a page was accepted or rejected.
+- Ensure driver cleanup and artifact terminal recording execute for every
+  state-machine exit, including malformed HTML and unexpected WebDriver
+  exceptions.
+
+### 2. Correct Empty, Malformed, and Zero-Result Semantics
+
+- Add an engine contract for recognized empty-result markers and for the
+  minimum valid organic-card evidence required for a populated SERP.
+- Change Mojeek handling so a SERP-ready page with no recognized organic cards
+  is reported as `empty` only when its empty fixture/state matches; otherwise
+  report `malformed` or `selector_drift` with the attempted card selector.
+- Prevent `result_count=0` from being represented as an unconditional
+  successful terminal job. Preserve the distinction between a valid provider
+  empty state and a parser that failed to find cards.
+- Add result-count and outcome fields consistently to progress events,
+  `FailureRecord`, terminal manifests, and the final operator summary while
+  retaining successful results from other engines.
+
+### 3. Resolve Brave and Ecosia Homepage Classification
+
+- Promote sanitized rendered artifacts from the latest run into narrowly
+  scoped fixtures after manual review; retain raw artifacts only under local
+  `logs/`.
+- For Brave, define a provider-specific challenge signal based on reliable
+  visible DOM/URL evidence and test it against both a blocked fixture and a
+  normal homepage fixture. Hidden locale/script mentions alone must not cause
+  `blocked`.
+- For Ecosia, identify the consent overlay's stable role/attribute/container
+  evidence and classify `consent_required` before input lookup. A normal page
+  with no overlay must continue to use the normal input contract.
+- Record the selector candidate and observed DOM evidence in diagnostics, but
+  do not fall back to arbitrary inputs or click consent controls implicitly.
+
+### 4. Make Post-Submit Handling Deterministic for Qwant, Startpage, and Swisscows
+
+- Split submit into explicit click/Enter, navigation-observed, and result-
+  state-wait phases. Capture the URL after each phase and include it in the
+  terminal artifact and failure record.
+- For Qwant, classify challenge/consent pages before reporting timeout and
+  report a homepage-stuck response as a dedicated navigation/state failure
+  when no SERP or empty marker appears.
+- For Startpage, distinguish the legitimate `/sp/search` route from a
+  challenge/consent response and verify the documented organic-card selector
+  against sanitized fixture variants.
+- For Swisscows, add a deterministic rate-limit predicate with precedence over
+  generic privacy/consent markup; preserve a bounded timeout only when no
+  explicit provider state is visible.
+- Add per-engine timeout and readiness configuration where needed, with
+  documented defaults and validation against unsafe/unbounded values.
+
+### 5. Configuration, Retry, and Operator Feedback
+
+- Document and validate per-engine enablement, page limits, timeout values,
+  retry policy, progress format, and diagnostic capture settings as one
+  coherent configuration surface.
+- Define retryability by terminal category: access-control and consent states
+  remain non-bypassable by default, while transient navigation/timeouts may
+  use the existing bounded policy. Never retry a selector failure as if it
+  were a rate limit.
+- Extend the final summary with counts by terminal category and a compact
+  per-engine table containing result count, final URL path, and next operator
+  action.
+- Keep stdout limited to the result contract; send progress and diagnostic
+  summaries to stderr or the manifest. Ensure redaction and correlation
+  behavior remains unchanged.
+
+### 6. Fixtures, Tests, and Verification
+
+- Add sanitized fixtures for Mojeek empty and malformed responses, Brave
+  blocked versus normal homepage, Ecosia consent versus normal homepage,
+  Qwant homepage-stuck/challenge, Startpage route/challenge, and Swisscows
+  rate-limit/privacy precedence.
+- Add state-machine tests for every legal terminal path, repeated polling,
+  URL-only transitions, DOM-only transitions, mixed visible markers, and
+  cleanup after exceptions.
+- Add integration-style mocked-WebDriver tests proving that a valid SERP is
+  parsed before incidental hidden markers are considered, that zero cards do
+  not become populated success, and that post-submit URLs reach the public
+  failure metadata.
+- Verify configuration validation, retry classification, progress/result
+  separation, artifact manifests, correlation propagation, and partial-result
+  retention.
+- Run the offline suite with diagnostics disabled and the focused diagnostic
+  suite with mocked drivers. Execute one low-volume live run only for the
+  providers whose state remains fixture-insufficient; do not make live access
+  part of the default test gate.
+
+### Phase 7.3 Acceptance Criteria
+
+- Every job ends in a documented typed outcome; no provider-control response
+  is reported as unexplained selector drift or timeout when evidence exists.
+- Mojeek zero-card behavior is explicitly `empty` or `malformed`, never an
+  unconditional successful populated parse.
+- Brave and Ecosia distinguish challenge/consent states from normal homepage
+  selector drift using fixture-backed provider evidence.
+- Qwant, Startpage, and Swisscows expose post-submit URL/state and classify
+  challenge, consent, rate-limit, empty, malformed, and timeout outcomes
+  deterministically.
+- Valid Bing/Yandex-style SERPs remain parseable even when raw HTML contains
+  incidental hidden marker text.
+- Progress, artifacts, manifests, failure records, and operator summaries
+  agree on category, result count, final URL path, and correlation ID.
+- Existing successful results, normalized output, driver cleanup, and
+  diagnostic redaction behavior remain regression-free.
+
+## Refactoring Phase 7.2 - Provider-State-Klassifizierung und Selector-Korrekturen aus Artefaktbefunden
+
+### Objective
+
+Use the rendered HTML artifacts from the latest Phase-7.1 run to correct provider-state classification and engine-specific browser behavior without weakening access-control handling or broadening selectors indiscriminately. Separate genuine `rate_limited`, `blocked`, and `consent_required` responses from false positives caused by hidden scripts or generic privacy text, classify Brave/Ecosia challenges before waiting for a search input, and make every terminal failure traceable through its correlation ID.
+
+Phase 7.2 is evidence-driven adapter hardening. It preserves partial results and the normalized result contract, keeps diagnostic HTML opt-in, and promotes selectors only when captured artifacts and offline fixtures support the change.
+
+### Evidence and Scope from the Latest Run
+
+- The latest run completed all ten configured engine jobs with visible `10/10` progress and retained partial results.
+- Brave's failure artifact contains CAPTCHA/challenge signals while the homepage input is unavailable. This is an access-control state, not selector drift.
+- Ecosia's failure artifact contains a large consent overlay and no usable search input. Consent must be classified before input lookup.
+- Bing's failure artifact contains a normal page title and many `b_algo` cards, while the job was classified as `rate_limited`; hidden JavaScript/consent text is likely producing a false positive.
+- Yandex's failure artifact contains a normal result title and many `.serp-item` cards, while the job was also classified as `rate_limited`; the same raw-HTML false-positive risk applies.
+- Qwant remains on the homepage after submit and its failure artifact contains CAPTCHA/consent signals. Startpage reaches `/sp/search` but its artifact contains CAPTCHA/consent content. Swisscows contains `too many requests` alongside privacy/consent text and needs deterministic precedence.
+- The run manifest contains correlation IDs, but final CLI `FailureRecord` warnings still print `correlation_id=None`; the correlation must be propagated into the report boundary.
+
+### Production Principles
+
+- State classification uses a strict precedence and evidence boundary: explicit provider block/challenge URL or visible marker, explicit rate-limit status, explicit consent interstitial, SERP-ready success, empty result, then timeout/malformed. Generic words in scripts, metadata, privacy footers, or hidden JSON do not determine a terminal state.
+- A page that contains a valid SERP-ready container and organic cards is not rejected solely because unrelated hidden markup contains `privacy`, `consent`, `captcha`, or `rate limit` strings.
+- Access-control responses are observed and reported; the implementation does not solve CAPTCHA, rotate identities, bypass consent, or retry rate limits outside the configured policy.
+- Selector changes are provider-specific, fixture-backed, and narrowly scoped. A challenge/consent page is classified before selector fallback so it is not mislabeled as selector drift.
+- Correlation IDs are generated at job creation and survive browser events, artifact manifests, `FailureRecord`, logging, and the public report metadata.
+
+### 1. Refine the Shared Response-State Classifier
+
+- Split classification into URL evidence, visible rendered-text evidence, DOM-state evidence, and raw-HTML diagnostics. Only the first three may produce an operational state; raw HTML remains diagnostic context.
+- Add a classifier input for rendered body text or an equivalent provider-scoped visible-text snapshot. Exclude script/style contents, embedded JSON, metadata, tracking payloads, and privacy-policy footer text from state detection.
+- Define a typed precedence table: provider challenge/CAPTCHA or access-denied URL/visible marker -> `blocked`; provider-specific HTTP/DOM rate-limit marker or visible `too many requests` state -> `rate_limited`; consent interstitial/overlay preventing search -> `consent_required`; recognized result container with valid organic cards -> parseable SERP; recognized empty-result state -> `empty`; otherwise timeout or malformed according to the wait outcome.
+- Make the precedence deterministic for mixed pages such as Swisscows, where rate-limit evidence must not be hidden by generic consent/privacy text.
+- Keep provider-specific markers in adapter metadata rather than adding more global keyword matches.
+
+### 2. Correct Brave and Ecosia Pre-Input Handling
+
+- Run an early homepage-state classification immediately after navigation and before `_wait_for_input()`.
+- Add Brave challenge/CAPTCHA URL and visible-marker fixtures from `brave-p1-failure-4f3d7e67e328.html`; return `blocked` instead of `selector_drift` when the challenge page owns the DOM.
+- Add Ecosia consent-overlay selectors/markers from `ecosia-p1-failure-1d98ee9ecca1.html`; return `consent_required` before looking for the input field.
+- Preserve selector drift for a genuine normal homepage with no matching input, and include the attempted selector key in diagnostics.
+- Update registry metadata and `docs/searchengines.md` with the observed challenge/consent states, not with broader input selectors that could target unrelated page controls.
+
+### 3. Validate Bing and Yandex SERP Success Before Rejecting
+
+- Reproduce Bing from `bing-p1-failure-a7d617316762.html` and Yandex from `yandex-p1-failure-038c1fc08485.html` using sanitized fixtures.
+- Assert that Bing's `#b_results`/`li.b_algo` and Yandex's `.serp-item` organic containers are evaluated before generic hidden-text markers.
+- Add provider-scoped visible markers for genuine rate limits and remove or narrow raw HTML matches that occur in JavaScript, analytics payloads, privacy links, or unrelated modules.
+- Ensure the browser flow waits for a result container and parser output before issuing a rate-limit failure when both SERP cards and incidental rate-limit text are present.
+- Keep genuine provider rate limits as non-bypassable typed failures and preserve retryability only where the configured request policy permits it.
+
+### 4. Fix Qwant, Startpage, and Swisscows State/Submit Diagnostics
+
+- For Qwant, capture the post-submit URL and DOM transition; classify challenge/consent when present and report a submit/navigation failure when the page remains on the homepage without a recognized terminal state.
+- For Startpage, distinguish the legitimate `/sp/search` result route from its CAPTCHA/consent response and retain the artifact URL path in the failure record.
+- For Swisscows, add a specific rate-limit fixture and precedence test for `too many requests` plus privacy/consent markup; do not silently retry or treat it as a selector failure.
+- Add post-submit state events for `submit_clicked`, `navigation_started`, `serp_waiting`, and `state_classified` so provider behavior can be diagnosed without relying only on timestamps.
+
+### 5. Correlation, Results, and Operator Feedback
+
+- Pass each `EngineJob.correlation_id` into `FailureRecord.correlation_id`, CLI warning fields, progress events, and final report metadata.
+- Include `result_count` and the selected terminal category in human-readable progress output; a `results_parsed` event with zero rows must be visible and distinguishable from a successful populated parse.
+- Add a per-engine terminal summary to the run manifest containing state, result count, failure category, artifact paths, and final URL host/path without query parameters.
+- Preserve the existing stdout JSON contract; all progress and diagnostic summaries remain on stderr or in the manifest.
+
+### 6. Fixtures, Tests, and Verification
+
+- Promote sanitized artifacts into fixtures only after removing queries, tracking IDs, cookies, tokens, and unrelated third-party content.
+- Add classification fixtures for Brave blocked, Ecosia consent, Bing valid SERP with incidental hidden markers, Yandex valid SERP with incidental hidden markers, Qwant challenge/consent, Startpage challenge/consent, and Swisscows rate limit.
+- Add contract tests for pre-input classification, classifier precedence, visible-text extraction, SERP-before-rate-limit behavior, Qwant/Startpage navigation outcomes, correlation propagation, zero-result reporting, and driver cleanup.
+- Run the offline suite with diagnostic capture disabled and the focused artifact/classifier suite with capture enabled. Repeat one low-volume live diagnostic run only for providers whose fixture evidence remains insufficient.
+- Verify that no raw HTML under `logs/` is committed and that all promoted fixtures are stored under engine-specific fixture directories.
+
+### Phase 7.2 Acceptance Criteria
+
+- Brave and Ecosia challenges are reported as `blocked`/`consent_required`, not `selector_drift`.
+- Bing and Yandex valid SERP artifacts are parsed successfully when incidental hidden markup contains privacy/rate-limit terms.
+- Swisscows rate limits are classified deterministically as `rate_limited` when the explicit marker is present.
+- Qwant and Startpage failures expose the actual post-submit state and final URL path; no homepage-stuck case is reported as an unexplained timeout.
+- Every terminal failure has a non-null correlation ID in progress events, artifacts, `FailureRecord`, and CLI output.
+- Progress output shows populated versus zero-result parses, and the run manifest summarizes every engine/page terminal state.
+- Offline tests cover all artifact-derived states, while provider controls remain non-bypassable and live testing remains opt-in.
+
+## Refactoring Phase 7.1 - Laufdiagnostik, sichtbarer Fortschritt und HTML-Artefakte
+
+### Objective
+
+Make Phase-7 browser runs diagnosable without turning normal scraping into noisy or unsafe logging. Every configured query/engine/page job must expose visible, structured progress through its lifecycle, while an explicit diagnostic mode may save sanitized, fully rendered homepage and SERP HTML under `logs/` for selector analysis. The recorded artifacts must make the Brave/Ecosia selector drift and the observed blocked, consent, and rate-limited states from `docs/phase7.log` reproducible and distinguishable without leaking query data, cookies, headers, credentials, or unrelated page content.
+
+Phase 7.1 is an observability and selector-research phase. It does not bypass provider controls, retry blocked requests aggressively, or make HTML capture the default. Existing partial-success behavior remains: one diagnostic or provider failure is attached to its engine/page and does not discard successful results from other jobs.
+
+### Evidence from the Phase-7 Practical Run
+
+- The run started one query with four workers and completed with ten parsed fused results, so concurrent execution and partial-result retention are working at a high level.
+- Brave and Ecosia failed before submission with `selector_drift: search input not available`; their homepage DOM, consent state, and hydration timing must be captured before changing selectors.
+- Two engines returned `blocked`, one returned `consent_required`, and two returned `rate_limited`; these states must be tied to the engine, phase, URL, timing, and correlation ID rather than reported as indistinguishable failures.
+- The log has no correlation IDs and does not show per-engine state transitions or elapsed time, which prevents reliable mapping from a warning to a rendered page and selector candidate.
+- The existing result output contains provider overlap (for example Yahoo/DuckDuckGo matches). Diagnostic work must not alter fusion, ranking, or normalized result semantics.
+
+### Current State and Constraints
+
+- Phase 7 already has a declarative selector contract and a shared homepage-to-SERP flow, but progress is currently visible only as start/completion and partial-failure log messages.
+- A Selenium `page_source` snapshot is needed after JavaScript rendering and after each relevant state transition; raw HTTP responses are insufficient for hydrated providers such as Brave and Ecosia.
+- HTML can contain the keyword, account identifiers, consent tokens, cookies, hidden form values, result-page content, and tracking URLs. Capture must be opt-in, bounded, redacted, and excluded from normal artifacts and version control.
+- Concurrent workers may finish out of order. Progress output must remain thread-safe, structured, and correlated without exposing the keyword in log messages or filenames.
+- Provider blocks, consent pages, rate limits, empty results, selector drift, timeouts, and successful extraction are different states and must remain different in both logs and failure records.
+
+### Production Principles
+
+- Emit one structured progress event for each state transition: job accepted, driver created, homepage requested, homepage ready, input found, keyword submitted, SERP requested/ready, HTML captured, results parsed, provider state classified, job completed, or job failed.
+- Every event carries a correlation ID, engine, page, worker/job identity, state, elapsed duration, attempt number, and redacted URL metadata; query text, cookies, authorization headers, and full page content are never logged by default.
+- Human-readable progress is enabled for interactive CLI runs, while machine-readable JSON Lines remains available for CI and post-run analysis. Progress must not corrupt the final JSON result written to stdout or the configured output file.
+- HTML capture is disabled by default and enabled only through an explicit diagnostic setting/CLI flag. It has a bounded per-artifact size, a bounded total run size, deterministic retention/cleanup behavior, and a clear warning that captured pages may contain sensitive third-party content.
+- Capture happens at meaningful boundaries, not on every polling tick: at minimum homepage-ready, pre-submit, SERP-ready, and classified failure. Failed jobs retain the last available rendered snapshot when capture is enabled.
+- Artifact naming uses a non-reversible query/job digest plus engine, page, state, timestamp or run ID, and correlation ID. The original query is stored only in the in-memory job/report context and is not written into the filename or diagnostic HTML metadata.
+
+### 1. Progress Event Model and CLI Presentation
+
+- Define an immutable `ProgressEvent` with `run_id`, `correlation_id`, `query_index`, `engine`, `page`, `state`, `attempt`, `elapsed_ms`, `url_host/path` (without query parameters), `selector_key`, and optional `artifact_path`.
+- Add a thread-safe progress sink protocol with a console implementation and a JSONL implementation. The sink must tolerate worker completion order and preserve a monotonic event sequence per run.
+- Extend the CLI start message with total jobs and worker count, then render compact updates such as `[3/11] brave page=1 homepage_ready` and terminal summaries with success/failure counts. Keep progress on stderr so stdout remains valid JSON.
+- Include the selected diagnostic mode, artifact directory, retention limits, and redaction policy in the run summary without printing keywords or sensitive values.
+- Preserve correlation IDs in `FailureRecord`, structured logger fields, progress events, and diagnostic artifact manifests so one engine failure can be traced end to end.
+
+### 2. Rendered HTML Capture and Safe Artifact Store
+
+- Add a dedicated artifact store rooted at `logs/phase7/<run_id>/` or a configured equivalent; never write diagnostic pages into source, fixture, cache, or package directories.
+- Capture `driver.page_source` after the homepage-ready and SERP-ready waits, immediately before submit when requested, and on classified failure. Store a small JSON manifest beside each page with engine, state, page, correlation ID, observation time, current URL host/path, byte count, redaction version, and selector metadata.
+- Redact before writing: query values in URLs/forms, cookies, authorization or proxy data, account identifiers, session/CSRF tokens, unique request IDs where practical, and configured secret patterns. Use a conservative fallback that refuses to write an artifact when redaction fails.
+- Enforce maximum bytes per HTML file, maximum artifacts per job, maximum total run bytes, and an explicit retention policy. Write atomically through a temporary file and remove incomplete artifacts on failure.
+- Add an index/manifest for the run that maps engine/page/state/correlation ID to artifact paths and records missing snapshots. Do not make the manifest depend on the final result JSON.
+- Add `.gitignore` coverage and documentation so `logs/` remains local diagnostic output; sanitized fixtures promoted for tests belong under `tests/fixtures/searchengines/<engine>/` only after manual review.
+
+### 3. Selector-Drift Investigation Workflow
+
+- Reproduce the practical run with a fixed low-volume query set, one engine at a time and then with the configured worker count, using diagnostic capture and visible progress enabled.
+- For Brave and Ecosia, compare homepage-ready snapshots, input candidate matches, hydration timing, consent/block states, and post-submit SERP snapshots before changing selectors. Record the observed DOM attributes and selector decision in `docs/searchengines.md`.
+- For blocked, consent, and rate-limited engines, inspect the rendered page and URL classification without attempting bypasses. Decide whether the correct action is a typed failure, a provider-specific consent workflow allowed by policy, a longer bounded wait, or an engine readiness downgrade.
+- Promote a selector from `candidate` to `fixture-verified` only after the captured HTML is sanitized, a parser/flow fixture test passes, and the selector is scoped to the intended form/card rather than a broad page element.
+- Keep an evidence table for each changed selector: run ID, observation date, country/language, viewport/browser identity, old selector, new selector, fixture path, and reason for the change.
+
+### 4. Tests and Verification
+
+- Add unit tests for event ordering, thread-safe sinks, monotonic run sequence, redacted URLs/messages, progress-on-failure, and stdout/stderr separation.
+- Add artifact-store tests for opt-in behavior, naming without query text, HTML/manifest atomicity, redaction, size limits, retention, incomplete-write cleanup, and concurrent writers.
+- Add mocked-WebDriver contract tests proving snapshots occur after readiness and failure classification, artifact paths are included in progress events, and `quit()` still executes on every path.
+- Add regression fixtures for Brave and Ecosia once a sanitized rendered homepage/SERP is reviewed; add explicit fixtures for blocked, consent, and rate-limited states observed in `docs/phase7.log`.
+- Run the existing offline suite with diagnostics disabled, then run a focused diagnostic suite with mocked drivers. Keep live provider reproduction opt-in, low-volume, and outside the default CI gate.
+
+### 5. Documentation and Operations
+
+- Document the CLI/configuration switches for progress format, diagnostic HTML capture, output directory, redaction, size limits, retention, and cleanup.
+- Add a troubleshooting section linking `docs/phase7.log`, the run manifest, progress events, failure records, and the selector matrix in `docs/searchengines.md`.
+- Add a safe operator procedure: stop capture after evidence is collected, review artifacts locally, sanitize selected fixtures manually, delete raw artifacts, and never attach raw third-party pages to tickets or commits.
+- Record the first diagnostic run, selector decisions, disabled/experimental engines, and unresolved provider-control responses in the Phase 7.1 changelog.
+
+### Phase 7.1 Acceptance Criteria
+
+- Interactive runs show each job's engine/page state transition and a final success/failure summary without contaminating JSON stdout.
+- Every failure in the practical-run classes can be traced by correlation ID to a structured event and, when explicitly enabled and safely captured, a rendered HTML artifact.
+- Brave and Ecosia have an evidence-backed selector decision or an explicit `experimental`/`disabled` status; no selector is widened blindly.
+- HTML diagnostics are opt-in, redacted, bounded, atomically written, ignored by Git, and never required for normal tests or production scraping.
+- Offline tests cover progress, artifact safety, failure-state classification, and driver cleanup; live reproduction remains opt-in and provider-policy compliant.
+- The Phase 7.1 plan, implementation status, practical findings, and selector changes are recorded in both changelogs.
+
+## Refactoring Phase 7 - Browser-Based Search Flow and Per-Engine Selector Contracts
+
+### Objective
+
+Implement and verify the complete browser interaction for every registered search engine. A scrape starts on the engine's homepage, waits for the document to become usable, enters the keyword into the engine-specific search field, submits the form, waits for the search-result page, and extracts only the supported organic results. The homepage URLs, input/submit selectors, result-ready conditions, organic-card selectors, pagination hooks, and consent/block states are documented in `docs/searchengines.md` and promoted to code only after fixture-backed verification.
+
+Phase 7 is provider-adapter work. It keeps the shared browser lifecycle, normalized result contract, concurrency limits, failure model, and provider-safety rules from earlier phases. It does not bypass CAPTCHAs, consent controls, rate limits, robots guidance, or other access controls, and it does not make live provider access part of the default test suite.
+
+### Current State and Constraints
+
+- `docs/searchengines.md` currently documents direct result-page URL baselines and broad result-page reconnaissance, but not the homepage-to-form-to-submit interaction required for browser-driven scraping.
+- Search forms and SERP markup are dynamic and can vary by country, language, consent state, viewport, and experiment. Selectors are therefore ordered candidates with observation dates, not permanent provider guarantees.
+- Some providers render the form or result cards after JavaScript hydration; others expose a server-rendered or HTML-friendly surface. Each adapter must declare its readiness condition and classify an unusable page instead of waiting indefinitely.
+- The shared driver factory owns browser settings and teardown. Engine adapters own navigation, form interaction, provider-specific waits, selector fallback order, pagination state, and response classification.
+- Offline tests must use sanitized HTML fixtures and mocked WebDriver behavior. Live smoke tests remain opt-in, low-volume, and policy-compliant.
+
+### Production Principles
+
+- Every engine follows one observable state machine: `homepage_requested` -> `homepage_ready` -> `query_entered` -> `submitted` -> `serp_ready` -> `results_extracted`, with typed terminal states for empty, consent, CAPTCHA/block, rate-limit, timeout, malformed, and unsupported-country responses.
+- Homepage navigation is explicit and precedes form interaction. Direct result URLs remain a separate optimization only when the adapter contract and provider policy allow them.
+- Selectors are stored in adapter metadata in priority order, scoped to the intended form or organic result container, and covered by at least one normal fixture plus relevant fallback/error fixtures.
+- Submission must use the provider's accessible form semantics (submit control or keyboard submission) and must be followed by a URL, DOM, or state-change wait; fixed sleeps are not a readiness strategy.
+- Parsers receive captured HTML independently of Selenium and return the same normalized fields defined by the Phase 5/6 contract. Ads, AI answers, knowledge panels, navigation, duplicate sitelinks, and unrelated modules are excluded.
+- A selector drift or access-control response disables only the affected engine/page and preserves successful results from other engines.
+
+### 1. Shared Browser Interaction Contract
+
+- Add an immutable engine interaction descriptor containing homepage URL, search-field selector candidates, submit selector candidates, SERP-ready conditions, organic-card selectors, pagination strategy, locale/country mapping, and fixture/research metadata.
+- Add adapter methods for `open_homepage()`, `wait_for_homepage()`, `enter_keyword()`, `submit_search()`, `wait_for_serp()`, `capture_serp()`, and `classify_response()` with correlation IDs and redacted diagnostics.
+- Define explicit wait primitives for document readiness, visible/enabled input, successful keyword insertion, URL or DOM change after submit, result container visibility, empty-result state, and provider block/consent states.
+- Preserve one driver/session ownership per scrape job and guarantee teardown on successful extraction, timeout, parse failure, cancellation, and classified provider failure.
+
+### 2. Document and Verify Every Search Engine
+
+- Complete the Phase 7 entry-point and selector matrix in `docs/searchengines.md` for Google, Bing, Yandex, Yahoo, DuckDuckGo, Ecosia, Qwant, Startpage, Brave Search, Swisscows, and Mojeek.
+- For each engine, record the observed homepage URL, search input locator, submit locator or keyboard fallback, SERP-ready locator/state, organic-card locator, title/link/snippet locators, pagination locator/state, country/locale behavior, and known consent/block signatures.
+- Mark each locator as `candidate`, `fixture-verified`, or `live-smoke-verified`; include observation date and provider/plugin version so stale selectors are discoverable.
+- Prefer stable attributes such as `name`, `id`, accessible labels, semantic form actions, and provider-owned result classes. Avoid positional XPath, generated CSS class hashes, and broad selectors that can match ads or navigation.
+- Keep a documented fallback order and define the failure threshold at which an engine moves to `experimental` or `disabled` instead of silently returning incomplete results.
+
+### 3. Engine Adapter Implementation
+
+- Implement homepage/form/submit/serp behavior behind the existing plugin registry; orchestration must not branch on engine names.
+- Add provider-specific consent and empty-result handling before organic parsing, including safe early termination for CAPTCHA, bot, rate-limit, and access-denied pages.
+- Add pagination only after the first-page flow is stable. Reuse the adapter's observed next-page/cursor state and validate that the page or result set changed before parsing the next page.
+- Normalize redirect links and visible domains through the existing canonicalization boundary, and retain engine, country, query, page, and rank provenance.
+- Add bounded diagnostics (URL, state, selector key, timing, and sanitized HTML/screenshot paths when explicitly enabled) without logging keywords, cookies, headers, or page contents by default.
+
+### 4. Fixtures, Tests, and Verification
+
+- Add sanitized fixtures under `tests/fixtures/searchengines/<engine>/` for homepage-ready, query-filled, normal SERP, empty SERP, consent, CAPTCHA/block, rate-limit, malformed, and selector-fallback states where observed.
+- Add adapter contract tests proving homepage navigation precedes input, the keyword is entered exactly once, submit is performed, SERP readiness is awaited, organic cards are parsed, and the driver is closed on every terminal path.
+- Add selector tests for each documented locator and fallback order, including protection against ads, answer modules, duplicate cards, unsafe redirects, and stale page state.
+- Add deterministic tests for country/locale mapping, pagination state changes, timeout/error classification, structured partial failures, redacted diagnostics, and registry import isolation.
+- Keep one opt-in, low-volume browser smoke test per provider family or engine risk group; never require live search traffic for unit, CI, packaging, or documentation builds.
+
+### 5. Documentation, Operations, and Migration
+
+- Update the public configuration and contributor documentation with the browser flow, selector metadata lifecycle, fixture refresh process, opt-in smoke-test command, and provider-safety limitations.
+- Add a selector review checklist to `docs/searchengines.md`; require a fresh observation date and fixture update before enabling a changed adapter.
+- Record disabled/experimental engines and reasons in registry diagnostics, release notes, and the refactoring changelog.
+- Roll out in risk order: server-rendered/HTML-friendly engines first, then engines with consent or hydration complexity, and finally engines whose result cards require extensive live verification.
+
+### Phase 7 Acceptance Criteria
+
+- All eleven registered engines have documented homepage URLs and selector contracts with status, observation date, and fallback behavior.
+- A normal browser scrape executes homepage load, readiness wait, keyword entry, submit, SERP readiness wait, and organic extraction through the shared adapter contract.
+- Every engine has deterministic fixture coverage for normal results and its relevant empty, consent/block, malformed, and selector-fallback states.
+- Selector drift, provider access controls, timeouts, and parse failures produce typed engine-scoped failures without discarding successful results from other engines.
+- Default tests, linting, type checks, packaging, and documentation builds remain offline and browser-independent; live smoke tests are explicitly opt-in.
+- The Phase 7 plan, selector research, implementation status, and any disabled-engine decisions are recorded in both project changelogs.
+
 ## Refactoring Phase 6 - Reproducible Read-the-Docs Documentation Build
 
 ### Objective

@@ -63,6 +63,9 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Local Phase-7 diagnostic artifacts
+logs/
+
 # PyBuilder
 target/
 

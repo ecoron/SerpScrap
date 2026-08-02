@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from typing import Any
 
 import click
@@ -14,6 +15,24 @@ from serpscrap import Config, SerpScrap
 LOG_LEVELS = click.Choice(
     ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
 )
+
+
+def _echo_json(payload: Any) -> None:
+    """Write result JSON without failing on a legacy Windows console codec."""
+    stream = getattr(sys, "stdout", None)
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None:
+        try:
+            reconfigure(encoding="utf-8", errors="strict")
+        except (AttributeError, OSError, ValueError):
+            pass
+    rendered = json.dumps(payload, ensure_ascii=False, indent=2)
+    try:
+        click.echo(rendered)
+    except UnicodeEncodeError:
+        # Some embedded runners expose an immutable cp1252 stream.  Escaped
+        # UTF-8 keeps the JSON valid and guarantees that the command exits.
+        click.echo(rendered.encode("utf-8", errors="backslashreplace").decode("ascii"))
 
 
 class JsonLogFormatter(logging.Formatter):
@@ -27,6 +46,8 @@ class JsonLogFormatter(logging.Formatter):
         }
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
+        if getattr(record, "progress_event", None) is not None:
+            payload["event"] = record.progress_event
         return json.dumps(payload, ensure_ascii=False)
 
 
@@ -115,6 +136,22 @@ def main(log_level: str, log_format: str) -> None:
 @click.option("--overwrite", is_flag=True, default=False, help="Replace an existing JSON output file.")
 @click.option("--no-cache", is_flag=True, default=None, help="Disable the local HTML cache.")
 @click.option("--no-history", is_flag=True, default=None, help="Disable persistent SQLite history.")
+@click.option(
+    "--consent-action",
+    type=click.Choice(["necessary", "reject", "disabled"]),
+    default=None,
+    help="Handle consent dialogs using the privacy-preserving rejection action.",
+)
+@click.option("--progress/--no-progress", default=True, help="Show per-engine progress on stderr.")
+@click.option(
+    "--progress-format",
+    type=click.Choice(["text", "jsonl"]),
+    default="text",
+    show_default=True,
+    help="Progress event format; JSON Lines is written to stderr.",
+)
+@click.option("--diagnostic-html", is_flag=True, default=False, help="Save redacted rendered HTML under the diagnostic directory.")
+@click.option("--diagnostic-dir", type=click.Path(path_type=str, file_okay=False), default=None, help="Diagnostic artifact directory.")
 def search(
     keywords: tuple[str, ...],
     pages: int | None,
@@ -129,6 +166,11 @@ def search(
     overwrite: bool,
     no_cache: bool | None,
     no_history: bool | None,
+    consent_action: str | None,
+    progress: bool,
+    progress_format: str,
+    diagnostic_html: bool,
+    diagnostic_dir: str | None,
 ) -> None:
     """Run one or more configured search queries and write JSON to stdout."""
 
@@ -155,6 +197,13 @@ def search(
         overrides["do_caching"] = False
     if no_history:
         overrides["store_history"] = False
+    if consent_action is not None:
+        overrides["consent_action"] = consent_action
+    overrides["progress"] = progress
+    overrides["progress_format"] = progress_format
+    overrides["diagnostic_html"] = diagnostic_html
+    if diagnostic_dir is not None:
+        overrides["diagnostic_dir"] = diagnostic_dir
     config.apply(overrides)
     effective_workers = config.get().get("num_workers", 1)
     logger.info("Starting %d query job(s) with %d worker(s)", len(keywords), effective_workers)
@@ -179,7 +228,7 @@ def search(
             failure["message"],
         )
     logger.info("Search completed with %d parsed result(s)", len(results))
-    click.echo(json.dumps(results, ensure_ascii=False, indent=2))
+    _echo_json(results)
 
 
 @main.command("browser-check")

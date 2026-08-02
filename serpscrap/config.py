@@ -16,7 +16,7 @@ class Config:
         temp_root = Path(gettempdir())
         self.config: dict[str, Any] = {
             "use_own_ip": True,
-            "search_engines": ["bing", "yandex", "yahoo", "duckduckgo", "ecosia",
+            "search_engines": ["google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia",
                 "qwant", "startpage", "brave", "swisscows", "mojeek"],
             "supported_search_engines": [
                 "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia",
@@ -45,6 +45,7 @@ class Config:
             "request_delay_min": 0.75,
             "request_delay_max": 2.0,
             "request_retry_limit": 1,
+            "retryable_engine_categories": ["timeout", "navigation_state", "network"],
             "request_backoff_base": 2.0,
             "request_backoff_max": 10.0,
             "block_threshold": 2,
@@ -60,6 +61,14 @@ class Config:
             "scrape_urls": False,
             "url_threads": 6,
             "log_level": "INFO",
+            "progress": False,
+            "progress_format": "text",
+            "consent_action": "necessary",
+            "diagnostic_html": False,
+            "diagnostic_dir": str(Path("logs") / "phase7"),
+            "diagnostic_max_bytes_per_file": 2 * 1024 * 1024,
+            "diagnostic_max_total_bytes": 20 * 1024 * 1024,
+            "diagnostic_max_artifacts_per_job": 10,
             "num_workers": 4,
             "num_results_per_page": 10,
             "results_age": "Any",

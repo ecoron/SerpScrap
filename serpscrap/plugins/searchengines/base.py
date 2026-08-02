@@ -9,6 +9,7 @@ from typing import Any
 from urllib.parse import urlencode, urljoin, urlparse
 
 import lxml.html
+from lxml import etree
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +66,35 @@ class EnginePage:
     engine: str
     country_code: str
     page: int
+    visible_text: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class BrowserInteraction:
+    """Declarative homepage-to-SERP contract for one provider."""
+
+    homepage_url: str
+    search_input_selectors: tuple[str, ...]
+    submit_selectors: tuple[str, ...]
+    serp_ready_selectors: tuple[str, ...]
+    organic_card_selectors: tuple[str, ...]
+    observed_at: str | None = None
+    verification_status: str = "candidate"
+    dismiss_selectors: tuple[str, ...] = ()
+    consent_button_selectors: tuple[str, ...] = ()
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "homepage_url": self.homepage_url,
+            "search_input_selectors": list(self.search_input_selectors),
+            "submit_selectors": list(self.submit_selectors),
+            "serp_ready_selectors": list(self.serp_ready_selectors),
+            "organic_card_selectors": list(self.organic_card_selectors),
+            "observed_at": self.observed_at,
+            "verification_status": self.verification_status,
+            "dismiss_selectors": list(self.dismiss_selectors),
+            "consent_button_selectors": list(self.consent_button_selectors),
+        }
 
 
 class SearchEnginePlugin(ABC):
@@ -79,6 +109,20 @@ class SearchEnginePlugin(ABC):
     disable_reason: str | None = None
     fixture_version: str = "1"
     terms_review_date: str | None = None
+    browser_interaction: BrowserInteraction | None = None
+    homepage_block_markers: tuple[str, ...] = ()
+    homepage_consent_markers: tuple[str, ...] = ()
+    homepage_block_selectors: tuple[str, ...] = ()
+    homepage_consent_selectors: tuple[str, ...] = ()
+    blocked_visible_markers: tuple[str, ...] = (
+        "captcha", "unusual traffic", "access denied", "verify you are human", "automated queries"
+    )
+    rate_limited_visible_markers: tuple[str, ...] = ("too many requests", "rate limit", "429")
+    consent_visible_markers: tuple[str, ...] = (
+        "consent required", "cookie consent", "privacy choices", "manage privacy settings",
+        "accept all", "reject all",
+    )
+    empty_visible_markers: tuple[str, ...] = ()
 
     @property
     @abstractmethod
@@ -98,17 +142,65 @@ class SearchEnginePlugin(ABC):
     def parse(self, html: str, *, query: str, page: int, search_type: str) -> list[EngineResult]:
         """Parse organic results without network or persistence side effects."""
 
-    def classify(self, url: str, html: str) -> str | None:
+    def classify(self, url: str, html: str, *, visible_text: str | None = None) -> str | None:
         """Return an observable failure state, or ``None`` for a parseable page."""
 
-        lowered = f"{url}\n{html}".lower()
-        if any(token in lowered for token in ("captcha", "unusual traffic", "access denied")):
+        rendered = visible_text if visible_text is not None else self.visible_text_from_html(html)
+        lowered = f"{url}\n{rendered}".lower()
+        if any(token in lowered for token in self.blocked_visible_markers):
             return "blocked"
-        if any(token in lowered for token in ("consent required", "cookie consent", "your privacy")):
-            return "consent_required"
-        if any(token in lowered for token in ("too many requests", "rate limit", "429")):
+        if any(token in lowered for token in self.rate_limited_visible_markers):
             return "rate_limited"
+        if any(token in lowered for token in self.consent_visible_markers):
+            return "consent_required"
         return None
+
+    def classify_homepage(
+        self,
+        url: str,
+        *,
+        html: str = "",
+        visible_text: str = "",
+    ) -> str | None:
+        """Classify an access-control page before searching for the input."""
+
+        lowered = f"{url}\n{visible_text}".lower()
+        if any(token in lowered for token in self.homepage_block_markers):
+            return "blocked"
+        if any(token in lowered for token in self.homepage_consent_markers):
+            return "consent_required"
+        if html:
+            try:
+                dom = lxml.html.fromstring(html)
+                if any(dom.cssselect(selector) for selector in self.homepage_block_selectors):
+                    return "blocked"
+                if any(dom.cssselect(selector) for selector in self.homepage_consent_selectors):
+                    return "consent_required"
+            except (TypeError, ValueError, etree.ParserError):
+                pass
+        return self.classify(url, "", visible_text=visible_text)
+
+    def classify_empty(self, url: str, html: str, *, visible_text: str | None = None) -> bool:
+        """Return whether the rendered page explicitly represents no results."""
+
+        del url
+        rendered = visible_text if visible_text is not None else self.visible_text_from_html(html)
+        lowered = rendered.lower()
+        return bool(self.empty_visible_markers and any(marker in lowered for marker in self.empty_visible_markers))
+
+    @staticmethod
+    def visible_text_from_html(html: str) -> str:
+        """Extract visible-ish text while excluding scripts and embedded payloads."""
+
+        if not html:
+            return ""
+        try:
+            dom = lxml.html.fromstring(html)
+            for node in dom.xpath("//script|//style|//noscript|//template|//svg"):
+                node.drop_tree()
+            return " ".join(dom.text_content().split())
+        except (TypeError, ValueError, etree.ParserError):
+            return ""
 
     @property
     def enabled(self) -> bool:
@@ -127,6 +219,9 @@ class SearchEnginePlugin(ABC):
             "provider_family": self.provider_family,
             "market_share": self.market_share,
             "terms_review_date": self.terms_review_date,
+            "browser_interaction": (
+                self.browser_interaction.metadata() if self.browser_interaction else None
+            ),
         }
 
 
@@ -134,6 +229,13 @@ def _clean_text(value: str | None) -> str | None:
     if not value:
         return None
     text = " ".join(unescape(value).split())
+    if any(marker in text for marker in ("Ã", "Â", "â€", "â€™", "â€“")):
+        try:
+            repaired = text.encode("latin-1").decode("utf-8")
+            if repaired.count("�") <= text.count("�"):
+                text = repaired
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
     return text or None
 
 

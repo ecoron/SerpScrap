@@ -133,8 +133,10 @@ class MultiEngineRunner:
 
         def run_job(job: EngineJob):
             plugin = self.registry.get(job.engine)
-            if plugin.supported_countries and job.country_code not in plugin.supported_countries:
-                raise ValueError(f"{job.engine} does not support country {job.country_code}")
+            plugin.validate_request(
+                search_type=str(config.get("search_type", "normal")),
+                country_code=job.country_code,
+            )
             with limits[job.engine]:
                 job_config = dict(config)
                 job_config.update({

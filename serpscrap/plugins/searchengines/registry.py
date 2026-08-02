@@ -190,12 +190,21 @@ def _alternatives() -> list[SearchEnginePlugin]:
 
 class SearchEngineRegistry:
     def __init__(self, plugins: Iterable[SearchEnginePlugin]):
-        plugin_list = list(plugins)
-        self._plugins = {plugin.engine_id: plugin for plugin in plugin_list}
-        if len(self._plugins) != len(plugin_list):
-            raise ValueError("duplicate search-engine plugin IDs")
-        if any(not key or key != key.lower() for key in self._plugins):
-            raise ValueError("search-engine IDs must be lowercase and non-empty")
+        self._plugins: dict[str, SearchEnginePlugin] = {}
+        for plugin in plugins:
+            self.register(plugin)
+
+    def register(self, plugin: SearchEnginePlugin) -> SearchEnginePlugin:
+        """Register one validated plugin while preserving insertion order."""
+
+        errors = plugin.validate_contract()
+        if errors:
+            details = "; ".join(errors)
+            raise ValueError(f"invalid plugin {plugin.engine_id!r}: {details}")
+        if plugin.engine_id in self._plugins:
+            raise ValueError(f"duplicate search-engine plugin ID: {plugin.engine_id}")
+        self._plugins[plugin.engine_id] = plugin
+        return plugin
 
     def get(self, engine_id: str) -> SearchEnginePlugin:
         try:
@@ -216,6 +225,28 @@ class SearchEngineRegistry:
             )
             raise ValueError(f"disabled search engine(s): {reasons}")
         return plugins
+
+    def find_capable(
+        self,
+        *,
+        search_type: str = "normal",
+        country_code: str = "",
+        include_experimental: bool = False,
+    ) -> tuple[SearchEnginePlugin, ...]:
+        """Return plugins supporting a capability in deterministic registry order."""
+
+        result = []
+        for plugin in self:
+            if plugin.readiness == "disabled" or (
+                plugin.readiness == "experimental" and not include_experimental
+            ):
+                continue
+            try:
+                plugin.validate_request(search_type=search_type, country_code=country_code)
+            except ValueError:
+                continue
+            result.append(plugin)
+        return tuple(result)
 
     def ids(self) -> tuple[str, ...]:
         return tuple(self._plugins)

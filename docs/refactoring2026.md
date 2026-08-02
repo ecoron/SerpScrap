@@ -1815,3 +1815,105 @@ Modernize SerpScrap so that search engine result pages (SERPs) are retrieved rel
 - Offline unit tests require neither Chrome nor network access and pass deterministically.
 - The opt-in browser smoke test passes locally and in the project container.
 - Deprecated Selenium and SQLAlchemy APIs, `chromedriver-autoinstaller`, and the legacy Chrome installation flow are removed.
+# Refactoring Phase 9.2 - Developer-Friendly Search-Engine Plugin Structure
+
+## Objective
+
+Make the search-engine plugin layer easy to extend for developers while keeping
+runtime behavior explicit, deterministic, and safe. Adding a new engine should
+require one isolated plugin implementation, a registry entry, documented
+capabilities, sanitized fixtures, and contract tests; it must not require
+changes to orchestration, browser flow, result normalization, or fusion.
+
+## Architectural Principles
+
+- Keep one narrow, transport-independent plugin contract for URL construction,
+  parsing, classification, metadata, and optional browser interaction.
+- Separate provider-specific behavior from shared execution policy. Browser
+  navigation, retries, consent safety, diagnostics, pagination orchestration,
+  and result normalization remain shared services.
+- Prefer explicit immutable specifications and typed values over ad-hoc class
+  attributes and stringly-typed dictionaries.
+- Treat capabilities as declarations (`search_types`, pagination, country or
+  language support, browser/API transport, readiness) and validate them before
+  a job starts.
+- Keep unavailable or experimental engines importable and diagnosable, but
+  prevent accidental selection unless their readiness state allows it.
+- Make plugin failures typed and observable. A selector drift, unsupported
+  search type, malformed page, block, consent page, and rate limit must remain
+  distinguishable.
+
+## Target Plugin Contract
+
+1. Introduce small value objects/protocols for `EngineId`, plugin metadata,
+   search capabilities, pagination strategy, browser interaction, and parser
+   output. Preserve the current public plugin methods through a compatibility
+   adapter during migration.
+2. Define a single `SearchEnginePlugin` contract with explicit methods for
+   `build_url`, `parse`, `classify`, and capability validation. Provider code
+   may customize selectors and markers, but may not own retries, sleeps,
+   driver lifecycle, persistence, or cross-engine ranking.
+3. Replace the generic template plugin's growing conditional branches with
+   composable provider specifications and small provider adapters. Shared
+   helpers cover URL encoding, common organic-card extraction, canonical URL
+   normalization, rank assignment, and safe text cleanup.
+4. Give each plugin a stable ID, semantic display name, plugin version,
+   contract version, provider family, readiness state, fixture version, and
+   verification metadata. Metadata must be JSON serializable and suitable for
+   diagnostics and CLI/API discovery.
+5. Extend the registry with explicit registration/validation errors, stable
+   ordering, capability queries, and optional discovery hooks. Duplicate IDs,
+   invalid IDs, incomplete contracts, unsupported capabilities, and invalid
+   readiness transitions fail early with actionable messages.
+
+## Implementation Slices
+
+1. Freeze the current behavior with characterization tests for every registered
+   engine, URL/pagination output, parser output, outcome classification, and
+   registry metadata.
+2. Add the typed capability and metadata models plus contract validation;
+   adapt the existing Google and alternative plugins without changing results.
+3. Extract shared URL, pagination, text, card, and result-normalization helpers
+   and migrate providers incrementally, keeping provider-specific selectors in
+   provider modules/data rather than shared flow code.
+4. Refactor `default_registry()` into declarative registration and add an
+   ergonomic extension path for an in-tree plugin. Define the policy for
+   optional external entry-point discovery without making it mandatory for the
+   first implementation.
+5. Make browser flow and application validation consume capabilities instead
+   of engine-name conditionals; preserve typed terminal outcomes and partial
+   result behavior.
+6. Add a new minimal fixture-backed example engine in tests (not necessarily a
+   production provider) to prove that extension work is isolated and documented.
+7. Update developer documentation, examples, API/CLI diagnostics, and the
+   changelog; remove obsolete compatibility branches only after the migration
+   tests pass.
+
+## Verification Strategy
+
+- Contract-test every plugin for stable identity, metadata, supported search
+  types, URL encoding, deterministic pagination, parse output, and JSON-safe
+  serialization.
+- Test registry registration, duplicate/invalid IDs, disabled and experimental
+  readiness, selection validation, capability queries, and deterministic order.
+- Use sanitized offline fixtures for normal, empty, malformed, consent,
+  blocked, rate-limited, selector-drift, and provider-specific result pages.
+- Test that adding a fixture-backed plugin does not require changes to shared
+  browser flow, multi-engine execution, fusion, or result normalization.
+- Keep browser tests opt-in and verify that shared flow still classifies typed
+  outcomes without bypassing provider controls.
+- Run `pipenv run pytest` and focused typing/linting checks from the repository
+  root; no network access is required for the contract suite.
+
+## Phase 9.2 Acceptance Criteria
+
+- A developer can add a search-engine plugin by implementing the documented
+  contract, registering it, adding fixtures, and adding contract tests.
+- No engine-specific branch is required in shared orchestration, browser flow,
+  multi-search, fusion, or result normalization for a normal web plugin.
+- Unsupported search types, invalid pagination/country combinations, disabled
+  plugins, and incomplete contracts fail before navigation with clear errors.
+- Registry and plugin metadata expose capabilities, readiness, versions, and
+  verification status deterministically through existing diagnostics surfaces.
+- Existing engines retain their current parsed results and terminal outcome
+  semantics, and the complete offline test suite remains green.

@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Implemented the Phase 9.2 plugin foundation: typed plugin capabilities and
+  metadata, contract validation, registry registration/capability discovery,
+  pre-navigation request validation, fixture-backed contract tests, and a
+  developer guide for adding search engines.
 - Implemented the Phase 9.1 consent foundation: semantic Google/Ecosia
   controls, explicit consent progress states, overlay-clear verification,
   removal of undocumented JavaScript consent shortcuts, and mocked-browser /
@@ -145,3 +149,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Text processing tools removed
 - Fewer requirements
+## Unreleased
+
+- Added the Phase 9.2 implementation plan for a typed, capability-driven,
+  developer-friendly search-engine plugin structure, including registry
+  validation, fixture contracts, migration slices, and acceptance criteria.

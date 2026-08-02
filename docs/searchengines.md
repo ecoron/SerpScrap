@@ -1,5 +1,91 @@
 # Search Engines for Refactoring Phase 7
 
+## Developer Guide: Search-Engine Plugins
+
+Search-engine plugins are small, declarative adapters. A plugin describes one
+provider's URL, capabilities, browser contract, response classification, and
+parser. Shared services own Selenium lifecycle, retries, diagnostics,
+multi-engine execution, normalization, and fusion. A new provider should not
+require an engine-specific branch in those shared services.
+
+### Plugin layout
+
+The contract lives in `serpscrap/plugins/searchengines/base.py`; the trusted
+in-tree registrations live in `registry.py`:
+
+| Part | Responsibility |
+|---|---|
+| `SearchEnginePlugin` | Stable identity, URL building, parsing, classification, metadata, and capability validation |
+| `GenericHtmlPlugin` | Conservative shared HTML-card parsing for server-rendered SERPs |
+| `BrowserInteraction` | Homepage, input, submit, readiness, organic-card, overlay, and consent selectors |
+| `PluginCapabilities` | Search types, pagination strategy, transport, and country support |
+| `SearchEngineRegistry` | Registration, contract validation, selection, metadata, and capability discovery |
+
+Prefer one provider module or one clearly scoped adapter per provider. Keep
+provider selectors and markers beside that provider. Do not put provider
+conditionals into `browser_flow.py`, `multi.py`, or `fusion.py`.
+
+### Adding a plugin
+
+1. Subclass `SearchEnginePlugin` for a custom parser or `GenericHtmlPlugin`
+   when the provider exposes ordinary organic HTML cards.
+2. Define a stable lowercase `engine_id`, a human-readable `display_name`, a
+   URL template, `search_types`, `pagination_strategy`, `transport`, and a
+   `BrowserInteraction` when browser transport is used.
+3. Implement `build_url(query, page, country_code, search_type)` and `parse(...)`.
+   URL construction must be deterministic and encode user queries. Parsing
+   must return `EngineResult` values only; it must not perform network access,
+   persistence, retries, or browser actions.
+4. Add provider-specific block, rate-limit, consent, and empty-state markers
+   only when they are supported by sanitized fixtures. Never turn an unknown
+   or blocked page into a successful empty result.
+5. Register the instance in `default_registry()` (or a separately composed
+   `SearchEngineRegistry`) and run `validate_contract()` before using it.
+   Duplicate IDs, invalid metadata, missing browser selectors, and unsupported
+   readiness values fail immediately.
+6. Add sanitized homepage/SERP fixtures and contract tests covering URL
+   encoding, pagination, normal parsing, empty/malformed pages, and provider
+   control states. Keep raw pages, cookies, tokens, and user queries out of
+   source control.
+7. Update the engine matrix, fixture/verification date, and changelog.
+
+Minimal browser-backed example:
+
+```python
+class ExamplePlugin(GenericHtmlPlugin):
+    engine_id = "example"
+    display_name = "Example Search"
+    search_url = "https://example.test/search?q={query}"
+    pagination_strategy = "page"
+    browser_interaction = BrowserInteraction(
+        homepage_url="https://example.test/",
+        search_input_selectors=("input[name='q']",),
+        submit_selectors=("button[type='submit']",),
+        serp_ready_selectors=("main#results",),
+        organic_card_selectors=("article.result",),
+    )
+    card_selectors = ("article.result",)
+
+    def _build_url(self, query, page, country_code):
+        return self.search_url.format(query=quote(query, safe="")) + f"&page={page}"
+```
+
+For a non-browser transport, set `transport = "http"` and omit
+`browser_interaction`; the parser and URL contract remain the same. Use
+`readiness = "experimental"` with a `disable_reason` while a provider is
+fixture-covered but not ready for normal selection.
+
+### Contract checklist
+
+- `plugin.validate_contract()` returns no errors.
+- `plugin.metadata()` is JSON serializable and includes capabilities,
+  readiness, versions, and verification metadata.
+- `plugin.validate_request(...)` rejects unsupported search types or countries
+  before navigation.
+- Organic results have stable ranks, normalized absolute URLs, and no ads,
+  AI modules, navigation, or duplicate sitelinks.
+- Offline tests pass; browser smoke tests remain opt-in and low volume.
+
 Last researched: 2026-08-02. Market snapshot: Europe, all devices, July 2026.
 
 This document is the operational registry input for the Phase 7 browser-flow and plugin set. It is not a promise that undocumented query parameters or CSS selectors are stable. Every engine is independently disableable and is enabled only while its homepage flow, URL/country mapping, pagination, response classification, and parsing behavior remain covered by sanitized offline fixtures.

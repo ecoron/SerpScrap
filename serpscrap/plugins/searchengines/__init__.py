@@ -4,6 +4,7 @@ from serpscrap.plugins.searchengines.base import (
     BrowserInteraction,
     EnginePage,
     EngineResult,
+    PluginCapabilities,
     SearchEnginePlugin,
 )
 from serpscrap.plugins.searchengines.fusion import ResultFusion
@@ -13,6 +14,7 @@ __all__ = [
     "EnginePage",
     "EngineResult",
     "BrowserInteraction",
+    "PluginCapabilities",
     "ResultFusion",
     "SearchEnginePlugin",
     "SearchEngineRegistry",

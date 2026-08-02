@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from html import unescape
-from typing import Any
+from typing import Any, ClassVar
 from urllib.parse import urlencode, urljoin, urlparse
 
 import lxml.html
@@ -112,11 +112,38 @@ class BrowserInteraction:
         }
 
 
-class SearchEnginePlugin(ABC):
-    """Trusted in-tree plugin boundary for one search engine."""
+@dataclass(frozen=True, slots=True)
+class PluginCapabilities:
+    """Validated, transport-independent capabilities of a plugin."""
 
+    search_types: tuple[str, ...]
+    pagination: str
+    transport: str
+    supported_countries: frozenset[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "search_types": list(self.search_types),
+            "pagination": self.pagination,
+            "transport": self.transport,
+            "supported_countries": sorted(self.supported_countries),
+        }
+
+
+class SearchEnginePlugin(ABC):
+    """Trusted, side-effect-free boundary for one search engine.
+
+    Provider implementations should normally only define identity, URL
+    construction, parsing, and declarative class attributes. Shared execution
+    services own transport lifecycle, retries, persistence, and fusion.
+    """
+
+    contract_version: ClassVar[str] = "1"
     plugin_version = "1"
+    display_name: str | None = None
     search_types: tuple[str, ...] = ("normal",)
+    pagination_strategy: str = "provider"
+    transport: str = "browser"
     supported_countries: frozenset[str] = frozenset()
     market_share: float | None = None
     provider_family: str | None = None
@@ -221,16 +248,72 @@ class SearchEnginePlugin(ABC):
     def enabled(self) -> bool:
         return self.readiness == "enabled"
 
+    @property
+    def capabilities(self) -> PluginCapabilities:
+        return PluginCapabilities(
+            search_types=tuple(self.search_types),
+            pagination=self.pagination_strategy,
+            transport=self.transport,
+            supported_countries=frozenset(self.supported_countries),
+        )
+
+    def validate_contract(self) -> tuple[str, ...]:
+        """Return actionable contract errors without performing I/O."""
+
+        errors: list[str] = []
+        engine_id = self.engine_id
+        if not engine_id or engine_id != engine_id.lower() or any(
+            character not in "abcdefghijklmnopqrstuvwxyz0123456789_-" for character in engine_id
+        ):
+            errors.append("engine_id must be non-empty lowercase ASCII with '-', '_' or digits")
+        if not self.search_url or "{" not in self.search_url:
+            errors.append("search_url must be a non-empty URL template")
+        if not self.search_types or len(set(self.search_types)) != len(self.search_types):
+            errors.append("search_types must be a non-empty tuple without duplicates")
+        if any(not value or value != value.lower() for value in self.search_types):
+            errors.append("search_types must contain non-empty lowercase values")
+        if self.readiness not in {"enabled", "experimental", "disabled"}:
+            errors.append("readiness must be enabled, experimental, or disabled")
+        if self.readiness != "enabled" and not self.disable_reason:
+            errors.append("disable_reason is required for experimental or disabled plugins")
+        if self.pagination_strategy not in {"offset", "page", "provider", "cursor", "none"}:
+            errors.append("pagination_strategy is unsupported")
+        if self.transport not in {"browser", "http", "hybrid"}:
+            errors.append("transport must be browser, http, or hybrid")
+        if any(not country or country != country.upper() or len(country) != 2 for country in self.supported_countries):
+            errors.append("supported_countries must contain ISO-3166 alpha-2 uppercase codes")
+        if self.transport in {"browser", "hybrid"}:
+            interaction = self.browser_interaction
+            if interaction is None:
+                errors.append("browser_interaction is required for browser or hybrid transport")
+            elif not all((interaction.homepage_url, interaction.search_input_selectors, interaction.serp_ready_selectors, interaction.organic_card_selectors)):
+                errors.append("browser_interaction requires homepage, input, ready, and organic selectors")
+        return tuple(errors)
+
+    def validate_request(self, *, search_type: str, country_code: str) -> None:
+        """Validate a requested capability before navigation starts."""
+
+        if search_type not in self.search_types:
+            raise ValueError(f"{self.engine_id} does not support search type {search_type!r}")
+        normalized_country = country_code.upper()
+        if self.supported_countries and normalized_country not in self.supported_countries:
+            raise ValueError(f"{self.engine_id} does not support country {normalized_country}")
+
     def metadata(self) -> dict[str, Any]:
         """Return stable operational metadata without importing a transport."""
         return {
             "engine_id": self.engine_id,
+            "display_name": self.display_name or self.engine_id,
+            "contract_version": self.contract_version,
             "plugin_version": self.plugin_version,
             "readiness": self.readiness,
             "disable_reason": self.disable_reason,
             "fixture_version": self.fixture_version,
             "supported_countries": sorted(self.supported_countries),
             "search_types": list(self.search_types),
+            "pagination_strategy": self.pagination_strategy,
+            "transport": self.transport,
+            "capabilities": self.capabilities.to_dict(),
             "provider_family": self.provider_family,
             "market_share": self.market_share,
             "terms_review_date": self.terms_review_date,

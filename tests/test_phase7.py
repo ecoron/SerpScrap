@@ -15,6 +15,7 @@ from serpscrap.plugins.searchengines.base import (
 )
 from serpscrap.plugins.searchengines.browser_flow import BrowserFlowError, HomepageSearchFlow
 from serpscrap.plugins.searchengines.registry import default_registry
+
 HTML = """
 <html><body><div id="b_results"><li class="b_algo"><h2><a href="https://example.test/a">Result</a></h2><p>Snippet</p></li></div></body></html>
 """

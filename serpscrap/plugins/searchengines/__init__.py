@@ -8,7 +8,11 @@ from serpscrap.plugins.searchengines.base import (
     SearchEnginePlugin,
 )
 from serpscrap.plugins.searchengines.fusion import ResultFusion
-from serpscrap.plugins.searchengines.registry import SearchEngineRegistry, default_registry, searxng_plugin
+from serpscrap.plugins.searchengines.registry import (
+    SearchEngineRegistry,
+    default_registry,
+    searxng_plugin,
+)
 
 __all__ = [
     "EnginePage",

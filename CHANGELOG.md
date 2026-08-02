@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Fixed Ruff import-order and formatting violations in the API service,
+  search-engine exports, and phase-plan tests.
+
+- Fixed the Phase 9.1 and Phase 9 documentation heading hierarchy so strict
+  Sphinx builds no longer report non-consecutive header-level warnings.
+
 - Implemented the Phase 9.2 plugin foundation: typed plugin capabilities and
   metadata, contract validation, registry registration/capability discovery,
   pre-navigation request validation, fixture-backed contract tests, and a

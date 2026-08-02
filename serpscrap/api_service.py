@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import os
 import threading
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
-import os
 from typing import Any
 
 from serpscrap.application import SearchApplication

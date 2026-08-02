@@ -3,8 +3,11 @@ from pathlib import Path
 import pytest
 
 from serpscrap.plugins.searchengines.base import BrowserInteraction, GenericHtmlPlugin
-from serpscrap.plugins.searchengines.registry import SearchEngineRegistry, default_registry, searxng_plugin
-
+from serpscrap.plugins.searchengines.registry import (
+    SearchEngineRegistry,
+    default_registry,
+    searxng_plugin,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests" / "fixtures" / "searchengines"

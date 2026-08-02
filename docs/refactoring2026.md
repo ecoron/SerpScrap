@@ -1,6 +1,6 @@
 # Refactoring Phase 9.1 - Google and Ecosia Consent and Browser-Flow Completion
 
-### Status
+## Status
 
 Implementation in progress. The semantic consent contract, provider-specific
 selectors, explicit verification, fixture coverage, and mocked-browser tests
@@ -9,7 +9,7 @@ provider protections intact: SerpScrap must
 not bypass CAPTCHA, rate limits, access controls, or a consent decision that
 cannot be verified through the rendered browser state.
 
-### Implementation Status
+## Implementation Status
 
 - [x] Semantic, provider-scoped consent labels and selectors
 - [x] Explicit consent progress states and overlay-clear verification
@@ -19,7 +19,7 @@ cannot be verified through the rendered browser state.
 - [x] Sanitized Google/Ecosia consent fixtures and mocked-browser regression tests
 - [ ] Dated low-volume live smoke evidence for Google and Ecosia
 
-### Research Findings
+## Research Findings
 
 - Google's official Custom Search JSON API is not a general replacement for
   the public Google SERP. It requires an API key and a configured Programmable
@@ -39,7 +39,7 @@ cannot be verified through the rendered browser state.
   reuse must remain isolated, opt-in, and user-controlled; see the [ChromeDriver
   profile documentation](https://developer.chrome.com/docs/chromedriver/capabilities).
 
-### Objective
+## Objective
 
 Complete and verify the Google and Ecosia homepage flows for the supported
 privacy-preserving consent action. The implementation must recognize consent
@@ -47,7 +47,7 @@ as a stateful provider interaction, confirm that the overlay is gone before
 search input, preserve a typed `consent_required` outcome when confirmation is
 not possible, and record enough sanitized evidence to diagnose selector drift.
 
-### Solution Decision
+## Solution Decision
 
 | Option | Decision | Rationale |
 | --- | --- | --- |
@@ -64,9 +64,9 @@ scoped to the observed consent button and still requires a visible semantic
 rejection label plus overlay-clear verification. It must not silently alter
 consent state.
 
-### Provider-Specific Implementation Plan
+## Provider-Specific Implementation Plan
 
-#### Google
+### Google
 
 1. Capture a new, low-volume, opt-in artifact for each supported country/
    language combination where the consent overlay appears. Record URL, dialog
@@ -83,7 +83,7 @@ consent state.
    successful consent action must still pass the existing homepage, submit,
    URL/state-change, and organic-card contracts.
 
-#### Ecosia
+### Ecosia
 
 1. Capture consent overlays for the relevant region/device combinations and
    identify whether the controls are in the main DOM, an iframe, or a shadow
@@ -99,7 +99,7 @@ consent state.
    consent control as an observable diagnostic outcome, not as evidence that
    Ecosia is equivalent to Bing or Google.
 
-### Shared State Machine and Safety Rules
+## Shared State Machine and Safety Rules
 
 - Model `consent_not_present`, `consent_visible`, `consent_action_started`,
   `consent_cleared`, and `consent_required` as explicit states.
@@ -114,7 +114,7 @@ consent state.
 - Preserve partial-success semantics: one unresolved provider consent state
   must not discard results from other engines.
 
-### Implementation Slices
+## Implementation Slices
 
 1. Refresh the Google/Ecosia artifact matrix with sanitized, dated,
    opt-in observations and explicit country/device assumptions.
@@ -129,7 +129,7 @@ consent state.
 6. Run one low-volume live smoke per provider and supported market, compare
    result/provenance metadata, and record selector decisions in the changelog.
 
-### Test and Acceptance Strategy
+## Test and Acceptance Strategy
 
 - Unit tests cover locale label matching, selector scoping, state transitions,
   explicit wait timeouts, overlay disappearance, and redaction.
@@ -141,7 +141,7 @@ consent state.
 - Live browser checks remain opt-in, low-volume, dated, and outside the default
   CI gate. They must not bypass provider controls.
 
-### Acceptance Criteria
+## Acceptance Criteria
 
 - Google and Ecosia each have a documented, fixture-backed consent contract
   with explicit success and safe failure states.
@@ -156,14 +156,14 @@ consent state.
 
 # Refactoring Phase 9 - Project Quality, Performance, and Documentation Structure
 
-### Status
+## Status
 
 Implementation completed for the service hardening, documentation split, and
 deterministic quality checks described below. The remaining release decision
 and broader performance profiling are still follow-up work. This phase does
 not make Version 2 available on PyPI yet.
 
-### Implementation Status
+## Implementation Status
 
 - [x] Separate Docker operator and developer documentation
 - [x] Bounded API job workers and pending-job capacity
@@ -172,7 +172,7 @@ not make Version 2 available on PyPI yet.
 - [x] Compose lifecycle settings and documented runtime limits
 - [ ] Host-specific performance baseline and full multi-container smoke run
 
-### Objective
+## Objective
 
 Improve project and code structure, establish predictable performance for the
 Docker application, and provide documentation for both Docker operators and
@@ -181,7 +181,7 @@ may be distributed as Docker images or installed from the Git repository; the
 Version 2 PyPI release is intentionally deferred until the refactoring and
 release checks are complete.
 
-### Documentation Audience and Structure
+## Documentation Audience and Structure
 
 Documentation must clearly distinguish between the people running the Docker
 application and the people developing or extending SerpScrap:
@@ -199,7 +199,7 @@ The Docker user guide remains in `docs/docker.rst`; developer-facing material
 is maintained separately. Examples must identify whether they target a
 released package, a pre-release Docker image, or the Git checkout.
 
-### Quality and Project-Structure Goals
+## Quality and Project-Structure Goals
 
 - Define ownership of API, application, persistence, provider, UI, MCP, and
   Docker integration boundaries.
@@ -212,7 +212,7 @@ released package, a pre-release Docker image, or the Git checkout.
 - Distinguish generated files, local data, logs, caches, secrets, and build
   artifacts clearly from source-controlled project files.
 
-### Performance and Reliability Goals
+## Performance and Reliability Goals
 
 - Measure startup time, memory use, request latency, job throughput, and
   polling behavior for the application, UI, and MCP containers.
@@ -225,7 +225,7 @@ released package, a pre-release Docker image, or the Git checkout.
 - Record a reproducible baseline and investigate regressions before optimizing
   provider-specific behavior.
 
-### Release and Version 2 Communication
+## Release and Version 2 Communication
 
 The README and Docker documentation must state prominently that Version 2 is
 being completely reworked. During this phase:
@@ -238,7 +238,7 @@ being completely reworked. During this phase:
 
 Examples must include an explicit image tag or Git revision for reproducibility.
 
-### Implementation Slices
+## Implementation Slices
 
 1. Audit repository and service boundaries; document ownership, supported entry
    points, and generated or deployment-local files.
@@ -253,7 +253,7 @@ Examples must include an explicit image tag or Git revision for reproducibility.
 6. Validate docs, tests, lint, typing, package, and Docker checks; record
    findings and remaining release work in both changelogs.
 
-### Test and Acceptance Strategy
+## Test and Acceptance Strategy
 
 - Documentation tests verify the Phase 9 plan, README release messaging,
   installation paths, and user/developer documentation links.
@@ -264,7 +264,7 @@ Examples must include an explicit image tag or Git revision for reproducibility.
 - A Docker smoke check covers startup, readiness, bounded lifecycle, persistent
   mounts, and clean shutdown.
 
-### Acceptance Criteria
+## Acceptance Criteria
 
 - Docker users and developers have explicitly separated documentation.
 - The README identifies Version 2 as a complete rework, explains deferred PyPI

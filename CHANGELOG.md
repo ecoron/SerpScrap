@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Updated stale registry and configuration expectations to include the new
+  plugins while keeping disabled MetaGer out of active defaults.
+
 - Fixed Ruff import-order and formatting violations in the API service,
   search-engine exports, and phase-plan tests.
 

@@ -1930,9 +1930,10 @@ before an engine is enabled.
 
 ### Prioritization
 
-1. **Wave A — activated public no-auth browser candidates:** MetaGer, GOOD,
-   xPrivo, Marginalia, and eTools.ch are included in the default configuration
-   and remain covered by fixture/parser contracts.
+1. **Wave A — activated public no-auth browser candidates:** GOOD, xPrivo,
+   Marginalia, and eTools.ch are included in the default configuration and
+   remain covered by fixture/parser contracts. MetaGer remains registered but
+   disabled until a public no-auth route is available.
 2. **Wave B — experimental public-instance candidate:** SearXNG, only through an explicitly
    configured and reviewed public or self-hosted instance.
 3. API-only, login-protected, subscription-only, pre-launch, and research-only

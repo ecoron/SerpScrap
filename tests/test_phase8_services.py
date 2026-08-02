@@ -91,9 +91,10 @@ def test_configuration_defaults_persist_and_explicit_search_selection_overrides(
     defaults = configuration.get()
     assert defaults["source"] == "defaults"
     assert defaults["configuration"]["search_engines"] == Config().get()["search_engines"]
-    assert {"metager", "good", "xprivo", "marginalia", "etools"}.issubset(
+    assert {"good", "xprivo", "marginalia", "etools"}.issubset(
         defaults["configuration"]["search_engines"]
     )
+    assert "metager" not in defaults["configuration"]["search_engines"]
 
     saved = configuration.save({"search_engines": ["bing", "google"]})
     assert saved["source"] == "persisted"
@@ -116,7 +117,7 @@ def test_configuration_defaults_persist_and_explicit_search_selection_overrides(
     assert configuration.get()["configuration"]["search_engines"] == ["bing", "google"]
     reset = configuration.reset()
     assert reset["source"] == "defaults"
-    assert len(reset["configuration"]["search_engines"]) == len(reset["engines"])
+    assert reset["configuration"]["search_engines"] == Config().get()["search_engines"]
 
 
 def test_api_configuration_endpoints_expose_registry_and_persist_selection(tmp_path):

@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Implemented Phase 10.1 MCP hardening: strict bounded tool schemas with
+  read-only/mutation annotations, versioned structured responses, argument
+  validation, bounded untrusted SERP content, paginated result/history reads,
+  JSON-RPC error classification, and non-loopback authentication safeguards.
+- Secured the Compose MCP deployment by requiring ``MCP_AUTH_TOKEN`` and
+  documented loopback-only unauthenticated local startup.
+
+- Added the Phase 10.1 MCP server best-practice hardening plan covering
+  agent-oriented tool schemas, versioned structured responses, asynchronous
+  polling and pagination, untrusted-content boundaries, least-privilege
+  configuration changes, transport security, and protocol verification.
+
 - Added MCP configuration examples for Claude Code, JSON-configured clients,
   the OpenAI Responses API, and the Anthropic Messages API, including local
   versus hosted transport and authentication caveats.

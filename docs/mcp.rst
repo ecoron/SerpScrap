@@ -21,12 +21,29 @@ local process, start the API first and then run:
 .. code-block:: bash
 
    $env:SERPSCRAP_API_URL = "http://127.0.0.1:8000/api/v1"  # PowerShell
+   $env:MCP_HOST = "127.0.0.1"
    python -m serpscrap.mcp_server
 
-   SERPSCRAP_API_URL=http://127.0.0.1:8000/api/v1 python -m serpscrap.mcp_server  # POSIX
+   SERPSCRAP_API_URL=http://127.0.0.1:8000/api/v1 MCP_HOST=127.0.0.1 python -m serpscrap.mcp_server  # POSIX
 
 The optional ``MCP_HOST`` and ``MCP_PORT`` variables change the bind address
 and port. ``GET /healthz`` returns ``{"status": "ok"}``.
+
+Security and trust boundary
+===========================
+
+The gateway treats SERP titles, snippets, URLs, and provider diagnostics as
+untrusted data. It bounds MCP output and never interprets returned content as
+instructions. ``MCP_MAX_OUTPUT_BYTES`` can lower the default 100,000-byte
+response limit.
+
+Loopback development may run without authentication. A non-loopback bind
+requires ``MCP_AUTH_TOKEN``; clients must send ``Authorization: Bearer
+<token>``. ``MCP_ALLOW_INSECURE_REMOTE=1`` is an explicit development escape
+hatch and must not be used for a hosted deployment. Use HTTPS and a secret
+injection mechanism outside the repository for remote access. Configuration
+mutation tools are separate from read tools and must be approved by the MCP
+client according to its permission model.
 
 Configurations for popular model clients
 ========================================
@@ -148,6 +165,11 @@ Call a tool by sending ``tools/call`` with ``params.name`` and
 Available tools
 ===============
 
+``tools/list`` exposes strict JSON schemas with bounded arguments and
+read-only/mutation annotations. Tool calls return both MCP text content and a
+``structuredContent`` envelope with ``schema_version`` ``1.0``. Search
+content remains inert data and is bounded before it leaves the gateway.
+
 ``start_search``
    Start a job. Arguments include ``query`` or ``queries`` and optional
    ``options`` such as ``search_engines``, ``country_code``, page count, and
@@ -155,7 +177,8 @@ Available tools
 ``get_search_status``
    Read status and partial results for a job using its ``id``.
 ``list_results``
-   Read normalized results, optionally filtered by ``run_id``.
+   Read normalized results, optionally filtered by ``run_id`` and bounded by
+   ``offset``/``limit`` pagination.
 ``list_search_history``
    List persisted search runs.
 ``analyze_history``
@@ -180,6 +203,8 @@ Example search call
    JSON
 
 Use the returned ID with ``get_search_status`` and then ``list_results``. MCP
-clients should poll with a bounded interval and stop on the terminal status.
-Only connect trusted clients to the gateway: the current gateway has no
-authentication layer and configuration tools change persisted state.
+clients should poll with a bounded interval, use the returned terminal state,
+and stop after a bounded number of attempts. Read tools are idempotent;
+configuration tools change persisted shared state and require explicit
+approval. Only connect trusted, authenticated clients to a non-loopback
+gateway.

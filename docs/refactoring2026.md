@@ -1976,6 +1976,145 @@ before an engine is enabled.
   plugin’s own identity.
 - SearXNG selection is instance-scoped and does not rotate public instances or
   bypass limiters/CAPTCHAs.
+
+# Refactoring Phase 10.1 - MCP Server Best-Practice Hardening
+
+## Objective
+
+Harden the SerpScrap MCP gateway for reliable agent use, predictable tool
+selection, safe configuration changes, and maintainable operation. The phase
+turns the current functional gateway into an explicit MCP product surface
+without changing the underlying search engine or normalized-result contracts.
+
+## Source-Derived Principles
+
+- Design tools for the agent: use precise names, concise descriptions,
+  actionable argument descriptions, explicit required fields, and examples
+  that make the intended workflow discoverable.
+- Return stable structured output alongside human-readable MCP text content.
+  Search results must expose a documented envelope, pagination metadata,
+  provenance, timestamps, and typed failure information without leaking
+  provider-internal or sensitive data.
+- Keep the tool surface narrow and composable. Separate starting a search,
+  observing a job, reading results, and changing configuration; do not add a
+  broad catch-all tool that combines reads and writes.
+- Enforce least privilege and explicit approval boundaries. Search and result
+  reads are read-only; configuration mutation is isolated, validated, audited,
+  and clearly described as a state-changing operation.
+- Treat untrusted search content as data, not instructions. Tool output,
+  snippets, titles, URLs, and fetched metadata must not be promoted to MCP
+  instructions or silently interpreted as executable input.
+- Make failures diagnosable and recoverable: distinguish validation,
+  unsupported engine, timeout, rate limit, block/consent, upstream, and
+  internal failures, while returning bounded retry guidance.
+- Keep transports and deployment assumptions explicit. Local HTTP use,
+  hosted HTTPS use, authentication, origin/trust boundaries, and health
+  checks must be documented and tested separately.
+
+## Target MCP Contract
+
+1. Publish complete `tools/list` schemas for all nine tools, including stable
+   names, descriptions, required/optional arguments, enums, bounds, and
+   read-only versus mutating annotations where supported by the gateway.
+2. Define versioned response envelopes for search start/status/results/history
+   and analytics. Preserve the current fields through a compatibility layer,
+   while adding `schema_version`, correlation/run identifiers, terminal state,
+   pagination, and typed error fields.
+3. Make asynchronous search behavior explicit: `start_search` returns a job
+   identifier and lifecycle state; `get_search_status` reports bounded
+   progress; `list_results` supports deterministic pagination and a clear
+   terminal/partial-result distinction.
+4. Add safe result provenance and content boundaries. Preserve canonical URLs,
+   contributing engines, ranks, timestamps, and query context; redact or
+   bound oversized snippets and diagnostic payloads.
+5. Add an authentication and trust-boundary contract for deployments. Local
+   development may remain explicit and opt-in, but non-local binding or hosted
+   transport must require documented authentication, HTTPS, allowed origins,
+   and safe configuration defaults.
+
+## Implementation Slices
+
+1. Freeze the current MCP behavior with protocol fixtures for `initialize`,
+   `tools/list`, successful calls, malformed arguments, unknown tools, partial
+   jobs, and configuration failures.
+2. Audit every tool description and JSON schema for agent-oriented wording,
+   strict validation, bounded strings/integers, explicit enums, and consistent
+   naming. Add read-only/mutation metadata where the selected MCP transport
+   supports it.
+3. Introduce typed, versioned MCP response models and serializers. Preserve
+   current client-visible text content while exposing stable structured data
+   for machine consumption.
+4. Refine the asynchronous search contract with deterministic polling,
+   pagination, partial-result semantics, terminal states, retry hints, and
+   correlation IDs. Ensure repeated reads are idempotent and bounded.
+5. Harden untrusted-content handling: keep snippets and fetched fields inert,
+   cap output size, validate URLs, avoid instruction-like rendering, and add
+   redaction tests for secrets, headers, cookies, proxy data, and diagnostics.
+6. Isolate configuration mutation behind explicit validation, safe defaults,
+   audit logging, and a deployment policy that prevents unauthenticated
+   remote writes. Add health/readiness and capability diagnostics without
+   exposing credentials or filesystem paths.
+7. Add transport/deployment tests for local HTTP, container health, rejected
+   unauthorized requests, HTTPS/remote configuration, and graceful shutdown;
+   keep external-provider tests opt-in and offline protocol tests deterministic.
+8. Update `docs/mcp.rst`, client examples, API/CLI diagnostics, operator
+   guidance, and the changelog. Document compatibility, schema versioning,
+   authentication, polling, pagination, and the security model.
+
+## Verification Strategy
+
+- Run offline JSON-RPC/MCP contract tests against sanitized fixtures; no
+  network, browser, database, or external MCP client is required for the core
+  suite.
+- Snapshot `tools/list` and response envelopes so accidental tool/schema drift
+  fails reviewably.
+- Test every argument boundary, unknown field policy, malformed request,
+  unknown tool, duplicate poll, missing job, partial result, and terminal
+  failure state.
+- Test that result content cannot change tool selection, configuration, or
+  execution policy and that sensitive values never appear in tool output or
+  logs.
+- Test read/write permission separation, authentication failures, trusted
+  origin policy, and non-local bind safeguards.
+- Run `pipenv run pytest`, Ruff, typing checks, documentation builds, and a
+  container health smoke test from the repository root.
+- Perform one opt-in client interoperability smoke test after the deterministic
+  suite passes; do not make hosted-provider access a required CI dependency.
+
+## Phase 10.1 Acceptance Criteria
+
+- `tools/list` exposes complete, strict, agent-oriented schemas for every
+  current SerpScrap MCP tool with stable naming and documented side effects.
+- Search start, status, and result retrieval have versioned, machine-readable
+  envelopes with correlation IDs, deterministic pagination, provenance, and
+  explicit partial/terminal failure semantics.
+- Search/result reads cannot mutate persisted configuration; configuration
+  writes are validated, auditable, protected by the deployment security
+  policy, and rejected when the trust boundary is unsafe.
+- Untrusted SERP content remains inert data, output sizes are bounded, and
+  secrets, cookies, headers, proxy details, and local paths are not exposed.
+- Local and hosted transport expectations, authentication, HTTPS, health
+  checks, polling, and compatibility behavior are documented and tested.
+- The complete offline test suite, lint/type checks, documentation build, and
+  container health smoke test pass without requiring external search providers.
+
+## Out of Scope
+
+- Replacing the existing search-engine registry, browser adapters, fusion
+  algorithm, or normalized result schema.
+- Adding new search providers or bypassing provider rate limits, CAPTCHAs,
+  consent, authentication, or robots/policy controls.
+- Building a hosted SaaS control plane or selecting a specific MCP client as
+  the sole supported integration.
+
+## Source Basis
+
+The plan is derived from the observed search results and their linked guidance,
+including the MCP specification's security guidance, the MCP client best
+practices, Microsoft's MCP-for-Beginners material, Docker's server guidance,
+and the cited production-oriented MCP best-practice articles. The source
+matrix remains external research input; implementation decisions must still be
+validated against the repository's current gateway and transport behavior.
 - SearXNG selection is instance-scoped and does not rotate public instances or
   bypass limiters/CAPTCHAs.
 - Existing eleven-engine behavior and the complete offline suite remain green.

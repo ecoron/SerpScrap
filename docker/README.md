@@ -11,6 +11,16 @@ All images use the repository root as their build context so that the Python
 package, lock files, and UI assets remain available without duplicating source
 files.
 
+Set a secret token before starting the stack because the MCP gateway is
+published on port 8001:
+
+```powershell
+$env:MCP_AUTH_TOKEN = "replace-with-a-secret"
+```
+
+Never commit the token or expose the gateway without HTTPS and an authenticated
+trusted client.
+
 Start the complete stack from the repository root:
 
 ```bash

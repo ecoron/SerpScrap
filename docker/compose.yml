@@ -62,6 +62,8 @@ services:
     restart: unless-stopped
     environment:
       SERPSCRAP_API_URL: http://serpscrap-app:8000/api/v1
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:?Set MCP_AUTH_TOKEN for the MCP gateway}
+      MCP_MAX_OUTPUT_BYTES: ${MCP_MAX_OUTPUT_BYTES:-100000}
     depends_on: [serpscrap-app]
     ports: ["8001:8001"]
     networks: [serpscrap]

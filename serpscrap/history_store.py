@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import DateTime, Integer, String, Text, create_engine, select
+from sqlalchemy import DateTime, Integer, String, Text, create_engine, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from serpscrap.models import SearchReport
@@ -83,6 +83,21 @@ class SearchHistoryStore:
         self.engine = create_engine(self.url, future=True, connect_args=connect_args)
         _Base.metadata.create_all(self.engine)
         self.sessions = sessionmaker(self.engine, expire_on_commit=False)
+
+    def healthcheck(self) -> bool:
+        """Return whether the configured persistence backend accepts queries."""
+
+        try:
+            with self.engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+        except Exception:
+            return False
+        return True
+
+    def close(self) -> None:
+        """Release pooled database connections during application shutdown."""
+
+        self.engine.dispose()
 
     def create_run(self, run_id: str, query: str, options: dict[str, Any]) -> None:
         with self.sessions.begin() as session:
@@ -274,16 +289,28 @@ class SearchHistoryStore:
             return self._failure_dicts(session, run_id)
 
     def list_results(
-        self, run_id: str | None = None, engine: str | None = None, limit: int = 100, result_kind: str | None = None
+        self,
+        run_id: str | None = None,
+        engine: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        result_kind: str | None = None,
     ) -> list[dict[str, Any]]:
         with self.sessions() as session:
-            statement = select(SearchResult).order_by(SearchResult.id).limit(limit)
+            statement = select(SearchResult).order_by(SearchResult.id)
             if run_id:
                 statement = statement.where(SearchResult.run_id == run_id)
             if engine:
                 statement = statement.where(SearchResult.search_engine == engine)
+            # Result kind is stored inside the normalized JSON payload for
+            # SQLite/PostgreSQL parity. Keep the fallback scan bounded while
+            # applying that filter in Python.
+            scan_limit = 10_000 if result_kind else max(1, offset + limit)
+            statement = statement.limit(scan_limit)
             rows = [json.loads(row.payload_json) for row in session.scalars(statement)]
-            return [row for row in rows if not result_kind or row.get("result_kind", "organic") == result_kind]
+            if result_kind:
+                rows = [row for row in rows if row.get("result_kind", "organic") == result_kind]
+            return rows[max(0, offset) : max(0, offset) + max(0, limit)]
 
     def analytics(self, query: str | None = None) -> dict[str, Any]:
         runs = self.list_runs(limit=10000, query=query)

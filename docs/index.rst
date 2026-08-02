@@ -67,6 +67,7 @@ Contents
    results
    configuration
    docker
+   development
    examples
    ressources
    searchengines

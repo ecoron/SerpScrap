@@ -48,18 +48,25 @@ class ApiHandler(BaseHTTPRequestHandler):
         if path == "/healthz":
             return self._send(HTTPStatus.OK, {"status": "ok"})
         if path == "/readyz":
-            return self._send(HTTPStatus.OK, {"status": "ready"})
+            readiness = self.service.readiness()
+            return self._send(
+                HTTPStatus.OK if readiness["status"] == "ready" else HTTPStatus.SERVICE_UNAVAILABLE,
+                readiness,
+            )
         if path == "/api/v1/engines":
             return self._send(HTTPStatus.OK, {"engines": self.service.configuration.engines()})
         if path == "/api/v1/configuration":
             return self._send(HTTPStatus.OK, self.service.configuration.get())
         if path == "/api/v1/results":
+            limit = min(max(int((query.get("limit") or [100])[0]), 0), 1000)
+            offset = max(int((query.get("offset") or [0])[0]), 0)
             return self._send(
                 HTTPStatus.OK,
                 {"results": self.service.store.list_results(
                     run_id=(query.get("run_id") or [None])[0],
                     engine=(query.get("engine") or [None])[0],
-                    limit=min(int((query.get("limit") or [100])[0]), 1000),
+                    limit=limit,
+                    offset=offset,
                     result_kind=(query.get("kind") or [None])[0],
                 )},
             )
@@ -99,7 +106,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             request = SearchRequest.create(queries, options)
             run_id = self.service.submit(request, configuration)
         except Exception as exc:
-            return self._send(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+            status = HTTPStatus.SERVICE_UNAVAILABLE if "capacity" in str(exc) or "shutting down" in str(exc) else HTTPStatus.BAD_REQUEST
+            return self._send(status, {"error": str(exc)})
         return self._send(
             HTTPStatus.ACCEPTED,
             {
@@ -141,7 +149,14 @@ def serve(host: str | None = None, port: int | None = None, service: SearchJobSe
         (host or os.getenv("API_HOST", "0.0.0.0"), port or int(os.getenv("API_PORT", "8000"))),
         handler,
     )
-    server.serve_forever()
+    server.daemon_threads = True
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+        configured_service.close()
 
 
 if __name__ == "__main__":

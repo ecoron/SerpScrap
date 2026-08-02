@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import threading
 import uuid
+from concurrent.futures import Future, ThreadPoolExecutor
+import os
 from typing import Any
 
 from serpscrap.application import SearchApplication
@@ -17,21 +19,74 @@ class SearchJobService:
         self,
         application: SearchApplication | None = None,
         store: SearchHistoryStore | None = None,
+        max_active_jobs: int | None = None,
+        max_queued_jobs: int | None = None,
     ) -> None:
         self.application = application or SearchApplication()
         self.store = store or SearchHistoryStore()
         self.configuration = SearchConfigurationService(self.store)
+        self.max_active_jobs = max_active_jobs or max(1, min(int(os.getenv("SERPSCRAP_MAX_ACTIVE_JOBS", "4")), 32))
+        self.max_queued_jobs = max_queued_jobs or max(
+            self.max_active_jobs,
+            min(int(os.getenv("SERPSCRAP_MAX_QUEUED_JOBS", "16")), 128),
+        )
+        self._executor = ThreadPoolExecutor(max_workers=self.max_active_jobs, thread_name_prefix="serpscrap-job")
+        self._futures: set[Future[None]] = set()
+        self._lock = threading.Lock()
+        self._closed = False
 
     def submit(self, request: SearchRequest, configuration: dict[str, Any] | None = None) -> str:
         run_id = uuid.uuid4().hex
+        with self._lock:
+            if self._closed:
+                raise RuntimeError("search service is shutting down")
+            if len(self._futures) >= self.max_queued_jobs:
+                raise RuntimeError("search service job capacity reached")
         options = request.to_config()
         if configuration:
             options["configuration_source"] = configuration["source"]
             options["configuration_revision"] = configuration["revision"]
         self.store.create_run(run_id, ", ".join(request.queries), options)
-        thread = threading.Thread(target=self._run, args=(run_id, request), daemon=True)
-        thread.start()
+        with self._lock:
+            if self._closed or len(self._futures) >= self.max_queued_jobs:
+                future = None
+            else:
+                future = self._executor.submit(self._run, run_id, request)
+                self._futures.add(future)
+        if future is None:
+            self.store.delete_run(run_id)
+            raise RuntimeError("search service is shutting down or at capacity")
+        future.add_done_callback(self._forget_future)
         return run_id
+
+    def _forget_future(self, future: Future[None]) -> None:
+        with self._lock:
+            self._futures.discard(future)
+
+    def readiness(self) -> dict[str, Any]:
+        """Return a bounded, JSON-safe readiness snapshot."""
+
+        with self._lock:
+            accepting = not self._closed
+            pending = len(self._futures)
+        database = self.store.healthcheck()
+        return {
+            "status": "ready" if accepting and database else "not_ready",
+            "database": "ok" if database else "unavailable",
+            "accepting_jobs": accepting,
+            "pending_jobs": pending,
+            "max_queued_jobs": self.max_queued_jobs,
+        }
+
+    def close(self, wait: bool = True) -> None:
+        """Stop accepting jobs and release worker/database resources."""
+
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+        self._executor.shutdown(wait=wait, cancel_futures=not wait)
+        self.store.close()
 
     def _run(self, run_id: str, request: SearchRequest) -> None:
         self.store.mark_running(run_id)

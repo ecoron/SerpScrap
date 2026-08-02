@@ -358,3 +358,17 @@ This file records the implementation work performed against
 - Added validated per-engine worker ceilings, ranking settings, provider capability checks, and cache identity dimensions for country and plugin version.
 - Made cache writes atomic and added deterministic fusion/report metadata containing the immutable snapshot ID, normalized weights, fallback share, provider families, and plugin metadata.
 - Added Phase 5 plugin status documentation and offline configuration/cache regression tests while retaining Google-only compatibility.
+# Phase 9 - Project quality, performance, and documentation structure
+
+- Added the Phase 9 implementation plan to `refactoring2026.md`.
+- Separated Docker operator guidance from developer/contributor guidance.
+- Documented the Version 2 rework, Docker/Git pre-release paths, and deferred
+  PyPI availability.
+
+# Phase 9 implementation
+
+- Added bounded job execution and queue capacity controls to the shared API
+  service.
+- Added persistence health checks, readiness responses, graceful shutdown, and
+  bounded result pagination.
+- Added deterministic service tests and Docker operator lifecycle guidance.

@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Implemented Phase 9 service hardening: bounded API job capacity, database
+  readiness checks, graceful service shutdown, bounded result pagination, and
+  deterministic regression tests.
+- Expanded Docker operator documentation with health/readiness, lifecycle,
+  queue-capacity, and pagination guidance.
+- Added the Phase 9 plan for project/code quality, bounded performance,
+  separate Docker-user and developer documentation, and the Version 2
+  pre-release/PyPI communication model.
+- Reworked the project README as a public landing page and added a dedicated
+  developer guide alongside the Docker operator guide.
 - Resolved CI Ruff import-block failures for the Phase 8 service, MCP,
   normalization, and Docker-layout test modules.
 - Fixed the Phase 8.2 failure-persistence test fixture to provide the complete

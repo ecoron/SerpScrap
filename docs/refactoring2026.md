@@ -1,3 +1,126 @@
+# Refactoring Phase 9 - Project Quality, Performance, and Documentation Structure
+
+### Status
+
+Implementation completed for the service hardening, documentation split, and
+deterministic quality checks described below. The remaining release decision
+and broader performance profiling are still follow-up work. This phase does
+not make Version 2 available on PyPI yet.
+
+### Implementation Status
+
+- [x] Separate Docker operator and developer documentation
+- [x] Bounded API job workers and pending-job capacity
+- [x] Database-backed readiness and graceful service shutdown
+- [x] Bounded result pagination and deterministic service regression tests
+- [x] Compose lifecycle settings and documented runtime limits
+- [ ] Host-specific performance baseline and full multi-container smoke run
+
+### Objective
+
+Improve project and code structure, establish predictable performance for the
+Docker application, and provide documentation for both Docker operators and
+developers. Version 2 is a complete reworking of SerpScrap. Pre-release builds
+may be distributed as Docker images or installed from the Git repository; the
+Version 2 PyPI release is intentionally deferred until the refactoring and
+release checks are complete.
+
+### Documentation Audience and Structure
+
+Documentation must clearly distinguish between the people running the Docker
+application and the people developing or extending SerpScrap:
+
+- **Docker application users** need task-oriented guidance for image selection,
+  Compose startup, configuration, persistent mounts, health checks, upgrades,
+  backups, troubleshooting, and safe shutdown.
+- **Developers and contributors** need a separate guide for repository layout,
+  local Pipenv setup, service boundaries, coding and testing conventions,
+  performance profiling, documentation builds, and contribution workflow.
+- The project README remains the public entry point and links to the relevant
+  user and developer documentation without duplicating operational details.
+
+The Docker user guide remains in `docs/docker.rst`; developer-facing material
+is maintained separately. Examples must identify whether they target a
+released package, a pre-release Docker image, or the Git checkout.
+
+### Quality and Project-Structure Goals
+
+- Define ownership of API, application, persistence, provider, UI, MCP, and
+  Docker integration boundaries.
+- Remove duplicated configuration, lifecycle, and error-handling paths where
+  they can be replaced by shared typed services and contracts.
+- Keep public APIs, CLI behavior, normalized result models, and Docker service
+  contracts stable unless a deliberate Version 2 change is documented.
+- Keep formatting, linting, typing, deterministic tests, documentation builds,
+  and package builds reproducible in Pipenv and CI workflows.
+- Distinguish generated files, local data, logs, caches, secrets, and build
+  artifacts clearly from source-controlled project files.
+
+### Performance and Reliability Goals
+
+- Measure startup time, memory use, request latency, job throughput, and
+  polling behavior for the application, UI, and MCP containers.
+- Bound browser concurrency, polling backoff, result pagination, cache growth,
+  and diagnostic artifact retention.
+- Avoid unnecessary browser creation, repeated configuration loading, duplicate
+  serialization, and unbounded in-memory result accumulation.
+- Add health/readiness and graceful-shutdown checks for normal and degraded
+  database conditions while retaining useful partial-success behavior.
+- Record a reproducible baseline and investigate regressions before optimizing
+  provider-specific behavior.
+
+### Release and Version 2 Communication
+
+The README and Docker documentation must state prominently that Version 2 is
+being completely reworked. During this phase:
+
+- stable users should use the released PyPI package where applicable;
+- Version 2 pre-releases are offered through published Docker image tags;
+- developers may install Version 2 directly from the Git repository in an
+  isolated Pipenv environment;
+- Version 2 is not presented as a PyPI release until a later release step.
+
+Examples must include an explicit image tag or Git revision for reproducibility.
+
+### Implementation Slices
+
+1. Audit repository and service boundaries; document ownership, supported entry
+   points, and generated or deployment-local files.
+2. Establish developer documentation and a focused Docker user workflow.
+3. Add deterministic performance baselines and targeted tests for startup,
+   bounded concurrency, pagination, polling backoff, health, and shutdown.
+4. Simplify duplicated project/configuration paths and align CI, Pipenv,
+   packaging, and documentation-build instructions.
+5. Rewrite the README as a concise public landing page with installation
+   choices, examples, documentation links, project status, and the Version 2
+   release note.
+6. Validate docs, tests, lint, typing, package, and Docker checks; record
+   findings and remaining release work in both changelogs.
+
+### Test and Acceptance Strategy
+
+- Documentation tests verify the Phase 9 plan, README release messaging,
+  installation paths, and user/developer documentation links.
+- Existing unit, service, API, UI, MCP, Docker-layout, lint, type, and Sphinx
+  warning-as-error checks remain green.
+- Performance checks are deterministic and local; live provider searches are
+  opt-in and are not required for CI acceptance.
+- A Docker smoke check covers startup, readiness, bounded lifecycle, persistent
+  mounts, and clean shutdown.
+
+### Acceptance Criteria
+
+- Docker users and developers have explicitly separated documentation.
+- The README identifies Version 2 as a complete rework, explains deferred PyPI
+  availability, and documents Docker/Git pre-release paths.
+- Quality and performance baselines are reproducible and have a regression
+  test or diagnostic path.
+- CI and local Pipenv workflows validate code, docs, packaging, and Docker
+  layout without network-dependent provider searches.
+- The plan, implementation status, test evidence, and release decisions are
+  recorded in `docs/refactoring2026.md`, `CHANGELOG.md`, and
+  `docs/changelog-refactoring2026.md`.
+
 # SerpScrap Refactoring Plan 2026
 
 ## Refactoring Phase 8 - Multicontainer Application and Search Archive Analysis

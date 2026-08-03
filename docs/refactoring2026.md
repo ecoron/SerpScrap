@@ -1,3 +1,7 @@
+```{eval-rst}
+:orphan:
+```
+
 # Refactoring Phase 10.1 - Single-Image Docker Setup
 
 ## Status

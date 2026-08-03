@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Removed the internal ``refactoring2026.md`` planning document from the
+  public documentation navigation and updated the URL-scraping example to use
+  the stable SerpScrap documentation site.
+
+- Standardized the example search terms around privacy-friendly search-engine
+  research and renamed the related-results output file accordingly.
+
+- Removed the obsolete ``docs/ressources.rst`` page from the Sphinx navigation.
+
 - Split the UI into separate Flask/Jinja pages for overview, search, history,
   and configuration; added a persistent global header search and collapsible
   navigation with saved client preference.

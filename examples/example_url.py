@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import serpscrap
 
-url = 'https://en.wikipedia.org/wiki/Special:Random'
+url = 'https://serpscrap.readthedocs.io/en/latest/'
 
 config = serpscrap.Config()
 

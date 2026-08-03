@@ -43,19 +43,12 @@ Choose the interface that matches your workflow:
    docker
    mcp
    searchengines
-   ressources
 
 .. toctree::
    :caption: Developer guide
    :maxdepth: 3
 
    development
-
-.. toctree::
-   :caption: Project history
-   :maxdepth: 2
-
-   refactoring2026
 
 Version and support
 ===================

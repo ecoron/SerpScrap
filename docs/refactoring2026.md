@@ -73,6 +73,233 @@ workspace for starting searches, monitoring progress, inspecting results, and
 analyzing history. The UI remains a client of the shared API and must not
 duplicate scraping, persistence, or business logic.
 
+## Rough Product and Interaction Concept
+
+The UI is a dynamic search and analysis workspace, not a collection of static
+pages. Its primary value is the continuous transition from a search request to
+an explorable, comparable, and reusable data set. The browser application
+maintains client state for the selected run, active filters, view mode, and
+analysis context, while the API remains the source of truth for jobs and
+persisted results.
+
+### Application Shell
+
+Use a responsive application shell with a compact top bar, persistent primary
+navigation, and a contextual workspace area:
+
+- **Overview** shows recent searches, running jobs, result volume, failures,
+  and quick actions for a new search.
+- **Search workspace** combines query/options, live progress, current results,
+  provider status, and a details drawer without requiring page reloads.
+- **History and analysis** provides searchable runs, saved context, filters,
+  comparisons, trends, engine distribution, and result exploration.
+- **Configuration** manages default engines, country, search type, page size,
+  and runtime limits with clear revision and save feedback.
+
+The active run and analysis selection should remain visible in the shell. Deep
+links such as ``?run=<id>`` and ``?view=analysis`` should restore a useful
+workspace after reload or sharing, subject to the API's access policy.
+
+### Dynamic Data Model in the Frontend
+
+Use a small, explicit client state model with separate concerns:
+
+1. **Server state**: configuration, run summaries, progress, results,
+   failures, and analytics loaded from the versioned API.
+2. **View state**: selected run, selected result, filters, sort, pagination,
+   chart mode, comparison runs, and open panels.
+3. **Transient state**: loading, refreshing, submitting, deleting, retrying,
+   and notification messages.
+
+Refresh active jobs with bounded polling and backoff. Refresh only the panels
+whose data changed, preserve the user's filters and scroll position, and stop
+polling when a run reaches a terminal state. Optimistic UI may be used for
+local selections and filters, but destructive operations require confirmation
+and server acknowledgement.
+
+### Search and Result Exploration
+
+The search workspace should support the common workflow end to end:
+
+- query input with validation, multiple queries where supported, engine
+  selection, country, search type, page count, and result-page size;
+- a clear submit action plus a visible request summary before execution;
+- live job progress with engine, completed/total work, elapsed time, ETA,
+  correlation ID, and partial-result availability;
+- result cards or a dense table view with title, snippet, canonical URL,
+  result type, relevance, rank, contributing engines, and timestamp;
+- client-side view filters combined with server-side engine, run, kind,
+  pagination, and query filters;
+- result detail drawer with provenance, raw-safe metadata, failure context,
+  copy/open actions, and bounded content;
+- grouping by canonical destination URL, comparison of engines, sorting by
+  relevance/time/engine, and optional export/share actions when supported by
+  the API.
+
+Images, news, shopping, and video results should use typed visual variants,
+not one generic table. Missing thumbnails, malformed URLs, consent-required
+states, blocked providers, and partial success must each have an explicit
+non-destructive presentation.
+
+### History and Analysis Workspace
+
+History is an interactive analysis surface. It should provide:
+
+- searchable and filterable run list with status, query, date, result count,
+  failures, selected engines, and duration;
+- multi-select of runs for side-by-side comparison of result overlap, engine
+  coverage, success/failure rates, and changes over time;
+- summary cards for total searches, results, failures, active providers, and
+  last activity;
+- lightweight charts for searches by time, results by engine, status mix,
+  and top domains, with accessible tabular alternatives;
+- drill-down from every chart or summary into the corresponding filtered
+  result/run set;
+- safe deletion of one run or the archive with clear scope, confirmation,
+  completion feedback, and refresh of all affected panels.
+
+The first concept iteration should favor explainable metrics and fast
+filtering over a complex BI system. Analytics must be derived from the API's
+normalized data and must not expose cookies, raw diagnostics, credentials, or
+unbounded provider content.
+
+### Visual and Usability Direction
+
+The visual system should feel like a modern research console: calm neutral
+surfaces, one strong accent color, high-contrast status colors, generous
+spacing, restrained borders, clear typography, and purposeful data density.
+Use cards for summaries and actions, tables for scanning, drawers for detail,
+and charts only where they reveal a meaningful trend. Every status has an icon
+or label in addition to color. Responsive layouts collapse into stacked panels
+on small screens, retain primary actions, and keep result reading comfortable.
+
+Accessibility is part of the structure: semantic landmarks, keyboard-first
+navigation, visible focus, labelled controls, logical heading order, live
+regions for progress, reduced-motion support, contrast checks, and accessible
+table/chart alternatives are required from the first implementation slice.
+
+### Frontend Technical Setup
+
+Use Flask as the UI delivery layer and Jinja as the server-side template
+engine. Flask should serve the application shell and static assets while the
+existing versioned API remains the source of truth for searches, results,
+history, and analytics. The UI Flask app must not reimplement scraping or
+persistence logic. It may provide page routes, safe API proxying if needed,
+deep-link handling, and template context such as the active navigation item.
+
+Use Jinja inheritance and macros as the template foundation:
+
+```text
+ui/
+  app.py
+  templates/
+    base.html
+    layouts/app.html
+    pages/overview.html
+    pages/search.html
+    pages/history.html
+    pages/configuration.html
+    components/
+      navigation.html
+      status_badge.html
+      result_card.html
+      result_table.html
+      empty_state.html
+      pagination.html
+      chart.html
+    macros/
+      forms.html
+      tables.html
+      accessibility.html
+  static/
+    css/
+      tokens.css
+      base.css
+      layout.css
+      components.css
+      utilities.css
+      pages.css
+    js/
+      app.js
+      api-client.js
+      state-store.js
+      polling.js
+      notifications.js
+      charts.js
+      views/
+        search-workspace.js
+        results.js
+        history.js
+        configuration.js
+```
+
+`base.html` owns document metadata and asset loading; `layouts/app.html`
+owns the shell; pages compose reusable components; macros render repeated
+forms, tables, labels, and status elements. Keep business decisions in Python
+or JavaScript modules, not in complex template expressions. This follows
+Jinja's documented inheritance, include, and macro model.
+
+For the visual starting point, evaluate the static HTML/CSS version of
+**Tabler** first: it is an open-source, Bootstrap-based, responsive dashboard
+kit with cards, tables, forms, empty states, progress, tabs, toasts, and chart
+integration. It offers the right information-dense research-console language
+without forcing SerpScrap into React or Vue. **CoreUI** remains the fallback
+if its component coverage or maintenance better fits the implementation. The
+selected assets and license must be pinned and documented; avoid copying a
+whole template when only its layout and component patterns are needed.
+
+Keep CSS and JavaScript modular and locally served. CSS custom properties in
+`tokens.css` define colors, spacing, typography, radii, focus, and status
+semantics; component and page files consume those tokens instead of adding
+one-off inline styles. JavaScript modules should separately own API calls,
+state, bounded polling, rendering, filtering, charts, and notifications. No
+large inline script should remain in a page template. A small build step is
+optional, but generated assets must be reproducible, dependency-pinned, and
+covered by CI; the first increment may use native ES modules and a simple
+static asset manifest.
+
+The existing static ``http.server`` UI is therefore a temporary compatibility
+state. Phase 10.2 should replace it with a dedicated Flask UI process while
+continuing to use the single Phase-10.1 image and the shared API contract.
+The final Compose service must start that Flask application inside the Docker
+container, bind it to ``0.0.0.0`` on the configured UI port, and expose a
+container-local health endpoint or rendered-shell check. Running the Flask UI
+only on the host is not an accepted deployment mode.
+
+The API contract should be extended only where the concept needs capabilities
+not currently available, such as richer event streams, total counts for
+pagination, comparison endpoints, domain aggregates, or export jobs. Each
+extension needs typed response examples, bounded parameters, deterministic
+tests, and documentation before the UI depends on it.
+
+### Conceptual Delivery Order
+
+1. Establish the shell, design tokens, client state model, API adapter, and
+   reusable loading/error/empty/status components.
+2. Build the dynamic search workspace with live progress, partial results,
+   typed result views, filtering, pagination, and details.
+3. Build history search, run selection, deletion safeguards, and analysis
+   summary cards with drill-down.
+4. Add comparison, charts, exports/deep links, responsive behavior, and the
+   accessibility/visual regression gate.
+5. Reconcile any API gaps, update user/developer documentation, and record
+   each delivered slice in `CHANGELOG.md`.
+
+## Research-Based Template Decision
+
+The current recommendation is **Flask + Jinja + Tabler-inspired static
+components + native ES modules**. Flask and Jinja provide the server-rendered
+shell, inheritance, macros, and deep-linkable pages; JavaScript provides the
+dynamic data interaction; Tabler supplies a visual vocabulary for a modern
+dashboard. CoreUI is retained as a comparison option during the visual
+prototype, not as an additional framework commitment.
+
+The decision is based on the official [Flask Blueprint
+documentation](https://flask.palletsprojects.com/en/stable/blueprints/), the
+[Jinja template designer documentation](https://jinja.palletsprojects.com/en/stable/templates/),
+[Tabler documentation](https://docs.tabler.io/), and [CoreUI's open-source
+Bootstrap template overview](https://coreui.io/product/free-bootstrap-admin-template/).
+
 ## Implementation Slices
 
 1. Inventory current screens and flows; define user journeys, responsive
@@ -99,6 +326,8 @@ duplicate scraping, persistence, or business logic.
 - Keyboard, focus, labels, contrast, and reduced-motion checks pass for the
   supported UI flows.
 - UI tests and the documented local smoke test pass without external providers.
+- Compose starts the Flask/Jinja UI inside the project container, serves the
+  configured shell/static assets, and passes its container healthcheck.
 - Current UI behavior, setup, and screenshots/documentation match the code and
   are recorded in `CHANGELOG.md`.
 

@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added the Phase 10.2 rough UI product concept for a dynamic search and
+  analysis workspace, including application shell, client state model, live
+  result exploration, history analysis, visual direction, frontend setup, and
+  staged delivery order.
+- Added the Phase 10.2 template decision: Flask/Jinja for the UI shell and
+  template inheritance, modular CSS/ES modules for interaction, and a
+  Tabler-inspired static dashboard component system with CoreUI as fallback.
+- Clarified that the final Flask/Jinja UI must run inside the Docker Compose
+  project container on the configured UI port with a container healthcheck;
+  host-only UI execution is not an accepted deployment mode.
+
 - Implemented Refactoring Phase 10.1 with one shared `docker/Dockerfile` for
   the API, UI, and MCP services; removed the three service-specific
   Dockerfiles and aligned Compose, CI, tests, and Docker documentation.

@@ -18,8 +18,8 @@ def test_docker_uses_one_project_dockerfile_and_shared_image():
     assert "context: .." in compose
     assert compose.count("image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}") == 3
     assert compose.count("dockerfile: docker/Dockerfile") == 1
-    assert "entrypoint: [\"python\"]" in compose
-    assert "--directory\", \"/app/ui" in compose
+    assert 'entrypoint: ["python", "-m", "ui.app"]' in compose
+    assert "http://localhost:8080/healthz" in compose
     assert "../data/postgres:/var/lib/postgresql/data" in compose
     assert "../logs:/var/log/serpscrap" in compose
 

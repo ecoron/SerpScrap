@@ -32,18 +32,21 @@ def test_history_can_delete_one_run_or_all_runs(tmp_path):
 
 
 def test_ui_contract_contains_grouped_engine_and_delete_controls():
-    document = (Path(__file__).parents[1] / "ui" / "index.html").read_text(encoding="utf-8")
-    assert "groupedResults" in document
-    assert "group.engines" in document
-    assert "delete-current" in document
-    assert "delete-all" in document
-    assert "progress-card" in document
-    assert "progress-eta" in document
-    assert "overflow-y: auto" in document
-    assert "overflow: visible" in document
-    assert "history-table" in document
-    assert "nth-child(1)" in document
-    assert "delete-historical').disabled = !historicalRunId" in document
+    root = Path(__file__).parents[1] / "ui"
+    template = (root / "templates" / "pages" / "overview.html").read_text(encoding="utf-8")
+    javascript = (root / "static" / "js" / "views" / "results.js").read_text(encoding="utf-8")
+    app = (root / "static" / "js" / "app.js").read_text(encoding="utf-8")
+    css = (root / "static" / "css" / "layout.css").read_text(encoding="utf-8")
+    assert "groupResults" in javascript
+    assert "group.engines" in javascript
+    assert "delete-current" in template
+    assert "delete-all" in template
+    assert "progress-card" in template
+    assert "progress-eta" in template
+    assert "renderResults" in app
+    assert "overflow-x: auto" in (root / "static" / "css" / "components.css").read_text(encoding="utf-8")
+    assert "grid-template-columns" in css
+    assert "delete-historical" in template
 
 
 def test_history_exposes_progress_state(tmp_path):

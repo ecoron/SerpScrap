@@ -27,9 +27,14 @@ From the repository root:
    mkdir -p data/postgres data/cache data/diagnostics data/exports logs
    docker compose -f docker/compose.yml up --build
 
-Open the UI at ``http://localhost:8080``. The API is at
+The Flask/Jinja UI runs inside ``serpscrap-ui`` at ``http://localhost:8080``.
+The API is at
 ``http://localhost:8000/api/v1`` and the MCP gateway is at
 ``http://localhost:8001``.
+
+The UI health endpoint is ``http://localhost:8080/healthz``. The shared image
+contains the Flask UI module, Jinja templates, static assets, and API client;
+Compose starts the UI with ``python -m ui.app``.
 
 To build and run only the CLI image:
 

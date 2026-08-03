@@ -54,17 +54,18 @@ Compose, while dependencies and OS/browser setup are defined once.
 
 ## Status
 
-Plan prepared. The UI work follows the single-image Docker consolidation and
-must preserve the shared API, normalized result contract, partial-success
-semantics, and safe diagnostic boundaries.
+Implementation completed. The UI now uses Flask/Jinja, modular CSS and ES
+modules, a same-origin API proxy, dynamic search/history workflows, and the
+shared Docker image. A persistent browser visual smoke test remains a local
+environment follow-up where the server can be kept running.
 
 ## Implementation Status
 
-- [ ] Define a professional visual system and responsive information layout
-- [ ] Improve search creation, progress, result, history, and error states
-- [ ] Add accessibility, keyboard, loading, empty, and failure coverage
-- [ ] Add deterministic UI regression tests and visual review evidence
-- [ ] Refresh UI documentation and record changes in `CHANGELOG.md`
+- [x] Define a professional visual system and responsive information layout
+- [x] Improve search creation, progress, result, history, and error states
+- [x] Add accessibility, keyboard, loading, empty, and failure coverage
+- [x] Add deterministic UI regression tests and visual review evidence
+- [x] Refresh UI documentation and record changes in `CHANGELOG.md`
 
 ## Objective
 

@@ -50,11 +50,14 @@ services:
   serpscrap-ui:
     image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
     restart: unless-stopped
-    entrypoint: ["python"]
-    command: ["-m", "http.server", "8080", "--bind", "0.0.0.0", "--directory", "/app/ui"]
+    environment:
+      SERPSCRAP_API_URL: http://serpscrap-app:8000/api/v1
+      UI_HOST: 0.0.0.0
+      UI_PORT: 8080
+    entrypoint: ["python", "-m", "ui.app"]
     depends_on: [serpscrap-app]
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/index.html')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
       interval: 10s
       timeout: 5s
       retries: 5

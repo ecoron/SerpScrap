@@ -15,6 +15,8 @@ Repository layout
 * ``tests/`` contains deterministic unit, service, parser, fixture, and layout
   tests. Browser/network checks are explicitly marked and opt-in.
 * ``docker/`` contains one shared runtime Dockerfile and the Compose file.
+* ``ui/`` contains the Flask application, Jinja templates, modular CSS, and
+  browser ES modules for the dynamic UI.
 * ``docs/`` contains the user and developer documentation.
 
 Local environment

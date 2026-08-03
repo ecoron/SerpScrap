@@ -5,8 +5,9 @@ The Docker-specific files are grouped in this directory:
 - `compose.yml` defines the four-container deployment.
 - `Dockerfile` builds the single browser-enabled SerpScrap runtime image.
 
-Compose reuses that image for the application, UI, and MCP services. Runtime
-commands, ports, health checks, and mounts remain service-specific.
+Compose reuses that image for the application, UI, and MCP services. The UI
+service starts `python -m ui.app`, while runtime commands, ports, health
+checks, and mounts remain service-specific.
 
 Set a secret token before starting the stack because the MCP gateway is
 published on port 8001:

@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Implemented Refactoring Phase 10.2: replaced the static UI with a Flask/Jinja
+  application running inside the Compose UI container, using a same-origin API
+  proxy and `/healthz` endpoint.
+- Added modular Jinja templates, design-token CSS layers, responsive layouts,
+  native ES modules for API/state/polling/views, dynamic search progress,
+  result grouping, history filtering, analytics metrics, configuration, and
+  deletion safeguards.
+- Added Flask runtime dependencies, UI server/asset tests, and updated Docker,
+  development, and operator documentation for `python -m ui.app`.
+
 - Added the Phase 10.2 rough UI product concept for a dynamic search and
   analysis workspace, including application shell, client state model, live
   result exploration, history analysis, visual direction, frontend setup, and

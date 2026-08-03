@@ -29,6 +29,8 @@ def test_phase102_dynamic_ui_concept_is_documented():
         "tokens.css",
         "api-client.js",
         "Tabler",
+        "must start that Flask application inside the Docker",
+        "Compose starts the Flask/Jinja UI inside the project container",
         "CHANGELOG.md",
     ):
         assert requirement in document

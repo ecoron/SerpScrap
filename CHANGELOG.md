@@ -6,7 +6,23 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Implemented Phase 10.1 MCP hardening: strict bounded tool schemas with
+- Implemented Refactoring Phase 10.1 with one shared `docker/Dockerfile` for
+  the API, UI, and MCP services; removed the three service-specific
+  Dockerfiles and aligned Compose, CI, tests, and Docker documentation.
+- Added shared-image configuration through `SERPSCRAP_IMAGE`, service-specific
+  runtime commands and health checks, UI assets in the image, and a non-root
+  runtime user.
+
+- Added the Refactoring Phase 10.1 single-image Docker implementation plan,
+  including Compose consolidation, Docker tests, documentation freshness, and
+  changelog evidence requirements.
+- Added the Refactoring Phase 10.2 professional UI implementation plan,
+  including responsive/accessibility goals, explicit state handling, UI tests,
+  documentation freshness, and changelog evidence requirements.
+- Renumbered the existing MCP hardening plan as Phase 10.3 to make the Phase 10
+  Docker/UI/MCP split unambiguous.
+
+- Implemented Phase 10.3 MCP hardening: strict bounded tool schemas with
   read-only/mutation annotations, versioned structured responses, argument
   validation, bounded untrusted SERP content, paginated result/history reads,
   JSON-RPC error classification, and non-loopback authentication safeguards.
@@ -15,7 +31,7 @@ All notable changes to this project will be documented in this file.
 - Added project-local ``.env`` loading for direct MCP startup, with explicit
   process environment variables taking precedence and a safe ``.env.example``.
 
-- Added the Phase 10.1 MCP server best-practice hardening plan covering
+- Added the Phase 10.3 MCP server best-practice hardening plan covering
   agent-oriented tool schemas, versioned structured responses, asynchronous
   polling and pagination, untrusted-content boundaries, least-privilege
   configuration changes, transport security, and protocol verification.

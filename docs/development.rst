@@ -14,7 +14,7 @@ Repository layout
 * ``scrapcore/`` contains browser setup and lower-level scraping integration.
 * ``tests/`` contains deterministic unit, service, parser, fixture, and layout
   tests. Browser/network checks are explicitly marked and opt-in.
-* ``docker/`` contains the app, UI, MCP Dockerfiles and Compose file.
+* ``docker/`` contains one shared runtime Dockerfile and the Compose file.
 * ``docs/`` contains the user and developer documentation.
 
 Local environment

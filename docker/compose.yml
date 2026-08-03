@@ -16,9 +16,10 @@ services:
     networks: [serpscrap]
 
   serpscrap-app:
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
     build:
       context: ..
-      dockerfile: docker/app/Dockerfile
+      dockerfile: docker/Dockerfile
     restart: unless-stopped
     stop_grace_period: 30s
     entrypoint: ["python"]
@@ -47,18 +48,21 @@ services:
     networks: [serpscrap]
 
   serpscrap-ui:
-    build:
-      context: ..
-      dockerfile: docker/ui/Dockerfile
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
     restart: unless-stopped
+    entrypoint: ["python"]
+    command: ["-m", "http.server", "8080", "--bind", "0.0.0.0", "--directory", "/app/ui"]
     depends_on: [serpscrap-app]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/index.html')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports: ["8080:8080"]
     networks: [serpscrap]
 
   serpscrap-mcp:
-    build:
-      context: ..
-      dockerfile: docker/mcp/Dockerfile
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
     restart: unless-stopped
     environment:
       SERPSCRAP_API_URL: http://serpscrap-app:8000/api/v1
@@ -66,6 +70,12 @@ services:
       MCP_MAX_OUTPUT_BYTES: ${MCP_MAX_OUTPUT_BYTES:-100000}
     depends_on: [serpscrap-app]
     ports: ["8001:8001"]
+    entrypoint: ["python", "-m", "serpscrap.mcp_server"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks: [serpscrap]
 
 networks:

@@ -9,6 +9,11 @@ The Compose deployment runs the complete Version 2 alpha application:
 * ``serpscrap-ui`` provides the operator web interface.
 * ``serpscrap-mcp`` provides the MCP-compatible JSON-RPC gateway.
 
+All three project services use the single image built by
+``docker/Dockerfile``. Compose changes only the service command, ports,
+health check, environment, and mounts; PostgreSQL continues to use its
+official ``postgres:16-alpine`` image.
+
 The current project version is **2.0.0-alpha.1**. It is an evaluation release;
 pin the image tag or Git revision used in repeatable deployments.
 
@@ -30,7 +35,7 @@ To build and run only the CLI image:
 
 .. code-block:: bash
 
-   docker build --file docker/app/Dockerfile -t serpscrap:2.0.0-alpha.1 .
+   docker build --file docker/Dockerfile -t serpscrap:2.0.0-alpha.1 .
    docker run --rm serpscrap:2.0.0-alpha.1 search \
      --keyword "example keyword" --pages 1 --no-history
 

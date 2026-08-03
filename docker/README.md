@@ -3,13 +3,10 @@
 The Docker-specific files are grouped in this directory:
 
 - `compose.yml` defines the four-container deployment.
-- `app/Dockerfile` builds the browser-enabled SerpScrap application image.
-- `mcp/Dockerfile` builds the lightweight MCP gateway image.
-- `ui/Dockerfile` builds the static UI image.
+- `Dockerfile` builds the single browser-enabled SerpScrap runtime image.
 
-All images use the repository root as their build context so that the Python
-package, lock files, and UI assets remain available without duplicating source
-files.
+Compose reuses that image for the application, UI, and MCP services. Runtime
+commands, ports, health checks, and mounts remain service-specific.
 
 Set a secret token before starting the stack because the MCP gateway is
 published on port 8001:
@@ -26,6 +23,13 @@ Start the complete stack from the repository root:
 ```bash
 mkdir -p data/postgres data/cache data/diagnostics data/exports logs
 docker compose -f docker/compose.yml up --build
+```
+
+To use a prebuilt or pinned image, set `SERPSCRAP_IMAGE` and skip the build:
+
+```powershell
+$env:SERPSCRAP_IMAGE = "serpscrap:2.0.0-alpha.1"
+docker compose -f docker/compose.yml up -d
 ```
 
 The UI is available at `http://localhost:8080`, the API at

@@ -33,9 +33,17 @@ WORKDIR /app
 COPY requirements.lock pyproject.toml README.rst LICENSE MANIFEST.in ./
 COPY serpscrap ./serpscrap
 COPY scrapcore ./scrapcore
+COPY ui ./ui
 
 RUN pip install --no-cache-dir -r requirements.lock && \
-    pip install --no-cache-dir --no-deps .
+    pip install --no-cache-dir --no-deps . && \
+    mkdir -p /var/lib/serpscrap/cache /var/lib/serpscrap/diagnostics \
+      /var/lib/serpscrap/exports /var/log/serpscrap && \
+    useradd --create-home --uid 10001 --shell /usr/sbin/nologin serpscrap && \
+    chown -R serpscrap:serpscrap /app /var/lib/serpscrap /var/log/serpscrap
+
+USER serpscrap
+EXPOSE 8000 8001 8080
 
 HEALTHCHECK --interval=30s --timeout=15s --start-period=10s --retries=2 \
   CMD python -c "from scrapcore.scraper.browser import ChromeDriverFactory; from serpscrap.config import Config; d=ChromeDriverFactory.from_config(Config().get()).create(); d.quit()"

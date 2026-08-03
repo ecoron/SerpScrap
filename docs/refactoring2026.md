@@ -1,3 +1,107 @@
+# Refactoring Phase 10.1 - Single-Image Docker Setup
+
+## Status
+
+Implementation completed. The project now builds one shared runtime image for
+the API, UI, and MCP services; PostgreSQL remains the official database image.
+
+## Implementation Status
+
+- [x] Consolidate the Docker build into one image and one source of truth
+- [x] Align Compose services, configuration, health checks, and mounts
+- [x] Add deterministic Docker-layout and container smoke tests
+- [x] Refresh Docker and deployment documentation
+- [x] Record implementation evidence and decisions in `CHANGELOG.md`
+
+## Objective
+
+Provide a reproducible Docker setup that builds one SerpScrap image and uses
+that image for the application, UI, MCP, and any supporting runtime services
+that require project code. Runtime commands, environment variables, ports,
+health checks, volumes, and security boundaries remain service-specific in
+Compose, while dependencies and OS/browser setup are defined once.
+
+## Implementation Slices
+
+1. Audit Dockerfiles, Compose services, build contexts, mounts, entrypoints,
+   and CI references; document the desired single-image topology.
+2. Create one multi-purpose image with a stable base, pinned/runtime
+   dependencies, non-root defaults, browser requirements, and clear command
+   overrides; remove redundant image definitions.
+3. Update Compose, local overrides, CI, examples, health checks, persistence,
+   and graceful shutdown behavior to use the single image without coupling
+   service data directories.
+4. Add offline tests for image/build references, service commands, required
+   environment variables, mounts, exposed ports, and safety defaults; run a
+   bounded Compose smoke test where Docker is available.
+5. Update `docs/docker.rst`, README links, troubleshooting and upgrade notes,
+   and keep all project documentation current with the final topology.
+6. Record changed files, test evidence, migration notes, and remaining risks
+   in `CHANGELOG.md`.
+
+## Acceptance Criteria
+
+- The complete Compose setup references exactly one project image.
+- Rebuilding the image requires no duplicated service-specific Dockerfile.
+- Each service retains an explicit command, least-privilege configuration,
+  health/readiness behavior, and isolated persistent mounts where required.
+- Docker-layout tests and the documented smoke check pass without provider
+  network searches.
+- Docker documentation, this plan, and `CHANGELOG.md` describe the same
+  current setup.
+
+# Refactoring Phase 10.2 - Professional User Interface
+
+## Status
+
+Plan prepared. The UI work follows the single-image Docker consolidation and
+must preserve the shared API, normalized result contract, partial-success
+semantics, and safe diagnostic boundaries.
+
+## Implementation Status
+
+- [ ] Define a professional visual system and responsive information layout
+- [ ] Improve search creation, progress, result, history, and error states
+- [ ] Add accessibility, keyboard, loading, empty, and failure coverage
+- [ ] Add deterministic UI regression tests and visual review evidence
+- [ ] Refresh UI documentation and record changes in `CHANGELOG.md`
+
+## Objective
+
+Turn the existing functional UI into a professional, accessible, responsive
+workspace for starting searches, monitoring progress, inspecting results, and
+analyzing history. The UI remains a client of the shared API and must not
+duplicate scraping, persistence, or business logic.
+
+## Implementation Slices
+
+1. Inventory current screens and flows; define user journeys, responsive
+   breakpoints, typography, color, spacing, component, and status conventions.
+2. Redesign the application shell, navigation, search form, engine/options
+   controls, progress view, result cards/table, history, filters, and detail
+   views with clear hierarchy and consistent interaction patterns.
+3. Add explicit loading, empty, partial, consent-required, blocked,
+   rate-limited, malformed, and terminal-failure states with actionable text.
+4. Implement accessibility and usability checks for keyboard navigation, focus,
+   labels, contrast, responsive layout, bounded polling, and reduced motion.
+5. Add deterministic API/UI tests for submission, refresh, filtering, history,
+   deletion safeguards, error states, and responsive-critical selectors; run a
+   local browser smoke test where available.
+6. Update `docs/`, UI configuration/examples, screenshots or references where
+   applicable, and record implementation evidence in `CHANGELOG.md`.
+
+## Acceptance Criteria
+
+- Core search and history workflows are visually consistent, responsive, and
+  understandable without relying on color alone.
+- Progress, partial results, empty states, provider failures, and consent
+  requirements are explicit and actionable.
+- Keyboard, focus, labels, contrast, and reduced-motion checks pass for the
+  supported UI flows.
+- UI tests and the documented local smoke test pass without external providers.
+- Current UI behavior, setup, and screenshots/documentation match the code and
+  are recorded in `CHANGELOG.md`.
+
 # Refactoring Phase 9.1 - Google and Ecosia Consent and Browser-Flow Completion
 
 ## Status
@@ -251,7 +355,7 @@ Examples must include an explicit image tag or Git revision for reproducibility.
    choices, examples, documentation links, project status, and the Version 2
    release note.
 6. Validate docs, tests, lint, typing, package, and Docker checks; record
-   findings and remaining release work in both changelogs.
+   findings and remaining release work in `CHANGELOG.md`.
 
 ## Test and Acceptance Strategy
 
@@ -274,8 +378,7 @@ Examples must include an explicit image tag or Git revision for reproducibility.
 - CI and local Pipenv workflows validate code, docs, packaging, and Docker
   layout without network-dependent provider searches.
 - The plan, implementation status, test evidence, and release decisions are
-  recorded in `docs/refactoring2026.md`, `CHANGELOG.md`, and
-  `docs/changelog-refactoring2026.md`.
+  recorded in `docs/refactoring2026.md` and `CHANGELOG.md`.
 
 # SerpScrap Refactoring Plan 2026
 
@@ -1155,7 +1258,7 @@ Phase 7.1 is an observability and selector-research phase. It does not bypass pr
 - Brave and Ecosia have an evidence-backed selector decision or an explicit `experimental`/`disabled` status; no selector is widened blindly.
 - HTML diagnostics are opt-in, redacted, bounded, atomically written, ignored by Git, and never required for normal tests or production scraping.
 - Offline tests cover progress, artifact safety, failure-state classification, and driver cleanup; live reproduction remains opt-in and provider-policy compliant.
-- The Phase 7.1 plan, implementation status, practical findings, and selector changes are recorded in both changelogs.
+- The Phase 7.1 plan, implementation status, practical findings, and selector changes are recorded in `CHANGELOG.md`.
 
 ## Refactoring Phase 7 - Browser-Based Search Flow and Per-Engine Selector Contracts
 
@@ -1266,7 +1369,7 @@ Phase 6 is documentation infrastructure work. It does not change the public sear
 
 - Modernize `docs/conf.py` to the current package version, stable project metadata, supported extensions, source paths, theme, static assets, and exclusion patterns.
 - Add and pin the Markdown parser needed for `.md` sources, or remove Markdown from `source_suffix` and migrate the published Markdown pages to RST after checking all links and headings.
-- Ensure `docs/refactoring2026.md`, `docs/searchengines.md`, and `docs/changelog-refactoring2026.md` are either intentionally included in the toctree or explicitly excluded from the published user documentation.
+- Ensure `docs/refactoring2026.md` and `docs/searchengines.md` are either intentionally included in the toctree or explicitly excluded from the published user documentation; record documentation changes in `CHANGELOG.md`.
 - Resolve duplicate labels, broken internal references, missing static directories, outdated HTTP links, and stale Google-only wording exposed by a strict Sphinx build.
 - Keep the existing `docs/Makefile` as a thin local wrapper around the same Sphinx configuration used by Read the Docs, adding explicit `html`, `linkcheck`, and clean/help behavior only where useful.
 
@@ -1300,7 +1403,7 @@ Phase 6 is documentation infrastructure work. It does not change the public sear
 - The same warning-clean Sphinx build succeeds locally through the documented Makefile/Pipenv workflow and in CI.
 - All intentionally published RST and Markdown pages parse correctly, appear in the intended navigation, and have no unresolved internal references.
 - `docs/_config.yml` is either removed as obsolete or explicitly documented and verified as belonging to a separate workflow.
-- The documentation describes current Phase-5 defaults and CLI behavior, and the Phase-6 changes are recorded in both changelogs.
+- The documentation describes current Phase-5 defaults and CLI behavior, and the Phase-6 changes are recorded in `CHANGELOG.md`.
 
 ## Refactoring Phase 5 - Production Integration of Configurable Search-Engine Plugins
 
@@ -1547,7 +1650,7 @@ Google remains supported but is no longer architecturally privileged or required
 - Results are conservatively canonicalized, grouped, and deterministically ordered by a versioned, explainable combination of cross-engine frequency, position, and market weight; ties and unreported market shares follow documented policies.
 - Offline fixtures and conformance tests cover normal, localized, empty, blocked/consent, and layout-fallback behavior for all eleven engines without network or Chrome.
 - Google can be disabled, is not a special orchestration dependency, and retains all Phase 3 request-safety behavior when enabled.
-- `docs/searchengines.md`, configuration/results documentation, examples, package artifacts, tests, and `docs/changelog-refactoring2026.md` agree with the delivered plugin set and ranking snapshot.
+- `docs/searchengines.md`, configuration/results documentation, examples, package artifacts, tests, and `CHANGELOG.md` agree with the delivered plugin set and ranking snapshot.
 
 ## Refactoring Phase 3 - Resilient Google Requests and Complete SERP Formats
 
@@ -1721,7 +1824,7 @@ Simplify the architecture introduced during Phase 1 without weakening browser cl
 3. Add the application service and infrastructure protocols; first move orchestration, then cache access, and finally SQLAlchemy persistence behind adapters.
 4. Introduce the convenience API and local JSON writer, keeping compatibility wrappers around the old lifecycle during the transition.
 5. Switch examples and documentation to the new API and JSON files, then remove CSV and confirmed-dead legacy modules.
-6. Run the full offline suite, package checks, focused typing/linting, and opt-in browser smoke test after each slice; record completed work in `docs/changelog-refactoring2026.md`.
+6. Run the full offline suite, package checks, focused typing/linting, and opt-in browser smoke test after each slice; record completed work in `CHANGELOG.md`.
 
 ### Verification Strategy
 
@@ -1977,7 +2080,7 @@ before an engine is enabled.
 - SearXNG selection is instance-scoped and does not rotate public instances or
   bypass limiters/CAPTCHAs.
 
-# Refactoring Phase 10.1 - MCP Server Best-Practice Hardening
+# Refactoring Phase 10.3 - MCP Server Best-Practice Hardening
 
 ## Objective
 
@@ -2081,7 +2184,7 @@ without changing the underlying search engine or normalized-result contracts.
 - Perform one opt-in client interoperability smoke test after the deterministic
   suite passes; do not make hosted-provider access a required CI dependency.
 
-## Phase 10.1 Acceptance Criteria
+## Phase 10.3 Acceptance Criteria
 
 - `tools/list` exposes complete, strict, agent-oriented schemas for every
   current SerpScrap MCP tool with stable naming and documented side effects.

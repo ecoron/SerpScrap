@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Split the UI into separate Flask/Jinja pages for overview, search, history,
+  and configuration; added a persistent global header search and collapsible
+  navigation with saved client preference.
+
 - Implemented Refactoring Phase 10.2: replaced the static UI with a Flask/Jinja
   application running inside the Compose UI container, using a same-origin API
   proxy and `/healthz` endpoint.

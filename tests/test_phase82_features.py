@@ -33,7 +33,7 @@ def test_history_can_delete_one_run_or_all_runs(tmp_path):
 
 def test_ui_contract_contains_grouped_engine_and_delete_controls():
     root = Path(__file__).parents[1] / "ui"
-    template = (root / "templates" / "pages" / "overview.html").read_text(encoding="utf-8")
+    template = "\n".join((root / "templates" / "pages" / name).read_text(encoding="utf-8") for name in ("search.html", "history.html"))
     javascript = (root / "static" / "js" / "views" / "results.js").read_text(encoding="utf-8")
     app = (root / "static" / "js" / "app.js").read_text(encoding="utf-8")
     css = (root / "static" / "css" / "layout.css").read_text(encoding="utf-8")

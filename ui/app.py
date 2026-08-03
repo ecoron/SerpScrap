@@ -15,14 +15,29 @@ def create_app() -> Flask:
         "SERPSCRAP_API_URL", "http://localhost:8000/api/v1"
     ).rstrip("/")
 
-    @app.get("/")
-    def index() -> str:
+    def render_page(page: str, template: str) -> str:
         return render_template(
-            "pages/overview.html",
-            active_page="overview",
+            f"pages/{template}.html",
+            active_page=page,
             api_base="/api",
             application_version=os.getenv("SERPSCRAP_UI_VERSION", "2.0.0-alpha.1"),
         )
+
+    @app.get("/")
+    def index() -> str:
+        return render_page("overview", "overview")
+
+    @app.get("/search")
+    def search_page() -> str:
+        return render_page("search", "search")
+
+    @app.get("/history")
+    def history_page() -> str:
+        return render_page("history", "history")
+
+    @app.get("/configuration")
+    def configuration_page() -> str:
+        return render_page("configuration", "configuration")
 
     @app.get("/healthz")
     def healthz() -> tuple[Response, int]:

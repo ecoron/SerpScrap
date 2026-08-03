@@ -83,6 +83,11 @@ maintains client state for the selected run, active filters, view mode, and
 analysis context, while the API remains the source of truth for jobs and
 persisted results.
 
+The user-facing application is divided into separate routes/pages for the
+overview, search workspace, history/analysis, and configuration. The primary
+search action is always available in the global header, while the sidebar can
+be collapsed and remembers the user's preference.
+
 ### Application Shell
 
 Use a responsive application shell with a compact top bar, persistent primary

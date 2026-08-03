@@ -15,6 +15,9 @@ All notable changes to this project will be documented in this file.
   deletion safeguards.
 - Added Flask runtime dependencies, UI server/asset tests, and updated Docker,
   development, and operator documentation for `python -m ui.app`.
+- Added an end-to-end UI proxy test proving that history and analytics travel
+  through Flask and the shared API to a database-backed history store; clarified
+  that the complete Compose stack is required for a functional local UI.
 
 - Added the Phase 10.2 rough UI product concept for a dynamic search and
   analysis workspace, including application shell, client state model, live

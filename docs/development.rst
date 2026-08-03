@@ -44,6 +44,19 @@ Run the deterministic checks before submitting changes:
    pipenv run python -m build --no-isolation
    pipenv run python -m sphinx -W --keep-going -b html docs docs/_build/html
 
+Run the complete application locally with Docker Compose so the Flask UI can
+reach the API and PostgreSQL database through the internal network:
+
+.. code-block:: bash
+
+   docker compose -f docker/compose.yml up --build
+
+The UI is served at ``http://localhost:8080``. The UI does not connect to
+PostgreSQL directly; its same-origin ``/api`` proxy calls the shared API, and
+the API persists searches, results, failures, configuration, and analytics in
+PostgreSQL. Running only the UI process without the API service results in an
+empty/non-functional workspace by design.
+
 The browser smoke test requires Chrome and network access:
 
 .. code-block:: bash

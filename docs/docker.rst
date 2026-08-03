@@ -32,6 +32,12 @@ The API is at
 ``http://localhost:8000/api/v1`` and the MCP gateway is at
 ``http://localhost:8001``.
 
+The UI communicates with PostgreSQL indirectly through the shared API:
+``serpscrap-ui`` calls ``serpscrap-app`` over the Compose network, while
+``serpscrap-app`` uses the configured ``DATABASE_URL`` for search runs,
+results, failures, configuration, and analytics. Start the complete Compose
+stack; starting only the UI container cannot provide data or search actions.
+
 The UI health endpoint is ``http://localhost:8080/healthz``. The shared image
 contains the Flask UI module, Jinja templates, static assets, and API client;
 Compose starts the UI with ``python -m ui.app``.

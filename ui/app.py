@@ -43,7 +43,8 @@ def create_app() -> Flask:
 
         if request.method == "OPTIONS":
             return Response(status=204)
-        target = f"{app.config['SERPSCRAP_API_URL']}/{path}"
+        api_path = path[3:] if path == "v1" or path.startswith("v1/") else path
+        target = f"{app.config['SERPSCRAP_API_URL']}/{api_path}".rstrip("/")
         body = request.get_data() or None
         headers = {"Accept": "application/json"}
         if body:

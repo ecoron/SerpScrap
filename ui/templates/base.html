@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Dynamic multi-engine search and analysis workspace">
+  <title>{% block title %}SerpScrap Console{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static_assets', filename='css/tokens.css') }}"><link rel="stylesheet" href="{{ url_for('static_assets', filename='css/base.css') }}"><link rel="stylesheet" href="{{ url_for('static_assets', filename='css/layout.css') }}"><link rel="stylesheet" href="{{ url_for('static_assets', filename='css/components.css') }}"><link rel="stylesheet" href="{{ url_for('static_assets', filename='css/pages.css') }}">
+</head>
+<body data-page="{{ active_page }}">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand"><span class="brand-mark">S</span><span><strong>SerpScrap</strong><small>Search intelligence</small></span><button class="icon-button sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse navigation" aria-expanded="true">←</button></div>
+      <nav class="nav-list">
+        {% for item in [('overview', 'Overview', '⌂', 'index'), ('search', 'Search workspace', '⌕', 'search_page'), ('history', 'History & analysis', '◫', 'history_page'), ('configuration', 'Configuration', '⚙', 'configuration_page')] %}
+        <a class="nav-item{% if active_page == item[0] %} is-active{% endif %}" href="{{ url_for(item[3]) }}" data-nav-link="{{ item[0] }}"><span aria-hidden="true">{{ item[2] }}</span><span class="nav-label">{{ item[1] }}</span></a>
+        {% endfor %}
+      </nav>
+      <div class="sidebar-footer"><span class="status-dot"></span> API workspace online<small>v{{ application_version }}</small></div>
+    </aside>
+    <main id="main-content" class="main-content">
+      <header class="topbar">
+        <div><p class="eyebrow">Search intelligence workspace</p><h1>Explore your search data</h1></div>
+        <div class="topbar-actions"><form class="header-search" id="global-search-form" action="{{ url_for('search_page') }}" method="get"><label class="sr-only" for="global-query">Search</label><input id="global-query" name="q" placeholder="Search the web…" autocomplete="off"><button class="button button-primary" type="submit">Search</button></form><button class="icon-button" id="refresh-all" type="button" title="Refresh data" aria-label="Refresh data">↻</button></div>
+      </header>
+      <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script type="module" src="{{ url_for('static_assets', filename='js/app.js') }}"></script>
+</body>
+</html>

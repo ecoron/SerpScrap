@@ -2,127 +2,181 @@
 Configuration
 =============
 
-Here we describe how you can configure SerpScrap to fit your needs.
-But it is also possible to run SerpScrap with the default settings.
+``Config`` provides a dictionary-compatible configuration object. New code can
+also pass friendly options directly to ``SerpScrap.search``. Settings are
+copied and validated once for every independent request.
 
-Permissions
------------
+Core settings
+-------------
 
-By default all needed or generated files are written into the local /tmp/ folder.
-The location can changed by configuration.
-Ensure the executing user has read/write permissions for this folder.
+* ``search_engines``: ordered list of registered engines, for example
+  ``['google', 'bing', 'duckduckgo']``.
+* ``search_type``: ``normal``, ``image``, ``news``, ``shopping``, or ``videos``.
+* ``num_pages_for_keyword``: positive page count per query.
+* ``num_results_per_page``: positive value up to 100.
+* ``num_workers``: maximum concurrent search-engine requests. Set it to ``4``
+  to cap a multi-engine run at four simultaneous requests.
+* ``engine_workers``: optional per-engine ceiling; it must not exceed
+  ``num_workers``. ``engine_workers_by_engine`` can provide individual limits.
+* ``chrome_headless``: use headless Chrome; defaults to ``True``.
+* ``chrome_binary``: optional explicit Chrome executable.
+* ``executable_path``: optional explicit ChromeDriver executable. Empty uses Selenium Manager.
+* ``page_load_timeout``: WebDriver navigation timeout in seconds.
+* ``wait_timeout``: maximum wait for a recognizable SERP state.
+* ``user_agent``: optional explicit desktop Chrome identity. Empty resolves a
+  user agent matching the installed Chrome major version, with a maintained
+  current Chrome fallback when detection is unavailable.
+* ``request_delay_min`` and ``request_delay_max``: jittered delay range between
+  Google navigations; no delay is added before the first navigation.
+* ``request_retry_limit``: bounded retries for transient timeout/WebDriver
+  failures. Blocking, CAPTCHA, consent, and rate-limit outcomes are not retried.
+* ``request_backoff_base`` and ``request_backoff_max``: exponential retry delay
+  bounds.
+* ``block_threshold``: explicit block/rate-limit outcomes that open the shared
+  run circuit breaker and stop new navigation.
+* ``window_width`` and ``window_height``: Chrome viewport dimensions.
+* ``language``: Google ``hl`` query parameter.
+* ``screenshot``: save diagnostic screenshots; defaults to ``False``.
+* ``dir_screenshot``: base directory for screenshots.
+* ``do_caching`` and ``cachedir``: enable and locate captured-HTML caching.
+* ``store_history``: persist SQLite run history; defaults to ``True``.
+* ``database_name``: SQLite history path without the ``.db`` suffix.
+* ``scrape_urls``: fetch the text content of parsed result URLs.
+* ``progress``: emit correlated per-engine progress events; the CLI enables it
+  by default, while library callers can keep it disabled.
+* ``progress_format``: ``text`` for human-readable stderr output or ``jsonl``
+  for one machine-readable event per line on stderr.
+* ``diagnostic_html``: explicitly enable redacted rendered-HTML artifacts for
+  selector/provider troubleshooting; defaults to ``False``.
+* ``diagnostic_dir``: artifact root, normally ``logs/diagnostics``.
+* ``diagnostic_max_bytes_per_file``, ``diagnostic_max_total_bytes``, and
+  ``diagnostic_max_artifacts_per_job``: safety limits for diagnostic output.
+* ``consent_action``: provider consent handling. Defaults to ``necessary``
+  and selects the privacy-preserving rejection action (Google's ``Alle
+  ablehnen``); ``reject`` is an explicit alias and ``disabled`` preserves a
+  ``consent_required`` failure.
+  If the provider does not expose an actionable control, the run safely remains
+  ``consent_required`` instead of bypassing or guessing at consent.
+  Consent progress events use ``consent_not_present``, ``consent_visible``,
+  ``consent_action_started``, and ``consent_cleared``; a failed verification
+  never continues into search input handling.
+* ``retryable_engine_categories``: bounded retry categories for engine jobs;
+  the default is ``['timeout', 'navigation_state', 'network']``. Provider
+  controls and parser/selector failures are not retried by default.
+* ``url_connect_timeout`` and ``url_read_timeout``: URL-enrichment network
+  timeout settings.
+* ``url_max_redirects`` and ``url_max_response_bytes``: enrichment response
+  safety bounds.
 
-Default configuration
----------------------
-
-* cachedir: '/tmp/.serpscrap/'                        - path cachefiles
-* chrome_headless: True                               - run chrome in headless mode, default is True
-* clean_cache_after: 24                               - clean cached files older then x hours
-* database_name: '/tmp/serpscrap'                     - path and name sqlite db (stores scrape results)
-* dir_screenshot: '/tmp/screenshots'                  - basedir for saved screenshots
-* do_caching: True                                    - enable / disable caching
-* executable_path: '/usr/local/bin/chromedriver'      - path to chromedriver, should detected automaticly
-* google_search_url: 'https://www.google.com/search?' - base search url, modify for other countries
-* headers:                                            - dict to customize request header, see below
-* num_pages_for_keyword: 2                            - number of result pages to scrape
-* num_results_per_page: 10                            - number results per searchengine page
-* results_age: 'Any'                                  - specify age of results default Any, y - last year, m - last month, w - last week, d - last 24h, h - last hour
-* proxy_file: ''                                      - path to proxy file, see below
-* sel_browser: 'chrome'                               - browser (chrome, phantomjs)
-* scrape_urls: False                                  - scrape urls of search results
-* screenshot: True                                    - enable screenshots for each query
-* search_engines: ['google']                          - search engines (google)
-* sleeping_max: 15                                    - max seconds to sleep between scrapes
-* sleeping_min: 5                                     - min seconds to sleep between scrapes
-* url_threads: 3                                      - number of threads if scrape_urls is true
-* use_own_ip: True                                    - if using proxies set to False
-
-Custom configuration
---------------------
-
-Change some config params.
-
-.. code-block:: python
-
-   import serpscrap
-   
-   config = serpscrap.Config()
-   config.set('scrape_urls', False)
-   
-   scrap = serpscrap.SerpScrap()
-   scrap.init(config=config.get(), keywords=keywords)
-
-You can apply your own config dictionary. It is not required to provide any possible
-config key. by applying the default config values will be overwritten by the new values.
-for not provided config keys the deault values still exists.
-
-.. code-block:: python
-
-   import serpscrap
-   
-   config = serpscrap.Config()
-   config_new = {
-      'cachedir': '/tmp/.serpscrap/',
-      'clean_cache_after': 24,
-      'database_name': '/tmp/serpscrap',
-      'do_caching': True,
-      'num_pages_for_keyword': 2,
-      'scrape_urls': True,
-      'search_engines': ['google'],
-      'google_search_url': 'https://www.google.com/search?',
-      'executable_path', '/usr/local/bin/chromedriver',
-   }
-   
-   config.apply(config_new)
-   scrap = serpscrap.SerpScrap()
-   scrap.init(config=config.get(), keywords=keywords)
-   # scrap.init(config=config_new, keywords=keywords)
-
-
-Headers
+Example
 -------
 
-You can customize your searchengine request headers if you are using phantomJS (deprecated)
-by providing a dict in your configuration. If you
-don't customize this setting, the default is used.
+.. code-block:: python
+
+   import serpscrap
+
+   scraper = serpscrap.SerpScrap()
+   results = scraper.search(
+       ['example query'],
+       pages=2,
+       workers=2,
+       screenshots=True,
+       store_history=False,
+   )
+
+Multiple search engines with at most four concurrent requests can be selected
+through ``Config``. The same settings are used by the Python API and the CLI;
+one failed provider does not discard successful results from the others.
 
 .. code-block:: python
 
-   config = {
-     ...
-     'headers': {
-         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-         'Accept-Language': 'de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4',
-         'Accept-Encoding': 'gzip, deflate, sdch',
-         'Connection': 'keep-alive',
-     },
-     ...
+   from serpscrap import Config, SerpScrap
 
+   config = Config()
+   config.apply({
+       'search_engines': ['google', 'bing', 'duckduckgo', 'ecosia'],
+       'country_code': 'DE',
+       'num_pages_for_keyword': 1,
+       'num_results_per_page': 10,
+       'num_workers': 4,
+       'engine_workers': 1,
+   })
+
+   scraper = SerpScrap()
+   results = scraper.search(['privacy-friendly search'], config=config)
+
+Diagnostic mode is opt-in because rendered pages can contain third-party
+content. The artifact manifest contains correlation IDs, states, result counts,
+and host/path information without query parameters. Raw artifacts are ignored
+by Git and should be reviewed and deleted after troubleshooting:
+
+.. code-block:: python
+
+   config.apply({
+       'progress': True,
+       'progress_format': 'jsonl',
+       'diagnostic_html': True,
+       'diagnostic_dir': 'logs/diagnostics',
+       'diagnostic_max_bytes_per_file': 2 * 1024 * 1024,
+       'diagnostic_max_total_bytes': 20 * 1024 * 1024,
+       'diagnostic_max_artifacts_per_job': 10,
+       'consent_action': 'necessary',
+       'retryable_engine_categories': ['timeout', 'navigation_state', 'network'],
+   })
+
+   scraper = SerpScrap()
+   results = scraper.search('selector troubleshooting', config=config)
+
+The equivalent CLI invocation is:
+
+.. code-block:: bash
+
+   serpscrap search -k "privacy-friendly search" \
+     --engine google --engine bing --engine duckduckgo --engine ecosia \
+     --country DE --workers 4
+
+Show progress and capture rendered pages for a focused provider run:
+
+.. code-block:: bash
+
+   serpscrap search -k "preisfehler" \
+     --engine bing --engine yandex --engine brave --engine ecosia \
+     --country DE --workers 4 --progress --diagnostic-html \
+     --diagnostic-dir logs/diagnostics
+
+For machine processing, keep result JSON on stdout and progress JSONL on
+stderr:
+
+.. code-block:: bash
+
+   serpscrap search -k "herrenschuhe" --progress-format jsonl \
+     > results.json 2> progress.jsonl
+
+Cache, SQLite history, screenshots, and JSON output are independent. JSON
+output is selected with ``output=`` or ``save_json()`` rather than a Config
+key. The removed ``output_filename`` and ``print_results`` settings raise a
+migration error.
 
 Proxy file
 ----------
 
-This feature works not stable in versions <= 0.9.1, if you use more then one worker
-and have more then one proxy in your file.
+Set ``use_own_ip`` to ``False`` and provide ``proxy_file``. Each non-comment
+line uses one of these formats:
 
-You can provide a list of proxies which should used for scraping the search engines.
-For this you have to create a proxy_file and to set the path to the file in the configuration.
+.. code-block:: text
 
-The proxy_file should look like this
+   http 192.0.2.10:8080
+   socks5 192.0.2.11:1080
 
-.. code-block:: bash
+Authenticated proxies are rejected by the Chrome factory because they require
+an external extension. They are not silently started without authentication.
 
-   http XX.XXX.XX.XX:80
-   socks4 XX.XXX.XX.XX:80 username:password
-   socks5 XX.XXX.XX.XX:1080 username:password
+Request policy
+--------------
 
-
-In the configuration you need the following settings:
-
-.. code-block:: python
-
-   config.set('use_own_ip', False)
-   config.set('proxy_file', 'path_to_your_file')
-
-
-
+The defaults deliberately favor low request volume: captured-page cache hits
+are resolved before Chrome starts, each query reuses one Chrome session, and
+Google navigation starts are paced across workers. SerpScrap classifies access
+controls and returns partial failures; it does not rotate identities or bypass
+CAPTCHAs automatically. Reducing delays or increasing workers raises the chance
+that Google rejects a run.

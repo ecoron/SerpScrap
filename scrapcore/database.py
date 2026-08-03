@@ -1,25 +1,36 @@
-# -*- coding: utf-8 -*-
 """
-The database schema .
+The database schema.
 There are four entities:
-    ScraperSearch: Represents a  search job.
-    SearchEngineResultsPage: Represents a SERP result page of a search_engine
-    Link: Represents a LINK on a SERP
+    ScraperSearch: Represents a search job.
+    SearchEngineResultsPage: Represents a SERP result page of a search engine.
+    Link: Represents a link on a SERP.
     Proxy: Stores all proxies and their statuses.
 """
 import datetime
 from urllib.parse import urlparse
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey
-from sqlalchemy import Integer, String, Table
-from sqlalchemy import create_engine, UniqueConstraint
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy.orm import scoped_session
-from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    UniqueConstraint,
+    create_engine,
+    inspect,
+)
+from sqlalchemy.orm import backref, declarative_base, relationship, scoped_session, sessionmaker
 
 Base = declarative_base()
+
+
+def utc_now_naive():
+    """Return UTC without timezone information for the legacy SQLite schema."""
+
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
 scraper_searches_serps = Table(
     'scraper_searches_serps',
@@ -30,6 +41,7 @@ scraper_searches_serps = Table(
 
 
 class ScraperSearch(Base):
+    """Represents a search job, including metadata and associated SERPs."""
     __tablename__ = 'scraper_search'
 
     id = Column(Integer, primary_key=True)
@@ -37,7 +49,7 @@ class ScraperSearch(Base):
     used_search_engines = Column(String)
     number_proxies_used = Column(Integer)
     number_search_queries = Column(Integer)
-    started_searching = Column(DateTime, default=datetime.datetime.utcnow)
+    started_searching = Column(DateTime, default=utc_now_naive)
     stopped_searching = Column(DateTime)
 
     serps = relationship(
@@ -47,16 +59,15 @@ class ScraperSearch(Base):
     )
 
     def __str__(self):
-        return '''
-            Search[{id}] scraped for {number_search_queries} unique keywords.
-            Started: {started_searching} and stopped: {stopped_searching}
-            '''.format(**self.__dict__)
+        return (f"Search[{self.id}] scraped for {self.number_search_queries} unique keywords. "
+                f"Started: {self.started_searching} and stopped: {self.stopped_searching}")
 
     def __repr__(self):
         return self.__str__()
 
 
 class SearchEngineResultsPage(Base):
+    """Represents a SERP result page of a search engine."""
     __tablename__ = 'serp'
 
     id = Column(Integer, primary_key=True)
@@ -64,68 +75,48 @@ class SearchEngineResultsPage(Base):
     search_engine_name = Column(String)
     scrape_method = Column(String)
     page_number = Column(Integer)
-    requested_at = Column(DateTime, default=datetime.datetime.utcnow)
+    requested_at = Column(DateTime, default=utc_now_naive)
     requested_by = Column(String, default='127.0.0.1')
 
-    # string in SERP indicates how many results we got for the search term.
     num_results_for_query = Column(String, default='')
-
-    # Whether we got any results at all. This is the same as len(serp.links)
     num_results = Column(Integer, default=-1)
-
     query = Column(String)
-
-    # if the query was modified by the search engine because there weren't any
-    # results, this variable is set to the query that was used instead.
-    # Otherwise it remains empty.
     effective_query = Column(String, default='')
-
     no_results = Column(Boolean, default=False)
 
     def __str__(self):
-        return '''
-        {search_engine_name} has [{num_results}] link results
-        for query "{query}"'''.format(**self.__dict__)
+        return (f"{self.search_engine_name} has [{self.num_results}] link results "
+                f"for query \"{self.query}\"")
 
     def __repr__(self):
         return self.__str__()
 
-    def has_no_results_for_query(self):
-        """
-        Returns True if the original query did not yield any results.
-        Returns False if either there are no serp entries,
-        or the search engine auto corrected the query.
-        """
-        return self.num_results == 0 or self.effective_query
+    def has_no_results_for_query(self) -> bool:
+        """Returns True if the original query did not yield any results."""
+        return self.num_results == 0 or bool(self.effective_query)
 
     def set_values_from_parser(self, parser):
         """Populate itself from a parser object."""
-
         self.num_results_for_query = parser.num_results_for_query
         self.num_results = parser.num_results
         self.effective_query = parser.effective_query
         self.no_results = parser.no_results
-
         for key, value in parser.search_results.items():
             if isinstance(value, list):
                 for link in value:
                     parsed = urlparse(link['link'])
-
                     if link['snippet'] is not None:
-                        # try to remove inline css, which is in some results since 12/2017
+                        # Remove inline CSS if present
                         tmp_snipped = link['snippet'].split('}')
                         if len(tmp_snipped) > 1:
-                            link['snippet'] = tmp_snipped[len(tmp_snipped)-1]
-
-                    # fill with nones to prevent key errors
-                    [link.update({key: None}) for key in (
-                         'snippet',
-                         'title',
-                         'visible_link',
-                         'rating',
-                         'sitelinks'
-                      ) if key not in link]
-
+                            link['snippet'] = tmp_snipped[-1]
+                    # Fill with None to prevent key errors
+                    for k in (
+                        'snippet', 'title', 'visible_link', 'rating', 'sitelinks',
+                        'source', 'published_at', 'price', 'merchant', 'duration',
+                        'image_url', 'thumbnail_url',
+                    ):
+                        link.setdefault(k, None)
                     Link(
                         link=link['link'],
                         snippet=link['snippet'],
@@ -136,14 +127,19 @@ class SearchEngineResultsPage(Base):
                         serp=self,
                         link_type=key,
                         rating=link['rating'],
-                        sitelinks=link['sitelinks']
+                        sitelinks=link['sitelinks'],
+                        source=link['source'],
+                        published_at=link['published_at'],
+                        price=link['price'],
+                        merchant=link['merchant'],
+                        duration=link['duration'],
+                        image_url=link['image_url'],
+                        thumbnail_url=link['thumbnail_url'],
                     )
-        for key, value in parser.related_keywords.items():
-            if isinstance(value, list) and len(value) > 0:
+        for _key, value in parser.related_keywords.items():
+            if isinstance(value, list) and value:
                 for keyword in value:
-                    [keyword.update({key: None}) for key in (
-                         'keyword',
-                      ) if key not in keyword]
+                    keyword.setdefault('keyword', None)
                     RelatedKeyword(
                         keyword=keyword['keyword'],
                         rank=keyword['rank'],
@@ -158,7 +154,6 @@ class SearchEngineResultsPage(Base):
         Args:
             A scraper object.
         """
-
         self.query = scraper.query
         self.search_engine_name = scraper.search_engine_name
         self.scrape_method = scraper.scrape_method
@@ -176,6 +171,7 @@ SERP = SearchEngineResultsPage
 
 
 class Link(Base):
+    """Represents a link on a SERP."""
     __tablename__ = 'link'
 
     id = Column(Integer, primary_key=True)
@@ -188,6 +184,13 @@ class Link(Base):
     link_type = Column(String)
     rating = Column(String)
     sitelinks = Column(String)
+    source = Column(String)
+    published_at = Column(String)
+    price = Column(String)
+    merchant = Column(String)
+    duration = Column(String)
+    image_url = Column(String)
+    thumbnail_url = Column(String)
 
     serp_id = Column(Integer, ForeignKey('serp.id'))
     serp = relationship(
@@ -196,13 +199,14 @@ class Link(Base):
     )
 
     def __str__(self):
-        return '<Link at rank {rank} has url: {link}>'.format(**self.__dict__)
+        return f'<Link at rank {self.rank} has url: {self.link}>'
 
     def __repr__(self):
         return self.__str__()
 
 
 class RelatedKeyword(Base):
+    """Represents a related keyword found on a SERP."""
     __tablename__ = 'related_keywords'
 
     id = Column(Integer, primary_key=True)
@@ -216,15 +220,14 @@ class RelatedKeyword(Base):
     )
 
     def __str__(self):
-        return '''
-            <related keyword at rank {rank} : {keyword}>
-            '''.format(**self.__dict__)
+        return f'<related keyword at rank {self.rank} : {self.keyword}>'
 
     def __repr__(self):
         return self.__str__()
 
 
 class Proxy(Base):
+    """Stores all proxies and their statuses."""
     __tablename__ = 'proxy'
 
     id = Column(Integer, primary_key=True)
@@ -238,7 +241,7 @@ class Proxy(Base):
     online = Column(Boolean)
     status = Column(String)
     checked_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now_naive)
 
     city = Column(String)
     region = Column(String)
@@ -250,7 +253,7 @@ class Proxy(Base):
     UniqueConstraint(ip, port, name='unique_proxy')
 
     def __str__(self):
-        return '<Proxy {ip}>'.format(**self.__dict__)
+        return f'<Proxy {self.ip}>'
 
     def __repr__(self):
         return self.__str__()
@@ -260,6 +263,7 @@ db_Proxy = Proxy
 
 
 class SearchEngine(Base):
+    """Represents a search engine configuration."""
     __tablename__ = 'search_engine'
 
     id = Column(Integer, primary_key=True)
@@ -270,9 +274,7 @@ class SearchEngine(Base):
 
 
 class SearchEngineProxyStatus(Base):
-    """Stores last proxy status for the given search engine.
-    A proxy can either work on a search engine or not.
-    """
+    """Stores last proxy status for the given search engine."""
     __tablename__ = 'search_engine_proxy_status'
 
     id = Column(Integer, primary_key=True)
@@ -283,7 +285,7 @@ class SearchEngineProxyStatus(Base):
 
 
 def get_engine(config, path=None):
-    """Return the sqlalchemy engine."""
+    """Return the SQLAlchemy engine for the configured database."""
     db_name = config.get('database_name', '/tmp/serpscrap') + '.db'
     db_path = path if path else db_name
     echo = config.get('log_sqlalchemy', False)
@@ -294,11 +296,26 @@ def get_engine(config, path=None):
     )
 
     Base.metadata.create_all(engine)
+    existing = {column["name"] for column in inspect(engine).get_columns("link")}
+    added_columns = {
+        "source",
+        "published_at",
+        "price",
+        "merchant",
+        "duration",
+        "image_url",
+        "thumbnail_url",
+    } - existing
+    if added_columns:
+        with engine.begin() as connection:
+            for column in sorted(added_columns):
+                connection.exec_driver_sql(f'ALTER TABLE link ADD COLUMN "{column}" VARCHAR')
 
     return engine
 
 
 def get_session(config, scoped=False, engine=None, path=None):
+    """Return a SQLAlchemy session factory or scoped session."""
     if not engine:
         engine = get_engine(config, path=path)
 
@@ -306,6 +323,7 @@ def get_session(config, scoped=False, engine=None, path=None):
         bind=engine,
         autoflush=True,
         autocommit=False,
+        expire_on_commit=False,
     )
 
     if scoped:
@@ -316,13 +334,8 @@ def get_session(config, scoped=False, engine=None, path=None):
 
 
 def fixtures(config, session):
-    """Add some base data."""
+    """Add base data for supported search engines if not present."""
     for se in config.get('supported_search_engines', []):
-        if se:
-            search_engine = session.query(SearchEngine).filter(
-                SearchEngine.name == se
-            ).first()
-            if not search_engine:
-                session.add(SearchEngine(name=se))
-
+        if se and not session.query(SearchEngine).filter(SearchEngine.name == se).first():
+            session.add(SearchEngine(name=se))
     session.commit()

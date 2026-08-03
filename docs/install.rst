@@ -2,55 +2,49 @@
 Install
 =======
 
-.. code-block:: python
+SerpScrap requires Python 3.10 or newer and Google Chrome.
 
-   pip uninstall SerpScrap -y
-   pip install SerpScrap --upgrade
-
-On the first run SerpScrap will try to install the required Chromedriver or PhantomJS binary on Windows and Linux instances.
-If self install doesnt work you can configure your custom path to the chromedriver or phantomjs binary.
-For Linux SerpScrap provides https://github.com/ecoron/SerpScrap/blob/master/install_chrome.sh, this should be executed automaticly on the first run.
-
-Chrome headless is recommended
-------------------------------
-
-By default SerpScrap is using the headless Chrome.
-You can also use phantomJS, but it is deprecated and it is also blocked very fast by the searchengine.
-We recommend to use headless Chrome.
-
-lxml
-----
-
-lxml is required.
-
-Windows
-=======
-for windows you may need the lxml binary form here: http://www.lfd.uci.edu/~gohlke/pythonlibs/
-For your convenience here are the direct links:
-* `lxml`_
-
-In some cases you may need also `Microsoft Visual C++ Build Tools`_ installed.
-
-iOS
-===
-is not supported yet
-
-
-cli encoding issues
--------------------
-
-To avoid encode/decode issues use this command before you start using SerpScrap in your cli.
+Create a virtual environment and install the package:
 
 .. code-block:: bash
 
-   chcp 65001
-   set PYTHONIOENCODING=utf-8
+   python -m venv .venv
+   .venv/bin/python -m pip install .
 
+On Windows, use ``.venv\Scripts\python`` instead.
 
-References
-==========
+ChromeDriver
+------------
 
-.. target-notes::
+Selenium Manager locates or downloads a compatible ChromeDriver automatically.
+No separate driver installer is required. Controlled or offline environments can
+set ``executable_path`` and ``chrome_binary`` explicitly or use the environment
+variables ``SERPSCRAP_CHROMEDRIVER`` and ``SERPSCRAP_CHROME_BINARY``.
 
-.. _`lxml`: http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml
-.. _`Microsoft Visual C++ Build Tools`: http://landinghub.visualstudio.com/visual-cpp-build-tools
+Development
+-----------
+
+Install the exact development dependency set and the local package:
+
+.. code-block:: bash
+
+   python -m pip install -r requirements-dev.lock
+   python -m pip install --no-deps -e .
+   python -m pytest -m "not browser"
+
+Pipenv remains supported as a development frontend. The editable package in
+``Pipfile`` reads its metadata and runtime dependencies from ``pyproject.toml``:
+
+.. code-block:: bash
+
+   pipenv install --dev
+   pipenv shell
+   pipenv run serpscrap --help
+
+The browser smoke test is opt-in because it requires Chrome and network access:
+
+.. code-block:: bash
+
+   SERPSCRAP_RUN_BROWSER=1 python -m pytest -m browser
+
+iOS is not supported.

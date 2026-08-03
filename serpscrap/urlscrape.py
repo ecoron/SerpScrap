@@ -1,196 +1,254 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-"""SerpScrap.UrlScrape"""
-import chardet
+"""Safe, cache-aware enrichment of parsed result URLs."""
+
+from __future__ import annotations
+
 import hashlib
-import html2text
 import json
 import re
-import urllib.request
-import os
-from bs4 import BeautifulSoup
+import tempfile
+import zlib
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import chardet
+import urllib3
+from urllib3.exceptions import (
+    ConnectTimeoutError,
+    HTTPError,
+    MaxRetryError,
+    NameResolutionError,
+    ReadTimeoutError,
+    SSLError,
+)
+from urllib3.util import Retry, Timeout
+
+from scrapcore.scraper.browser import ChromeIdentityProvider
 
 
-class UrlScrape():
+class UrlFetchError(RuntimeError):
+    """A classified URL-enrichment failure."""
+
+    def __init__(self, category: str, message: str):
+        super().__init__(message)
+        self.category = category
+
+
+@dataclass(frozen=True, slots=True)
+class HttpResponse:
+    status: int
+    url: str
+    headers: dict[str, str]
+    body: bytes
+
+
+class HttpClient:
+    """Small injectable HTTP boundary with explicit representation limits."""
+
+    accepted_content_types = ("text/html", "application/xhtml+xml")
+
+    def __init__(self, config: dict[str, Any]):
+        self.timeout = Timeout(
+            connect=float(config.get("url_connect_timeout", 10)),
+            read=float(config.get("url_read_timeout", 20)),
+        )
+        self.max_redirects = int(config.get("url_max_redirects", 5))
+        self.max_bytes = int(config.get("url_max_response_bytes", 5 * 1024 * 1024))
+        self.user_agent = ChromeIdentityProvider().resolve(
+            config.get("user_agent") or None, config.get("chrome_binary") or None
+        )
+        configured_headers = dict(config.get("headers", {}))
+        language = str(config.get("language", "en-US"))
+        primary_language = language.split("-", 1)[0]
+        self.headers = {
+            "Accept": configured_headers.get(
+                "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ),
+            "Accept-Language": configured_headers.get(
+                "Accept-Language", f"{language},{primary_language};q=0.9"
+            ),
+            "User-Agent": self.user_agent,
+        }
+        self.pool = urllib3.PoolManager(num_pools=max(1, int(config.get("url_threads", 6))))
+
+    def fetch(self, url: str) -> HttpResponse:
+        response = None
+        reusable = False
+        try:
+            response = self.pool.request(
+                "GET",
+                url,
+                headers=self.headers,
+                timeout=self.timeout,
+                redirect=True,
+                retries=Retry(
+                    total=self.max_redirects,
+                    connect=0,
+                    read=0,
+                    redirect=self.max_redirects,
+                    status=0,
+                    raise_on_redirect=True,
+                ),
+                preload_content=False,
+                decode_content=False,
+            )
+            status = int(response.status)
+            if status >= 400:
+                raise UrlFetchError("http", f"HTTP {status}")
+            headers = {key: value for key, value in response.headers.items()}
+            content_type = response.headers.get("Content-Type", "").split(";", 1)[0].lower()
+            if content_type not in self.accepted_content_types:
+                raise UrlFetchError(
+                    "unsupported_content", f"unsupported content type: {content_type or 'missing'}"
+                )
+            declared = response.headers.get("Content-Length")
+            if declared:
+                try:
+                    declared_size = int(declared)
+                except ValueError as exc:
+                    raise UrlFetchError("malformed_response", "invalid Content-Length") from exc
+                if declared_size > self.max_bytes:
+                    raise UrlFetchError(
+                        "oversized_response", "declared response size exceeds limit"
+                    )
+            body = response.read(amt=self.max_bytes + 1, decode_content=False)
+            if len(body) > self.max_bytes:
+                raise UrlFetchError("oversized_response", "response body exceeds limit")
+            reusable = True
+            encoding = response.headers.get("Content-Encoding", "").lower()
+            if encoding in {"gzip", "deflate"}:
+                window_bits = zlib.MAX_WBITS | 16 if encoding == "gzip" else zlib.MAX_WBITS
+                try:
+                    decompressor = zlib.decompressobj(window_bits)
+                    body = decompressor.decompress(body, self.max_bytes + 1)
+                    if decompressor.unconsumed_tail or len(body) > self.max_bytes:
+                        raise UrlFetchError(
+                            "oversized_response", "decompressed response exceeds limit"
+                        )
+                    body += decompressor.flush(self.max_bytes + 1 - len(body))
+                    if len(body) > self.max_bytes:
+                        raise UrlFetchError(
+                            "oversized_response", "decompressed response exceeds limit"
+                        )
+                except zlib.error as exc:
+                    raise UrlFetchError("decoding", "invalid compressed response") from exc
+            elif encoding:
+                raise UrlFetchError(
+                    "unsupported_content", f"unsupported content encoding: {encoding}"
+                )
+            return HttpResponse(
+                status=status,
+                url=response.geturl(),
+                headers=headers,
+                body=body,
+            )
+        except UrlFetchError:
+            raise
+        except (ConnectTimeoutError, ReadTimeoutError) as exc:
+            raise UrlFetchError("timeout", str(exc)) from exc
+        except NameResolutionError as exc:
+            raise UrlFetchError("dns", str(exc)) from exc
+        except SSLError as exc:
+            raise UrlFetchError("tls", str(exc)) from exc
+        except MaxRetryError as exc:
+            category = "redirect" if "redirect" in str(exc).lower() else "network"
+            raise UrlFetchError(category, str(exc.reason)) from exc
+        except HTTPError as exc:
+            raise UrlFetchError("network", str(exc)) from exc
+        finally:
+            if response is not None:
+                if reusable:
+                    response.release_conn()
+                else:
+                    response.close()
+
+
+class UrlScrape:
+    """Fetch and cache result-page metadata through an injectable HTTP client."""
 
     meta_robots_pattern = re.compile(
-        r'<meta\sname=["\']robots["\']\scontent=["\'](.*?)["\']\s/>'
+        r'<meta\s+[^>]*name=["\']robots["\'][^>]*content=["\'](.*?)["\'][^>]*>', re.I
     )
-    meta_title_pattern = re.compile(
-        r'<title[^>]*>([^<]+)</title>'
-    )
-    results = []
+    meta_title_pattern = re.compile(r"<title[^>]*>([^<]+)</title>", re.I)
 
-    def __init__(self, config=None):
-        self.cache_dir = config['cachedir']
-        self.url_threads = config['url_threads']
-        UrlScrape.assure_path_exists(self.cache_dir)
+    def __init__(self, config: dict[str, Any] | None = None, http_client: Any = None):
+        if config is None:
+            from serpscrap.config import Config
+
+            config = Config().get()
+        self.config = config
+        self.cache_dir = Path(config["cachedir"])
+        self.url_threads = int(config["url_threads"])
+        self.results: list[dict[str, Any]] = []
+        self.http_client = http_client or HttpClient(config)
+        self.assure_path_exists(self.cache_dir)
 
     @staticmethod
-    def assure_path_exists(cache_dir):
-        cache_dir = os.path.dirname(cache_dir)
-        if not os.path.exists(cache_dir):
-                os.makedirs(cache_dir)
+    def assure_path_exists(cache_dir: str | Path) -> None:
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
 
     @staticmethod
-    def adjust_encoding(data):
-        """detect and adjust encoding of data return data decoded to utf-8"""
-        check_encoding = chardet.detect(data)
-        if 'utf-8' not in check_encoding['encoding']:
-            try:
-                data = data.decode(check_encoding['encoding']).encode('utf-8')
-            except:
-                pass
+    def adjust_encoding(data: bytes) -> dict[str, Any]:
+        detected = chardet.detect(data).get("encoding") or "utf-8"
         try:
-            data = data.decode('utf-8')
-        except:
-            data = data.decode('utf-8', 'ignore')
-        return {'encoding': check_encoding['encoding'], 'data': data}
+            text = data.decode(detected)
+        except (LookupError, UnicodeDecodeError):
+            text = data.decode("utf-8", "replace")
+        return {"encoding": detected, "data": text}
 
-    def scrap_url(self, url):
-        m = hashlib.md5()
-        m.update(url.encode('utf-8'))
-        cache_file = os.path.join(self.cache_dir, m.hexdigest() + '.json')
+    def _cache_path(self, url: str) -> Path:
+        identity = getattr(self.http_client, "user_agent", "")
+        language = getattr(self.http_client, "headers", {}).get("Accept-Language", "")
+        digest = hashlib.sha256(f"{url}\0{identity}\0{language}".encode()).hexdigest()
+        return self.cache_dir / f"url-{digest}.json"
 
+    @staticmethod
+    def _write_atomic(path: Path, result: dict[str, Any]) -> None:
+        temporary: Path | None = None
         try:
-            with open(cache_file) as json_data:
-                result = json.load(json_data)
-                json_data.close()
-                UrlScrape.results.append(result)
-        except:
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=path.parent, delete=False, suffix=".tmp"
+            ) as handle:
+                temporary = Path(handle.name)
+                json.dump(result, handle, ensure_ascii=False)
+                handle.flush()
+            temporary.replace(path)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+
+    def scrap_url(self, url: str) -> dict[str, Any]:
+        cache_file = self._cache_path(url)
+        try:
+            result = json.loads(cache_file.read_text(encoding="utf-8"))
+            result["cache_hit"] = True
+        except (OSError, json.JSONDecodeError):
             try:
-                result = UrlScrape.fetch_url(url, cache_file)
-            except:
-                pass
+                result = self.fetch_url(url, cache_file)
+            except UrlFetchError as exc:
+                result = {
+                    "status": "error",
+                    "url": url,
+                    "error_category": exc.category,
+                    "error": str(exc),
+                }
+        self.results.append(result)
         return result
 
-    @staticmethod
-    def fetch_url(url, cache_file):
-        result = {}
-        try:
-            with urllib.request.urlopen(url) as response:
-                html = response.read()
-
-                encoded = UrlScrape.adjust_encoding(data=html)
-                html = encoded['data']
-
-                for sign in ['[', ']', '(', ')']:
-                    html = html.replace(sign, ' ')
-                for sign in ['»']:
-                    html = html.replace(sign, '')
-
-                meta_robots = UrlScrape.meta_robots_pattern.findall(html)
-                meta_title = UrlScrape.meta_title_pattern.findall(html)
-                if len(meta_robots) > 0:
-                    result.update({'meta_robots': meta_robots[0][0:15]})
-                else:
-                    result.update({'meta_robots': ''})
-                if len(meta_title) > 0:
-                    result.update({'meta_title': meta_title[0]})
-                else:
-                    result.update({'meta_title': ''})
-                result.update({'status': response.getcode()})
-                result.update({'url': response.geturl()})
-                result.update({'encoding': encoded['encoding']})
-
-                headers = dict(response.getheaders())
-                if 'Last-Modified' in headers.keys():
-                    result.update({'last_modified': headers['Last-Modified']})
-                else:
-                    result.update({'last_modified': None})
-
-                h = html2text.HTML2Text()
-                h.ignore_links = True
-                h.ignore_images = True
-
-                txt = split_into_sentences(
-                    BeautifulSoup(h.handle(html), 'html.parser').get_text().replace('\n', ' ')
-                )
-                row_count = len(txt)
-                word_sum = 0
-                tmp_txt = []
-                for row in txt:
-                    row = row.replace('*', '').replace('#', '').replace('_', '').replace('\t', '').replace('   ', ' ').replace('  ', ' ')
-                    row = ' '.join(
-                        [word for word in row.split(' ') if len(word) > 1]
-                    )
-                    word_sum += len(row.split(' '))
-                    tmp_txt.append(row)
-                avg_row_length = int(word_sum/row_count)
-                clean_txt = ''
-                for row in tmp_txt:
-                    word_count = len(row.split(' '))
-                    if 2 < word_count < avg_row_length*3:
-                        clean_txt += row+'\n'
-                result.update({'text_raw': clean_txt})
-
-                with open(cache_file, 'w') as fp:
-                    json.dump(result, fp)
-        except:
-            pass
+    def fetch_url(self, url: str, cache_file: str | Path) -> dict[str, Any]:
+        response = self.http_client.fetch(url)
+        encoded = self.adjust_encoding(response.body)
+        html = encoded["data"]
+        meta_robots = self.meta_robots_pattern.findall(html)
+        meta_title = self.meta_title_pattern.findall(html)
+        result = {
+            "meta_robots": meta_robots[0][:15] if meta_robots else "",
+            "meta_title": meta_title[0] if meta_title else "",
+            "status": response.status,
+            "url": response.url,
+            "encoding": encoded["encoding"],
+            "last_modified": response.headers.get("Last-Modified"),
+            "cache_hit": False,
+        }
+        self._write_atomic(Path(cache_file), result)
         return result
-
-ascii_lowercase = "abcdefghijklmnopqrstuvwxyz"
-ascii_uppercase = ascii_lowercase.upper()
-
-# States w/ with thanks to https://github.com/unitedstates/python-us
-# Titles w/ thanks to https://github.com/nytimes/emphasis and @donohoe
-abbr_capped = "|".join([
-    "ala|ariz|ark|calif|colo|conn|del|fla|ga|ill|ind|kan|ky|la|md|mass|mich|minn|miss|mo|mont|neb|nev|okla|ore|pa|tenn|vt|va|wash|wis|wyo", # States
-    "u.s",
-    "mr|ms|mrs|msr|dr|gov|pres|sen|sens|rep|reps|prof|gen|messrs|col|sr|jf|sgt|mgr|fr|rev|jr|snr|atty|supt|hr", # Titles
-    "ave|blvd|st|rd|hwy", # Streets
-    "jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec", # Months
-    "|".join(ascii_lowercase) # Initials
-]).split("|")
-
-abbr_lowercase = "etc|v|vs|viz|al|pct"
-
-exceptions = "U.S.|U.N.|E.U.|F.B.I.|C.I.A.".split("|")
-
-
-def is_abbreviation(dotted_word):
-    clipped = dotted_word[:-1]
-    if clipped[0] in ascii_uppercase:
-        if clipped.lower() in abbr_capped:
-            return True
-        else:
-            return False
-    else:
-        if clipped in abbr_lowercase:
-            return True
-        else:
-            return False
-
-
-def is_sentence_ender(word):
-    if word in exceptions:
-        return False
-    if word[-1] in ["?", "!", " .", " ."]:
-        return True
-    if len(re.sub(r"[^A-Z]", "", word)) > 1:
-        return True
-    if word[-1] == "." and (not is_abbreviation(word)):
-        return True
-    return False
-
-
-def split_into_sentences(text):
-    potential_end_pat = re.compile(r"".join([
-        r"([\w\.'’&\]\)]+[\.\?!])",  # A word that ends with punctuation
-        r"([‘’“”'\"\)\]]*)",  # Followed by optional quote/parens/etc
-        r"(\s+(?![a-z\-–—]))",  # Followed by whitespace + non-(lowercase or dash)
-        ]),
-        re.U
-    )
-    dot_iter = re.finditer(potential_end_pat, text)
-    end_indices = [
-        (x.start() + len(x.group(1)) + len(x.group(2)))
-        for x in dot_iter
-        if is_sentence_ender(x.group(1))
-    ]
-    spans = zip([None] + end_indices, end_indices + [None])
-    sentences = [
-        text[start:end].strip() for start, end in spans
-    ]
-    return sentences

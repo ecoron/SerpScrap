@@ -1,98 +1,114 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-import datetime
-"""
-SerpScrap.Config
-"""
+"""Public SerpScrap configuration with backward-compatible dictionary access."""
+
+from __future__ import annotations
+
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+from tempfile import gettempdir
+from typing import Any
 
 
-class Config():
-    """
-    Config
-    This modul is used to hold and handle the required configuration settings
+class Config:
+    """Mutable configuration facade retained for the public API."""
 
-    Attributes:
-        config: dict of configuration keys and values
-        apply (dict): method to set a new configuration
-        get (): return the current configuration
-        set (string, mixed): set an new value for an existing config key
-    """
+    def __init__(self) -> None:
+        temp_root = Path(gettempdir())
+        self.config: dict[str, Any] = {
+            "use_own_ip": True,
+            "search_engines": [
+                "bing", "yandex", "yahoo", "duckduckgo", "startpage", "brave",
+                "swisscows", "mojeek", "good", "xprivo", "marginalia", "etools",
+            ],
+            "supported_search_engines": [
+                "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia", "qwant",
+                "startpage", "brave", "swisscows", "mojeek", "metager", "good", "xprivo",
+                "marginalia", "etools",
+            ],
+            "country_code": "DE",
+            "engine_workers": 1,
+            "engine_workers_by_engine": {},
+            "engine_weights": {},
+            "other_market_share": 0.63,
+            "ranking": {"rrf_k": 60, "provider_family_cap": False},
+            "fusion_snapshot_id": "europe-2026-07",
+            "num_pages_for_keyword": 1,
+            "scrape_method": "selenium",
+            "sel_browser": "chrome",
+            "chrome_headless": True,
+            "chrome_binary": os.environ.get("SERPSCRAP_CHROME_BINARY", ""),
+            "chrome_no_sandbox": os.environ.get("SERPSCRAP_CHROME_NO_SANDBOX") == "1",
+            "disable_dev_shm_usage": True,
+            "executable_path": os.environ.get("SERPSCRAP_CHROMEDRIVER", ""),
+            "window_width": 1366,
+            "window_height": 900,
+            "page_load_timeout": 30,
+            "wait_timeout": 15,
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+            "request_delay_min": 0.75,
+            "request_delay_max": 2.0,
+            "request_retry_limit": 1,
+            "retryable_engine_categories": ["timeout", "navigation_state", "network"],
+            "request_backoff_base": 2.0,
+            "request_backoff_max": 10.0,
+            "block_threshold": 2,
+            "language": "de-DE",
+            "do_caching": True,
+            "cachedir": str(temp_root / ".serpscrap"),
+            "screenshot": False,
+            "dir_screenshot": str(temp_root / "serpscrap-screenshots"),
+            "database_name": str(temp_root / "serpscrap"),
+            "minimize_caching_files": False,
+            "clean_cache_after": 24,
+            "store_history": True,
+            "scrape_urls": False,
+            "url_threads": 6,
+            "log_level": "INFO",
+            "progress": False,
+            "progress_format": "text",
+            "consent_action": "necessary",
+            "diagnostic_html": False,
+            "diagnostic_dir": str(Path("logs") / "phase7"),
+            "diagnostic_max_bytes_per_file": 2 * 1024 * 1024,
+            "diagnostic_max_total_bytes": 20 * 1024 * 1024,
+            "diagnostic_max_artifacts_per_job": 10,
+            "num_workers": 4,
+            "num_results_per_page": 10,
+            "results_age": "Any",
+            "search_type": "normal",
+            "google_search_url": "https://www.google.com/search?",
+            "headers": {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            },
+            "url_connect_timeout": 10.0,
+            "url_read_timeout": 20.0,
+            "url_max_redirects": 5,
+            "url_max_response_bytes": 5 * 1024 * 1024,
+            "proxy_file": "",
+            "proxy_check_url": "https://icanhazip.com/",
+            "proxy_info_url": "https://ipinfo.io/json",
+            "check_proxies": True,
+            "stop_on_detection": True,
+            "today": datetime.now(timezone.utc).date().isoformat(),
+        }
 
-    config = {
-        'use_own_ip': True,
-        'search_engines': ['google'],
-        'num_pages_for_keyword': 2,
-        'scrape_method': 'selenium',
-        'sel_browser': 'chrome',
-        'chrome_headless': True,
-        'executable_path': '',
-        'do_caching': True,
-        'cachedir': '/tmp/.serpscrap/',
-        'screenshot': True,
-        'dir_screenshot': '/tmp/screenshots',
-        'database_name': '/tmp/serpscrap',
-        'minimize_caching_files': True,
-        'clean_cache_after': 24,
-        'output_filename': None,
-        # 'print_results': 'all',
-        'scrape_urls': False,
-        'url_threads': 6,
-        'log_level': 'INFO',
-        'num_workers': 1,
-        'num_results_per_page': 10,
-        'results_age': 'Any',
-        'sleeping_min': 20,
-        'sleeping_max': 25,
-        'search_type': 'normal',
-        'google_search_url': 'https://www.google.com/search?',
-        'bing_search_url': 'http://www.bing.com/search?',
-        'headers': {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4',
-            'Accept-Encoding': 'gzip, deflate, br'
-        },
-        'proxy_file': '',
-        'proxy_check_url': 'http://canihazip.com/s',
-        'proxy_info_url': 'https://ipinfo.io/json',
-        'stop_on_detection': True,
-        'today': datetime.datetime.strftime(
-            datetime.datetime.utcnow(),
-            '%Y-%m-%d'
-        )
-    }
-
-    def __init__(self):
-        for k, v in self.config.items():
-            setattr(self, k, v)
-        return None
-
-    def __dict__(self):
+    @property
+    def __dict__(self) -> dict[str, Any]:
         return self.config
 
-    def get(self):
-        """get the config dictionary
+    def __getattr__(self, key: str) -> Any:
+        try:
+            return self.config[key]
+        except KeyError as exc:
+            raise AttributeError(key) from exc
 
-        Returns:
-            dict: the ccurrent config
-        """
-
+    def get(self) -> dict[str, Any]:
         return self.config
 
-    def set(self, key, value):
-        """set or update a value of a config key
+    def set(self, key: str, value: Any) -> None:
+        self.config[key] = value
 
-        Args:
-            key (string): the config key
-            value (int|string|None): the config key value
-        """
-
-        self.config.__setitem__(key, value)
-
-    def apply(self, config):
-        """apply an individual config, replace default config
-        by values of new config
-
-        Args:
-            config (dict): new configuration
-        """
+    def apply(self, config: dict[str, Any]) -> None:
+        if not isinstance(config, dict):
+            raise TypeError("config must be a dictionary")
         self.config.update(config)

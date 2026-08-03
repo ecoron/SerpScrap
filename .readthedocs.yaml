@@ -1,0 +1,17 @@
+# Read the Docs configuration for the SerpScrap Sphinx documentation.
+# See https://docs.readthedocs.com/platform/stable/config-file/index.html
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
+
+sphinx:
+  configuration: docs/conf.py
+  builder: html
+  fail_on_warning: true
+
+python:
+  install:
+    - requirements: docs/requirements.txt

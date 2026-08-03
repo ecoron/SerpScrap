@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pip install --no-deps -e .
+      - run: python -m ruff check serpscrap scrapcore tests
+      - run: python -m mypy scrapcore/jobs.py scrapcore/scraper/browser.py scrapcore/scraper/selenium.py
+      - run: python -m pytest -m "not browser"
+      - run: python -m build --no-isolation
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --file docker/Dockerfile --tag serpscrap:test .
+      - run: >-
+          docker run --rm --entrypoint python serpscrap:test -c
+          "from scrapcore.scraper.browser import ChromeDriverFactory;
+          from serpscrap.config import Config;
+          d=ChromeDriverFactory.from_config(Config().get()).create();
+          print(d.capabilities['browserVersion']); d.quit()"
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r docs/requirements.txt
+      - run: python -m sphinx -W --keep-going -b html docs docs/_build/html

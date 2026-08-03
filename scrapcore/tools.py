@@ -1,58 +1,13 @@
-# -*- coding: utf-8 -*-
 
-from collections import namedtuple
-import csv
-import json
 import os
 import threading
+from collections import namedtuple
+
 from scrapcore import database
+from serpscrap.exceptions import ConfigurationError as ConfigurationError
 
 
-class JsonStreamWriter():
-    """Writes consecutive objects to an json output file."""
-
-    def __init__(self, filename):
-        self.file = open(filename, 'wt')
-        self.file.write('[')
-        self.last_object = None
-
-    def write(self, obj):
-        if self.last_object:
-            self.file.write(',')
-        json.dump(obj, self.file, indent=2, sort_keys=True)
-        self.last_object = id(obj)
-
-    def end(self):
-        self.file.write(']')
-        self.file.close()
-
-
-class CsvStreamWriter():
-    """
-    Writes consecutive objects to an csv output file.
-    """
-    def __init__(self, filename, csv_fieldnames):
-        self.csv_fieldnames = csv_fieldnames
-        self.file = open(filename, 'wt')
-        self.dict_writer = csv.DictWriter(
-            self.file,
-            fieldnames=csv_fieldnames,
-            delimiter=','
-        )
-        self.dict_writer.writeheader()
-
-    def write(self, data, serp):
-        for row in data['results']:
-            d = serp
-            d.update(row)
-            d = ({k: v if type(v) is str else v for k, v in d.items() if k in self.csv_fieldnames})
-            self.dict_writer.writerow(d)
-
-    def end(self):
-        self.file.close()
-
-
-class ScrapeJobGenerator():
+class ScrapeJobGenerator:
 
     def get(self, keywords, search_engines, scrape_method, num_pages):
         """Get scrape jobs by keywords."""
@@ -67,7 +22,7 @@ class ScrapeJobGenerator():
                     }
 
 
-class Proxies():
+class Proxies:
     Proxy = namedtuple('Proxy', 'proto, host, port, username, password')
 
     def parse_proxy_file(self, fname):
@@ -88,7 +43,7 @@ class Proxies():
         proxies = []
         path = os.path.join(os.getcwd(), fname)
         if os.path.exists(path):
-            with open(path, 'r') as pf:
+            with open(path) as pf:
                 for line in pf.readlines():
 
                     if not (line.strip().startswith('#') or
@@ -98,12 +53,12 @@ class Proxies():
                         try:
                             proto = tokens[0]
                             host, port = tokens[1].split(':')
-                        except Exception:
-                            raise Exception('''
+                        except Exception as exc:
+                            raise Exception(f'''
                                 Invalid proxy file.
-                                Should have the following format: {}
-                                '''.format(self.parse_proxy_file.__doc__)
-                            )
+                                Should have the following format: {self.parse_proxy_file.__doc__}
+                                '''
+                            ) from exc
                         if len(tokens) == 3:
                             username, password = tokens[2].split(':')
                             proxies.append(
@@ -182,10 +137,6 @@ class ShowProgressQueue(threading.Thread):
 
 
 class Error(Exception):
-    pass
-
-
-class ConfigurationError(Exception):
     pass
 
 

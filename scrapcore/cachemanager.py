@@ -1,8 +1,8 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 import hashlib
 import os
 import shutil
+import tempfile
 import time
 
 # import lxml.html
@@ -11,24 +11,23 @@ from scrapcore.database import SearchEngineResultsPage
 from scrapcore.parsing import Parsing
 
 
-class CacheManager():
+class CacheManager:
     """Manages caching"""
 
     CACHEDIR = '.serpscrap'
     CLEAN_CACHE_AFTER = 48
 
-    def __init__(self, config, logger, result_writer):
+    def __init__(self, config, logger):
         self.config = config
         self.logger = logger
         self.create_cache_dir()
         self.clean_cache()
-        self.result_writer = result_writer
 
     def create_cache_dir(self):
         if self.config.get('do_caching', True):
             cd = self.config.get('cachedir', self.CACHEDIR)
             if not os.path.exists(cd):
-                os.mkdir(cd)
+                os.makedirs(cd, exist_ok=True)
 
     def clean_cache(self):
         """Clean the caches searches."""
@@ -55,7 +54,19 @@ class CacheManager():
                          scrape_mode,
                          page_number):
         """Make a unique file name from the search engine search request."""
-        unique = [keyword, search_engine, scrape_mode, page_number]
+        plugin_version = self.config.get('plugin_version', '1')
+        unique = [
+            'phase5-cache-v3',
+            keyword,
+            search_engine,
+            scrape_mode,
+            page_number,
+            self.config.get('country_code', 'DE').upper(),
+            plugin_version,
+            self.config.get('search_type', 'normal'),
+            self.config.get('language', 'en'),
+            int(self.config.get('num_results_per_page', 10)),
+        ]
         sha = hashlib.sha256()
         sha.update(b''.join(str(s).encode() for s in unique))
 
@@ -66,42 +77,42 @@ class CacheManager():
 
     def get_cached(self, keyword, search_engine, scrapemode, page_number):
         """Loads a cached result."""
-        if self.config.get('do_caching', False):
-            file_name = self.cached_file_name(
-                keyword,
-                search_engine,
-                scrapemode,
-                page_number
-            )
-            cache_dir = self.config.get('cachedir', self.CACHEDIR)
-            if file_name in os.listdir(cache_dir):
-                try:
-                    modtime = os.path.getmtime(
-                        os.path.join(cache_dir, file_name)
-                    )
-                except FileNotFoundError:
-                    return False
-                modtime = (time.time() - modtime) / 60 / 60
-                if (modtime > int(self.config('clean_cache_after', 48))):
-                    return False
-                path = os.path.join(cache_dir, file_name)
-                return self.read_cached_file(path)
-            else:
-                return False
+        if not self.config.get('do_caching', True):
+            return False
+        file_name = self.cached_file_name(
+            keyword,
+            search_engine,
+            scrapemode,
+            page_number
+        )
+        cache_dir = self.config.get('cachedir', self.CACHEDIR)
+        cache_path = os.path.join(cache_dir, file_name)
+        if not os.path.exists(cache_path):
+            return False
+        try:
+            modtime = os.path.getmtime(cache_path)
+        except FileNotFoundError:
+            return False
+        modtime = (time.time() - modtime) / 60 / 60
+        if modtime > int(self.config.get('clean_cache_after', self.CLEAN_CACHE_AFTER)):
+            return False
+        return self.read_cached_file(cache_path)
 
     def read_cached_file(self, path):
         """Read a cache file."""
-        if self.config.get('do_caching', False):
-            ext = path.split('.')[-1]
-
-            if ext == 'cache':
-                with open(path, 'r') as fd:
-                    try:
-                        return fd.read()
-                    except UnicodeDecodeError as e:
-                        self.logger.warning(str(e))
-            else:
-                raise Exception('"{}" is a invalid cache file.'.format(path))
+        ext = path.split('.')[-1]
+        if ext == 'cache':
+            try:
+                with open(path, encoding='utf-8') as fd:
+                    return fd.read()
+            except UnicodeDecodeError as e:
+                self.logger.warning(str(e))
+                return None
+            except Exception as e:
+                self.logger.error(f"Error reading cache file {path}: {e}")
+                return None
+        else:
+            raise Exception(f'"{path}" is an invalid cache file.')
 
     def cache_results(self,
                       parser,
@@ -111,17 +122,14 @@ class CacheManager():
                       page_number,
                       db_lock=None):
         """Stores the parsed html in a file.
-        If an db_lock is given, all action are wrapped in this lock.
+        If a db_lock is given, all actions are wrapped in this lock.
         """
-        if self.config.get('do_caching', False):
-            if db_lock:
-                db_lock.acquire()
-
-            if self.config.get('minimize_caching_files', False):
-                html = parser.cleaned_html
-            else:
-                html = parser.html
-
+        if not self.config.get('do_caching', True):
+            return
+        if db_lock:
+            db_lock.acquire()
+        try:
+            html = parser.cleaned_html if self.config.get('minimize_caching_files', False) else parser.html
             file_name = self.cached_file_name(
                 query,
                 search_engine,
@@ -130,13 +138,19 @@ class CacheManager():
             )
             cache_dir = self.config.get('cachedir', self.CACHEDIR)
             path = os.path.join(cache_dir, file_name)
-
-            with open(path, 'w') as fd:
-                if isinstance(html, bytes):
-                    fd.write(html.decode())
-                else:
-                    fd.write(html)
-
+            parent = os.path.dirname(path) or '.'
+            fd, temporary = tempfile.mkstemp(prefix='.cache-', dir=parent, text=True)
+            try:
+                with os.fdopen(fd, 'w', encoding='utf-8') as output:
+                    if isinstance(html, bytes):
+                        output.write(html.decode('utf-8', errors='replace'))
+                    else:
+                        output.write(str(html))
+                os.replace(temporary, path)
+            finally:
+                if os.path.exists(temporary):
+                    os.remove(temporary)
+        finally:
             if db_lock:
                 db_lock.release()
 
@@ -181,6 +195,7 @@ class CacheManager():
             job = mapping.get(file_name, None)
 
             if job:
+                serp = None
                 try:
                     serp = self.get_serp_from_database(
                         session,
@@ -189,23 +204,30 @@ class CacheManager():
                         job['scrape_method'],
                         job['page_number']
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.logger.error(f"DB error for {file_name}: {e}")
 
                 if not serp:
-                    serp = self.parse_again(
-                        file_name,
-                        job['search_engine'],
-                        job['query']
-                    )
+                    try:
+                        serp = self.parse_again(
+                            file_name,
+                            job['search_engine'],
+                            job['query'],
+                            job['scrape_method'],
+                            job['page_number'],
+                        )
+                    except Exception as e:
+                        self.logger.error(f"Parse error for {file_name}: {e}")
+                        continue
 
+                if not hasattr(serp, 'scraper_searches'):
+                    serp.scraper_searches = []
                 serp.scraper_searches.append(scraper_search)
                 session.add(serp)
 
                 if num_cached % 200 == 0:
                     session.commit()
 
-                self.result_writer.store_serp_result(serp, self.config)
                 num_cached += 1
                 scrape_jobs.remove(job)
 
@@ -213,11 +235,8 @@ class CacheManager():
             len(files),
             self.config.get('cachedir'))
         )
-        self.logger.info('''{}/{} objects have been read from the cache.
-        {} remain to get scraped.'''.format(
-            num_cached,
-            num_total,
-            num_total - num_cached)
+        self.logger.info(f'''{num_cached}/{num_total} objects have been read from the cache.
+        {num_total - num_cached} remain to get scraped.'''
         )
 
         session.add(scraper_search)
@@ -225,19 +244,25 @@ class CacheManager():
 
         return scrape_jobs
 
-    def parse_again(self, file_name, search_engine, query):
+    def parse_again(self, file_name, search_engine, query, scrape_method, page_number):
         path = os.path.join(
             self.config.get('cachedir', self.CACHEDIR),
             file_name
         )
         html = self.read_cached_file(path)
         parsing = Parsing()
-        return parsing.parse_serp(
+        serp = parsing.parse_serp(
             self.config,
             html=html,
             search_engine=search_engine,
             query=query
         )
+        serp.search_engine_name = search_engine
+        serp.scrape_method = scrape_method
+        serp.page_number = page_number
+        serp.requested_by = 'cache'
+        serp.status = 'successful'
+        return serp
 
     def get_serp_from_database(self,
                                session,

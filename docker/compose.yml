@@ -1,0 +1,86 @@
+services:
+  serpscrap-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-serpscrap}
+      POSTGRES_USER: ${POSTGRES_USER:-serpscrap}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - ../data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [serpscrap]
+
+  serpscrap-app:
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    stop_grace_period: 30s
+    entrypoint: ["python"]
+    command: ["-m", "serpscrap.api_server"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-serpscrap}:${POSTGRES_PASSWORD:-change-me}@serpscrap-db:5432/${POSTGRES_DB:-serpscrap}
+      SERPSCRAP_DATA_DIR: /var/lib/serpscrap
+      SERPSCRAP_CACHE_DIR: /var/lib/serpscrap/cache
+      SERPSCRAP_DIAGNOSTICS_DIR: /var/lib/serpscrap/diagnostics
+      SERPSCRAP_MAX_ACTIVE_JOBS: ${SERPSCRAP_MAX_ACTIVE_JOBS:-4}
+      SERPSCRAP_MAX_QUEUED_JOBS: ${SERPSCRAP_MAX_QUEUED_JOBS:-16}
+    volumes:
+      - ../data/cache:/var/lib/serpscrap/cache
+      - ../data/diagnostics:/var/lib/serpscrap/diagnostics
+      - ../data/exports:/var/lib/serpscrap/exports
+      - ../logs:/var/log/serpscrap
+    depends_on:
+      serpscrap-db:
+        condition: service_healthy
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readyz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [serpscrap]
+
+  serpscrap-ui:
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
+    restart: unless-stopped
+    environment:
+      SERPSCRAP_API_URL: http://serpscrap-app:8000/api/v1
+      UI_HOST: 0.0.0.0
+      UI_PORT: 8080
+    entrypoint: ["python", "-m", "ui.app"]
+    depends_on: [serpscrap-app]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports: ["8080:8080"]
+    networks: [serpscrap]
+
+  serpscrap-mcp:
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
+    restart: unless-stopped
+    environment:
+      SERPSCRAP_API_URL: http://serpscrap-app:8000/api/v1
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:?Set MCP_AUTH_TOKEN for the MCP gateway}
+      MCP_MAX_OUTPUT_BYTES: ${MCP_MAX_OUTPUT_BYTES:-100000}
+    depends_on: [serpscrap-app]
+    ports: ["8001:8001"]
+    entrypoint: ["python", "-m", "serpscrap.mcp_server"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [serpscrap]
+
+networks:
+  serpscrap:
+    driver: bridge

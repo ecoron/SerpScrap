@@ -1,35 +1,12 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 import pprint
+
 import serpscrap
 
+scraper = serpscrap.SerpScrap()
+scraper.search(["privacy-friendly search engines"])
+related = [item["keyword"] for item in scraper.get_related()]
 
-def scrape_to_csv(config, keywords):
-    scrap = serpscrap.SerpScrap()
-    scrap.init(config=config.get(), keywords=keywords)
-    return scrap.as_csv('/tmp/cryptocurrency')
-
-
-def get_related(config, keywords, related):
-    scrap = serpscrap.SerpScrap()
-    scrap.init(config=config.get(), keywords=keywords)
-    scrap.run()
-    results = scrap.get_related()
-    for keyword in results:
-        if keyword['keyword'] not in related:
-            related.append(keyword['keyword'])
-    return related
-
-
-config = serpscrap.Config()
-config.set('scrape_urls', False)
-
-keywords = ['stellar']
-
-related = keywords
-related = get_related(config, keywords, related)
-
-scrape_to_csv(config, related)
-
-pprint.pprint('********************')
+results = scraper.search(related) if related else []
+scraper.save_json("/tmp/privacy-friendly-search-engines.json", results, overwrite=True)
 pprint.pprint(related)

@@ -63,6 +63,10 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Local Phase-7 diagnostic artifacts
+logs/
+data/
+
 # PyBuilder
 target/
 
@@ -91,3 +95,6 @@ ENV/
 make.bat
 phantomjs/
 chromedriver/
+/.mypy_cache/
+/.pytest_cache/
+/Pipfile.lock

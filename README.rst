@@ -2,178 +2,126 @@
 SerpScrap
 =========
 
-.. image:: https://img.shields.io/pypi/v/SerpScrap.svg
-    :target: https://pypi.python.org/pypi/SerpScrap
+.. image:: https://img.shields.io/badge/version-2.0.0--alpha.1-orange.svg
+   :target: https://github.com/ecoron/SerpScrap/releases
+   :alt: Version 2.0.0-alpha.1
 
 .. image:: https://readthedocs.org/projects/serpscrap/badge/?version=latest
-    :target: http://serpscrap.readthedocs.io/en/latest/
-    :alt: Documentation Status
-
-.. image:: https://travis-ci.org/ecoron/SerpScrap.svg?branch=master
-    :target: https://travis-ci.org/ecoron/SerpScrap
+   :target: https://serpscrap.readthedocs.io/en/latest/
+   :alt: Documentation status
 
 .. image:: https://img.shields.io/docker/pulls/ecoron/serpscrap.svg
-    :target: https://hub.docker.com/r/ecoron/serpscrap
+   :target: https://hub.docker.com/r/ecoron/serpscrap
+   :alt: Docker pulls
 
-SEO python scraper to extract data from major searchengine result pages.
-Extract data like url, title, snippet, richsnippet and the type from searchresults for given keywords. Detect Ads or make automated screenshots.
-You can also fetch text content of urls provided in searchresults or by your own.
-It's usefull for SEO and business related research tasks.
+SerpScrap retrieves structured search results for SEO, research, and
+automation. It is available as a Python package, a CLI, a Docker application,
+and an MCP-compatible server. Results are JSON-compatible and preserve the
+source engine, rank, URL, title, snippets, result type, and typed failures.
 
+Version 2.0.0-alpha.1
+=====================
 
-Extract these result types
---------------------------
+This is an alpha release for evaluation and development. Provider pages are
+dynamic, live searches require Chrome and network access, and results can be
+partial when a provider blocks, rate-limits, requests consent, or changes its
+layout. SerpScrap does not bypass those controls.
 
-* ads_main - advertisements within regular search results
-* image - result from image search
-* news - news teaser within regular search results
-* results - standard search result
-* shopping - shopping teaser within regular search results
-* videos - video teaser within regular search results
-
-For each result of a resultspage get
-====================================
-
-* domain
-* rank
-* rich snippet
-* site links
-* snippet
-* title
-* type
-* url
-* visible url
-
-Also get a screenshot of each result page.
-You can also scrape the text content of each result url.
-It is also possible to save the results as CSV for future analytics.
-If required you can also use your own proxylist.
-
-
-Ressources
-----------
-
-See http://serpscrap.readthedocs.io/en/latest/ for documentation.
-
-Source is available at https://github.com/ecoron/SerpScrap
-
-
-Install
--------
-
-The easy way to do:
-
-.. code-block:: python
-
-   pip uninstall SerpScrap -y
-   pip install SerpScrap --upgrade
-
-More details in the `install`_ section of the documentation.
-
-
-Usage
-=====
-
-SerpScrap in your applications
-
-.. code-block:: python
-  
-  #!/usr/bin/python3
-  # -*- coding: utf-8 -*-
-  import pprint
-  import serpscrap
-  
-  keywords = ['example']
-  
-  config = serpscrap.Config()
-  config.set('scrape_urls', False)
-  
-  scrap = serpscrap.SerpScrap()
-  scrap.init(config=config.get(), keywords=keywords)
- results = scrap.run()
-  
-  for result in results:
-      pprint.pprint(result)
-
-More detailes in the `examples`_ section of the documentation.
-
-To avoid encode/decode issues use this command before you start using SerpScrap in your cli.
+Install the package
+===================
 
 .. code-block:: bash
 
-   chcp 65001
-   set PYTHONIOENCODING=utf-8
+   python -m pip install SerpScrap==2.0.0a1
 
+For a source checkout:
 
-.. image:: https://raw.githubusercontent.com/ecoron/SerpScrap/master/docs/logo.png
-    :target: https://github.com/ecoron/SerpScrap
+.. code-block:: bash
 
-Supported OS
-------------
+   git clone https://github.com/ecoron/SerpScrap.git
+   cd SerpScrap
+   pipenv install --dev
+   pipenv run python -m pip install -e .
 
-* SerpScrap should work on Linux, Windows and Mac OS with installed Python >= 3.4
-* SerpScrap requieres lxml
-* Doesn't work on iOS
+Python example
+==============
 
-Changes
--------
-Notes about major changes between releases
+.. code-block:: python
 
-0.13.0
-------
+   from serpscrap import Config, SerpScrap
 
-* updated dependencies: chromedriver >= 76.0.3809.68 to use actual driver, sqlalchemy>=1.3.7 to solve security issues and other minor update changes
-* minor changes install_chrome.sh
+   config = Config()
+   config.apply({
+       "search_engines": ["google", "bing"],
+       "country_code": "DE",
+       "num_workers": 2,
+   })
 
-0.12.0
-======
+   scraper = SerpScrap()
+   results = scraper.search("privacy friendly search", config=config, pages=1)
+   scraper.save_json("results.json", overwrite=True)
 
-I recommend an update to the latest version of SerpScrap, because the searchengine has updated the markup of search result pages(serp)
+CLI example
+===========
 
-* Update and cleanup of selectors to fetch results
-* new resulttype videos
+.. code-block:: bash
 
-0.11.0
-======
+   serpscrap search -k "renewable energy" --search-type news \
+     --engine google --engine bing --country DE --workers 2 \
+     --output results.json --overwrite
 
-* Chrome headless is now the default browser, usage of phantomJS is deprecated
-* chromedriver is installed on the first run (tested on Linux and Windows. Mac OS should also work)
-* behavior of scraping raw text contents from serp urls, and of course given urls, has changed
-* run scraping of serp results and contents at once
-* csv output format changed, now it's tab separated and quoted
+The CLI keeps result JSON on stdout and progress/logging on stderr. Run
+``serpscrap search --help`` for the complete option reference.
 
-0.10.0
-======
+Docker application
+==================
 
-* support for headless chrome, adjusted default time between scrapes
+The Compose stack provides the API, PostgreSQL history, web UI, and MCP
+gateway:
 
-0.9.0
-=====
+.. code-block:: bash
 
-* result types added (news, shopping, image)
-* Image search is supported
+   mkdir -p data/postgres data/cache data/diagnostics data/exports logs
+   docker compose -f docker/compose.yml up --build
 
-0.8.0
-=====
+Open ``http://localhost:8080`` for the UI, use the API at
+``http://localhost:8000/api/v1``, and connect MCP clients to
+``http://localhost:8001``. See the :doc:`docs/docker` guide for health checks,
+mounts, operations, and security boundaries.
 
-* text processing tools removed.
-* less requirements
+MCP server
+==========
 
+The MCP gateway exposes tools for starting searches, polling status, listing
+results, inspecting history, discovering engines, and managing validated
+configuration. See the :doc:`docs/mcp` guide for JSON-RPC examples and client
+connection details.
 
-References
-----------
+Documentation map
+=================
 
-SerpScrap is using `Chrome headless`_ and `lxml`_ to scrape serp results. For raw text contents of fetched URL's, it is using `beautifulsoup4`_ .
-SerpScrap also supports `PhantomJs`_ ,which is deprecated, a scriptable headless WebKit, which is installed automaticly on the first run (Linux, Windows).
-The scrapcore was based on `GoogleScraper`_ , an outdated project, and has many changes and improvemts.
+* `User guide <https://serpscrap.readthedocs.io/en/latest/examples.html>`_
+  — Python and CLI examples.
+* `CLI reference <https://serpscrap.readthedocs.io/en/latest/cli.html>`_
+  — commands and important parameters.
+* `Docker guide <https://serpscrap.readthedocs.io/en/latest/docker.html>`_
+  — application deployment and operations.
+* `MCP guide <https://serpscrap.readthedocs.io/en/latest/mcp.html>`_
+  — gateway tools and JSON-RPC.
+* `Developer guide <https://serpscrap.readthedocs.io/en/latest/development.html>`_
+  — repository, tests, providers, and documentation.
 
-.. target-notes::
+Project checks
+=============
 
-.. _`install`: http://serpscrap.readthedocs.io/en/latest/install.html
-.. _`examples`: http://serpscrap.readthedocs.io/en/latest/examples.html
-.. _`Chrome headless`: http://chromedriver.chromium.org/
-.. _`lxml`: https://lxml.de/
-.. _`beautifulsoup4`: https://www.crummy.com/software/BeautifulSoup/
-.. _`PhantomJs`: https://github.com/ariya/phantomjs
-.. _`GoogleScraper`: https://github.com/NikolaiT/GoogleScraper
+.. code-block:: bash
 
+   pipenv run python -m ruff check serpscrap scrapcore tests
+   pipenv run python -m pytest -m "not browser"
+   pipenv run python -m sphinx -W --keep-going -b html docs docs/_build/html
+
+License and source
+==================
+
+Source code is available at https://github.com/ecoron/SerpScrap. The project
+is licensed under the terms in ``LICENSE``.

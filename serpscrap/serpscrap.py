@@ -1,220 +1,134 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-"""
-SerpScrap.SerpScrap
-"""
-import argparse
-import os
-import pprint
-import shutil
+"""Comfortable public SerpScrap API."""
 
-from scrapcore.core import Core
-from scrapcore.logger import Logger
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping
+from pathlib import Path
+from typing import Any
+
+from serpscrap.application import SearchApplication
 from serpscrap.config import Config
-from serpscrap.csv_writer import CsvWriter
-from serpscrap.chrome_install import ChromeInstall
-from serpscrap.phantom_install import PhantomInstall
+from serpscrap.models import SearchReport, SearchRequest
+from serpscrap.output import JsonResultWriter, normalize_json_path
 from serpscrap.urlscrape import UrlScrape
 
 
-logger = Logger()
-logger.setup_logger()
-logger = logger.get_logger()
+class SerpScrap:
+    """Run independent searches and return JSON-compatible dictionaries."""
 
+    def __init__(
+        self,
+        application: SearchApplication | None = None,
+        writer: JsonResultWriter | None = None,
+    ) -> None:
+        self.application = application or SearchApplication()
+        self.writer = writer or JsonResultWriter()
+        self.serp_query: list[str] | None = None
+        self.config: dict[str, Any] | None = None
+        self.results: list[dict[str, Any]] = []
+        self.related: list[dict[str, Any]] = []
+        self.last_report: SearchReport | None = None
 
-class SerpScrap():
-    """main module to execute the serp and url scrape tasks
-    Attributes:
-        args: list for cli args
-        serp_query: list holds the keywords to query the search engine
-        cli (list): for cli attributes
-        init (dict, str|list): init SerpScarp
-        run (): main method
-        scrap_serps (): scrape serps
-        scrap (): calls GoogleScraper
-        scrap_url(string): calls UrlScrape
-        as_csv(string): scrape serps save as csv
-    """
-    args = []
+    def search(
+        self,
+        keywords: str | Iterable[str],
+        *,
+        config: Config | Mapping[str, Any] | None = None,
+        pages: int | None = None,
+        workers: int | None = None,
+        visible: bool | None = None,
+        screenshots: bool | None = None,
+        scrape_urls: bool | None = None,
+        output: str | Path | None = None,
+        overwrite: bool = False,
+        **options: Any,
+    ) -> list[dict[str, Any]]:
+        """Execute one search request with no mandatory initialization step."""
 
-    serp_query = None
+        friendly_options = dict(options)
+        if pages is not None:
+            friendly_options["num_pages_for_keyword"] = pages
+        if workers is not None:
+            friendly_options["num_workers"] = workers
+        if visible is not None:
+            friendly_options["chrome_headless"] = not visible
+        if screenshots is not None:
+            friendly_options["screenshot"] = screenshots
+        if scrape_urls is not None:
+            friendly_options["scrape_urls"] = scrape_urls
 
-    results = []
+        target = normalize_json_path(output) if output is not None else None
+        if target is not None and target.exists() and not overwrite:
+            raise FileExistsError(f"Refusing to overwrite existing result file: {target}")
+        request = SearchRequest.create(keywords, config=config, **friendly_options)
+        report = self.application.execute(request)
+        self.last_report = report
+        self.results = report.results
+        self.related = report.related_keywords
+        if target is not None:
+            self.writer.write(target, self.results, overwrite=overwrite)
+        return self.results
 
-    related = []
+    def save_json(
+        self,
+        file_path: str | Path,
+        results: Iterable[Mapping[str, Any]] | None = None,
+        *,
+        overwrite: bool = False,
+    ) -> Path:
+        """Save provided or most recent results as an atomic JSON array."""
 
-    def cli(self, args=None):
-        """method called if executed on command line
-        Args:
-            args (mixed): args via commandline
-        Returns:
-            list: dicts of results
-        """
-        parser = argparse.ArgumentParser(prog='serpscrap')
-        parser.add_argument(
-            '-k',
-            '--keyword',
-            help='keyword for scraping',
-            nargs='*'
+        return self.writer.write(
+            file_path,
+            self.results if results is None else results,
+            overwrite=overwrite,
         )
-        self.args = parser.parse_args()
-        if len(self.args.keyword) > 0:
-            keywords = ' '.join(self.args.keyword)
 
-        self.init(config=None, keywords=keywords)
+    def init(
+        self,
+        config: Config | Mapping[str, Any] | None = None,
+        keywords: str | Iterable[str] | None = None,
+    ) -> None:
+        """Compatibility adapter for the Phase 1 ``init``/``run`` lifecycle."""
+
+        if keywords is None:
+            raise ValueError("No keywords given")
+        request = SearchRequest.create(keywords, config=config)
+        self.config = request.to_config()
+        self.serp_query = list(request.queries)
+
+    def run(self) -> list[dict[str, Any]]:
+        """Run a request prepared by ``init`` (Phase 1 compatibility)."""
+
+        if self.config is None or self.serp_query is None:
+            raise RuntimeError("Call init() before run(), or use search() directly")
+        return self.search(self.serp_query, config=self.config)
+
+    def scrap_serps(self) -> list[dict[str, Any]]:
+        """Compatibility alias returning the same canonical result list."""
+
         return self.run()
 
-    def init(self, config=None, keywords=None):
-        """init config and serp_query
-        Args:
-            config (None|dict): override default config
-            keywords (str|list): string or list of strings, keywords to scrape
-        Raises:
-            ValueError:
-        """
-        if config is not None:
-            self.config = config
-        else:
-            self.config = Config().get()
-
-        if self.config['executable_path'] == '' and self.config['sel_browser'] == 'phantomjs':
-            logger.info('preparing phantomjs')
-            firstrun = PhantomInstall()
-            phantomjs = firstrun.detect_phantomjs()
-            if phantomjs is None:
-                firstrun.download()
-                phantomjs = firstrun.detect_phantomjs()
-                if phantomjs is None:
-                    raise Exception('''
-                        phantomjs binary not found,
-                        provide custom path in config''')
-            self.config.__setitem__('executable_path', phantomjs)
-            logger.info('using ' + str(phantomjs))
-        elif self.config['executable_path'] == '' and self.config['sel_browser'] == 'chrome':
-            logger.info('preparing chromedriver')
-            firstrun = ChromeInstall()
-            chromedriver = firstrun.detect_chromedriver()
-            if chromedriver is None:
-                firstrun.download()
-                chromedriver = firstrun.detect_chromedriver()
-                if chromedriver is None:
-                    raise Exception('''
-                        chromedriver binary not found,
-                        provide custom path in config''')
-            self.config.__setitem__('executable_path', chromedriver)
-            logger.info('using ' + str(chromedriver))
-
-        # cleanup screenshot dir on init
-        if os.path.exists(self.config['dir_screenshot']):
-            shutil.rmtree(self.config['dir_screenshot'], ignore_errors=True)
-        # create screenshot dir current date
-        screendir = '{}/{}'.format(
-            self.config['dir_screenshot'],
-            self.config['today']
-        )
-
-        if not os.path.exists(screendir):
-            os.makedirs(screendir)
-
-        if isinstance(keywords, str):
-            self.serp_query = [keywords]
-        elif isinstance(keywords, list) and len(keywords) > 0:
-            self.serp_query = keywords
-        else:
-            raise ValueError('no keywords given')
-
-    def run(self):
-        """main method to run scrap_serps and scrap_url
-        Returns:
-            list: dicts with all results
-        """
-        self.results = []
-        if self.serp_query is not None:
-            self.results = self.scrap_serps()
-
-        if self.config['scrape_urls']:
-            for index, result in enumerate(self.results):
-                if 'serp_type' in result and \
-                   'serp_url' in result:
-                    logger.info('Scraping URL: ' + result['serp_url'])
-                    result_url = self.scrap_url(result['serp_url'])
-                    if 'status' in result_url:
-                        self.results[index].update(result_url)
-        return self.results if isinstance(self.results, list) else [self.results]
-
-    def as_csv(self, file_path):
-        writer = CsvWriter()
-        self.results = self.run()
-        writer.write(file_path + '.csv', self.results)
-
-    def scrap_serps(self):
-        """call scrap method and append serp results to list
-        Returns
-            list: dict of scrape results
-        """
-        search = self.scrap()
-        self.results = []
-        if search is not None:
-            for serp in search.serps:
-                self.related = []
-                for related_keyword in serp.related_keywords:
-                    self.related.append({
-                        'keyword': related_keyword.keyword,
-                        'rank': related_keyword.rank
-                    })
-                for link in serp.links:
-                    self.results.append({
-                        'query_num_results_total': serp.num_results_for_query,
-                        'query_num_results_page': serp.num_results,
-                        'query_page_number': serp.page_number,
-                        'query': serp.query,
-                        'serp_rank': link.rank,
-                        'serp_type': link.link_type,
-                        'serp_url': link.link,
-                        'serp_rating': link.rating,
-                        'serp_title': link.title,
-                        'serp_domain': link.domain,
-                        'serp_visible_link': link.visible_link,
-                        'serp_snippet': link.snippet,
-                        'serp_sitelinks': link.sitelinks,
-                        'screenshot': os.path.join('{}/{}/{}_{}-p{}.png'.format(
-                            self.config['dir_screenshot'],
-                            self.config['today'],
-                            'google',
-                            serp.query,
-                            str(serp.page_number),
-                        ))
-                    })
-            return self.results
-        else:
-            raise Exception('No Results')
-
     def scrap(self):
-        """scrap, method calls GoogleScraper method
-        Returns:
-            dict: scrape result#
-        """
-        # See in the config.cfg file for possible values
-        self.config['keywords'] = self.serp_query \
-            if isinstance(self.serp_query, list) else [self.serp_query]
+        """Compatibility hook returning the Phase 1 ORM graph."""
 
-        return Core().run(self.config)
+        if self.config is None or self.serp_query is None:
+            raise RuntimeError("Call init() before scrap()")
+        config = dict(self.config)
+        config["keywords"] = list(self.serp_query)
+        return self.application.runner.run(config)
 
-    def scrap_url(self, url):
-        """method calls UrlScrape
-        Args:
-            url (string): url to scrape
-        Returns:
-            dict: result of url scrape
-        """
-        urlscrape = UrlScrape(self.config)
-        return urlscrape.scrap_url(url)
+    def scrap_url(self, url: str) -> dict[str, Any]:
+        if self.config is None:
+            self.config = Config().get()
+        return UrlScrape(self.config).scrap_url(url)
 
-    def get_related(self):
-        return self.related
+    def get_related(self) -> list[dict[str, Any]]:
+        return [dict(item) for item in self.related]
 
+    def get_failures(self) -> list[dict[str, Any]]:
+        """Return structured failures from the most recent request."""
 
-if __name__ == "__main__":
-    """called on commandline execution"""
-    res = SerpScrap().cli()
-    pprint.pprint(res)
+        if self.last_report is None:
+            return []
+        return [failure.to_dict() for failure in self.last_report.failures]

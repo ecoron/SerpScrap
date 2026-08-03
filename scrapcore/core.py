@@ -1,201 +1,223 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-import datetime
-import queue
-import threading
+"""Orchestrate capture, parsing, persistence, and serialization."""
 
-from random import shuffle
+from __future__ import annotations
+
+import logging
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+from itertools import cycle
+
 from scrapcore.cachemanager import CacheManager
-from scrapcore.database import ScraperSearch
-from scrapcore.database import get_session, fixtures
+from scrapcore.database import ScraperSearch, SearchEngineResultsPage, fixtures, get_session
+from scrapcore.jobs import CapturedPage, ScrapeFailure, ScrapeJob, ScrapeJobResult
 from scrapcore.logger import Logger
-from scrapcore.result_writer import ResultWriter
+from scrapcore.parsing import Parsing
+from scrapcore.repository import SqliteHistoryRepository
 from scrapcore.scraper.scrape_worker_factory import ScrapeWorkerFactory
-from scrapcore.tools import Proxies
-from scrapcore.tools import ScrapeJobGenerator
-from scrapcore.tools import ShowProgressQueue
+from scrapcore.tools import Proxies, ScrapeJobGenerator
 from scrapcore.validator_config import ValidatorConfig
 
 
-class Core():
+def utc_now_naive() -> datetime:
+    """Return UTC in the naive form used by the existing SQLite schema."""
 
-    logger = None
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
-    def run(self, config):
-        """run with the dict in config."""
-        validator = ValidatorConfig()
-        validator.validate(config)
 
+class Core:
+    """Main controller for a complete scrape operation."""
+
+    def __init__(
+        self,
+        worker_factory: ScrapeWorkerFactory | None = None,
+        history_repository: SqliteHistoryRepository | None = None,
+    ):
+        self.logger: logging.Logger | None = None
+        self.worker_factory = worker_factory
+        self.history_repository = history_repository or SqliteHistoryRepository()
+
+    def run(self, config: dict):
+        ValidatorConfig().validate(config)
         return self.main(return_results=True, config=config)
 
-    def main(self, return_results=False, config=None):
-        """the main method"""
+    @staticmethod
+    def _parse_search_engines(config: dict) -> list[str]:
+        engines = config.get("search_engines", ["google"])
+        if isinstance(engines, str):
+            engines = [item.strip() for item in engines.split(",") if item.strip()]
+        return sorted(set(engines))
 
-        logger = Logger()
-        logger.setup_logger(level=config.get('log_level').upper())
-        self.logger = logger.get_logger()
-
-        keywords = set(config.get('keywords', []))
-        proxy_file = config.get('proxy_file', '')
-
-        # when no search engine is specified, use google
-        search_engines = config.get('search_engines', ['google'])
-        if not isinstance(search_engines, list):
-            if search_engines == '*':
-                search_engines = config.get('supported_search_engines')
-            else:
-                search_engines = search_engines.split(',')
-        search_engines = set(search_engines)
-
-        num_search_engines = len(search_engines)
-        num_workers = int(config.get('num_workers'))
-        scrape_method = config.get('scrape_method')
-        pages = int(config.get('num_pages_for_keyword', 1))
-        method = config.get('scrape_method', 'selenium')
-
-        result_writer = ResultWriter()
-        result_writer.init_outfile(config, force_reload=True)
-
-        cache_manager = CacheManager(config, self.logger, result_writer)
-
-        scrape_jobs = {}
-
-        if not scrape_jobs:
-            scrape_jobs = ScrapeJobGenerator().get(
-                keywords,
-                search_engines,
-                scrape_method,
-                pages
-            )
-
-        scrape_jobs = list(scrape_jobs)
-
-        proxies = []
-
-        if config.get('use_own_ip'):
-            proxies.append(None)
-        elif proxy_file:
-            proxies = Proxies().parse_proxy_file(proxy_file)
-
+    @staticmethod
+    def _get_proxies(config: dict) -> list:
+        if config.get("use_own_ip", True):
+            return [None]
+        proxies = Proxies().parse_proxy_file(config["proxy_file"])
         if not proxies:
-            raise Exception('''No proxies available. Turning down.''')
-        shuffle(proxies)
+            raise ValueError("No proxies available")
+        return proxies
 
-        # get a scoped sqlalchemy session
-        session_cls = get_session(config, scoped=True)
-        session = session_cls()
+    def _init_logger(self, config: dict) -> None:
+        configured = Logger()
+        configured.setup_logger(level=config.get("log_level", "INFO").upper())
+        self.logger = configured.get_logger()
 
-        # add fixtures
-        fixtures(config, session)
+    @staticmethod
+    def _group_jobs(raw_jobs: list[dict], config: dict, proxies: list) -> list[ScrapeJob]:
+        pages_by_query: dict[tuple[str, str], list[int]] = defaultdict(list)
+        for raw_job in raw_jobs:
+            pages_by_query[(raw_job["query"], raw_job["search_engine"])].append(
+                int(raw_job["page_number"])
+            )
+        proxy_cycle = cycle(proxies)
+        return [
+            ScrapeJob(
+                query=query,
+                search_engine=engine,
+                search_type=config.get("search_type", "normal"),
+                pages=tuple(sorted(set(pages))),
+                proxy=next(proxy_cycle),
+            )
+            for (query, engine), pages in pages_by_query.items()
+        ]
 
-        # add proxies to the database
-        Proxies().add_proxies_to_db(proxies, session)
+    def _persist_page(
+        self,
+        captured: CapturedPage,
+        config: dict,
+        session,
+        scraper_search: ScraperSearch,
+        cache_manager: CacheManager,
+    ) -> SearchEngineResultsPage:
+        parser_class = Parsing().get_parser_by_search_engine(captured.search_engine)
+        parser = parser_class(config=config, query=captured.query)
+        parser.parse(captured.html)
 
+        serp = Parsing().parse_serp(config, parser=parser, query=captured.query)
+        serp.search_engine_name = captured.search_engine
+        serp.scrape_method = "selenium"
+        serp.page_number = captured.page_number
+        serp.requested_at = captured.requested_at.replace(tzinfo=None)
+        serp.requested_by = captured.requested_by
+        serp.status = "successful"
+        serp.screenshot = captured.screenshot
+        scraper_search.serps.append(serp)
+        session.add(serp)
+        cache_manager.cache_results(
+            parser,
+            captured.query,
+            captured.search_engine,
+            "selenium",
+            captured.page_number,
+        )
+        return serp
+
+    @staticmethod
+    def _persist_failure(
+        failure: ScrapeFailure, session, scraper_search: ScraperSearch
+    ) -> SearchEngineResultsPage:
+        serp = SearchEngineResultsPage(
+            status=f"{failure.category}: {failure.message}",
+            search_engine_name=failure.search_engine,
+            scrape_method="selenium",
+            page_number=failure.page_number,
+            requested_at=utc_now_naive(),
+            requested_by="localhost",
+            query=failure.query,
+            num_results=0,
+            no_results=False,
+        )
+        serp.failure_url = failure.url
+        serp.failure_retryable = failure.retryable
+        serp.correlation_id = failure.correlation_id
+        serp.attempt_count = failure.attempt_count
+        scraper_search.serps.append(serp)
+        session.add(serp)
+        return serp
+
+    def main(self, return_results: bool = False, config: dict | None = None):
+        if config is None:
+            raise ValueError("config is required")
+        self._init_logger(config)
+        assert self.logger is not None
+
+        keywords = list(dict.fromkeys(config.get("keywords", [])))
+        if not keywords:
+            raise ValueError("At least one keyword is required")
+        engines = self._parse_search_engines(config)
+        proxies = self._get_proxies(config)
+        pages = int(config.get("num_pages_for_keyword", 1))
+        num_workers = int(config.get("num_workers", 1))
+
+        cache_manager = CacheManager(config, self.logger)
+        session_factory = get_session(config, path=":memory:")
+        session = session_factory()
         scraper_search = ScraperSearch(
-            number_search_engines_used=num_search_engines,
-            number_proxies_used=len(proxies),
+            number_search_engines_used=len(engines),
+            number_proxies_used=len([proxy for proxy in proxies if proxy]),
             number_search_queries=len(keywords),
-            started_searching=datetime.datetime.utcnow(),
-            used_search_engines=','.join(search_engines)
+            started_searching=utc_now_naive(),
+            used_search_engines=",".join(engines),
         )
 
-        # First of all, lets see how many requests remain
-        # to issue after searching the cache.
-        if config.get('do_caching'):
-            scrape_jobs = cache_manager.filter_scrape_jobs(
-                scrape_jobs,
-                session,
-                scraper_search
-            )
-
-        if scrape_jobs:
-
-            # Create a lock to synchronize database
-            # access in the sqlalchemy session
-            db_lock = threading.Lock()
-
-            # create a lock to cache results
-            cache_lock = threading.Lock()
-
-            # A lock to prevent multiple threads from solving captcha,
-            # used in selenium instances.
-            captcha_lock = threading.Lock()
-
-            self.logger.info('''
-                Going to scrape {num_keywords} keywords with {num_proxies}
-                proxies by using {num_threads} threads.'''.format(
-                num_keywords=len(list(scrape_jobs)),
-                num_proxies=len(proxies),
-                num_threads=num_search_engines)
-            )
-
-            progress_thread = None
-
-            # Show the progress of the scraping
-            q = queue.Queue()
-            progress_thread = ShowProgressQueue(config, q, len(scrape_jobs))
-            progress_thread.start()
-
-            workers = queue.Queue()
-            num_worker = 0
-            for search_engine in search_engines:
-
-                for proxy in proxies:
-                    for worker in range(num_workers):
-                        num_worker += 1
-                        workers.put(
-                            ScrapeWorkerFactory(
-                                config,
-                                cache_manager=cache_manager,
-                                mode=method,
-                                proxy=proxy,
-                                search_engine=search_engine,
-                                session=session,
-                                db_lock=db_lock,
-                                cache_lock=cache_lock,
-                                scraper_search=scraper_search,
-                                captcha_lock=captcha_lock,
-                                progress_queue=q,
-                                browser_num=num_worker
-                            )
-                        )
-
-            # here we look for suitable workers
-            # for all jobs created.
-            for job in scrape_jobs:
-                while True:
-                    worker = workers.get()
-                    workers.put(worker)
-                    if worker.is_suitabe(job):
-                        worker.add_job(job)
-                        break
-
-            threads = []
-
-            while not workers.empty():
-                worker = workers.get()
-                thread = worker.get_worker()
-                if thread:
-                    threads.append(thread)
-
-            for t in threads:
-                t.start()
-
-            for t in threads:
-                t.join()
-
-            # after threads are done, stop the progress queue.
-            q.put('done')
-            progress_thread.join()
-
-        result_writer.close_outfile()
-
-        scraper_search.stopped_searching = datetime.datetime.utcnow()
         try:
+            fixtures(config, session)
+            Proxies().add_proxies_to_db(proxies, session)
+            raw_jobs = list(
+                ScrapeJobGenerator().get(keywords, engines, "selenium", pages)
+            )
+            if config.get("do_caching", True):
+                raw_jobs = cache_manager.filter_scrape_jobs(
+                    raw_jobs, session, scraper_search
+                )
+
+            jobs = self._group_jobs(raw_jobs, config, proxies)
+            factory = self.worker_factory or ScrapeWorkerFactory(config)
+            results: list[ScrapeJobResult] = []
+            if jobs:
+                self.logger.info(
+                    "Capturing %s query jobs with %s Chrome worker(s)",
+                    len(jobs),
+                    min(num_workers, len(jobs)),
+                )
+                with ThreadPoolExecutor(
+                    max_workers=min(num_workers, len(jobs)),
+                    thread_name_prefix="serpscrap",
+                ) as executor:
+                    futures = [executor.submit(factory.execute, job) for job in jobs]
+                    results = [future.result() for future in futures]
+
+            for result in results:
+                for captured in result.pages:
+                    self._persist_page(
+                        captured,
+                        config,
+                        session,
+                        scraper_search,
+                        cache_manager,
+                    )
+                for failure in result.failures:
+                    self._persist_failure(failure, session, scraper_search)
+
+            scraper_search.stopped_searching = utc_now_naive()
             session.add(scraper_search)
             session.commit()
-        except Exception:
-            pass
 
-        if return_results:
-            return scraper_search
+            # Fully materialize the graph before detaching it from the session.
+            for serp in scraper_search.serps:
+                list(serp.links)
+                list(serp.related_keywords)
+            session.expunge_all()
+            scraper_search.persistence_failures = []
+            if config.get("store_history", True):
+                try:
+                    self.history_repository.persist(config, scraper_search)
+                except Exception as exc:
+                    self.logger.error("Optional SQLite history persistence failed: %s", exc)
+                    scraper_search.persistence_failures.append(str(exc))
+            return scraper_search if return_results else None
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()

@@ -13,6 +13,14 @@ All notable changes to this project will be documented in this file.
 - Fixed the UI API proxy to forward query parameters such as ``run_id`` and
   constrained result-table wrapping so historical inspection targets the
   selected run and remains readable.
+- Replaced live and historical result tables with responsive result cards,
+  visible snippets, relevance/engine badges, sorting, and a desktop
+  master-detail workspace that stacks cleanly on smaller screens.
+- Moved historical results inline below their selected run and moved advanced
+  search controls into a settings overlay. Global ``q`` searches now start
+  automatically after the search workspace loads.
+- Fixed settings-overlay closing by honoring the HTML ``hidden`` attribute and
+  prevented duplicate searches by locking the submit action until a run ends.
 
 - Removed the internal ``refactoring2026.md`` planning document from the
   public documentation navigation and updated the URL-scraping example to use

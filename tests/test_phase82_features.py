@@ -46,7 +46,8 @@ def test_ui_contract_contains_grouped_engine_and_delete_controls():
     assert "renderResults" in app
     assert "overflow-x: auto" in (root / "static" / "css" / "components.css").read_text(encoding="utf-8")
     assert "grid-template-columns" in css
-    assert "delete-historical" in template
+    assert "Inspect" in app
+    assert "history-detail-row" in app
 
 
 def test_history_exposes_progress_state(tmp_path):

@@ -97,6 +97,22 @@ Rows expose result type, relevance, contributing engines, and a ``Details``
 action. The detail panel displays title, snippet, source engine, relevance,
 and destination URL for live and historical runs.
 
+The UI uses compact result cards with the title, domain, URL, snippet, result
+type, relevance, and engine coverage visible in the listing. Desktop layouts
+use a two-column master-detail workspace: only the result list scrolls while
+the selected-result panel remains visible. At narrow widths the columns stack
+and the detail panel becomes part of the normal mobile flow.
+
+History inspection is rendered as an expandable row directly below the
+selected search run. The archive list remains the primary navigation surface,
+while the selected run's result cards and detail panel stay visually attached
+to that row.
+
+Advanced search options are opened through the settings control beside the
+global search field. A global search query such as ``/search?q=research`` is
+copied into the search form and submitted automatically after configuration
+loads, so users do not need to press a second search button.
+
 The same-origin UI proxy must preserve the incoming query string when
 forwarding API requests. In particular, ``run_id`` is required for historical
 results; dropping it causes the API to return the most recent results instead

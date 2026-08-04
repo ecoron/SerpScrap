@@ -22,8 +22,13 @@ def test_flask_ui_renders_shell_and_healthcheck():
         assert response.status_code == 200
         assert marker in response.data
 
-    assert b"current-detail" in client.get("/search").data
-    assert b"historical-result-detail" in client.get("/history").data
+    search_page = client.get("/search").data
+    history_page = client.get("/history").data
+    assert b"current-detail" in search_page
+    assert b"search-settings-overlay" in search_page
+    assert b"search-settings-toggle" in page.data
+    assert b"historical-result-detail" not in history_page
+    assert b"result-list" in search_page
 
     health = client.get("/healthz")
     assert health.status_code == 200
@@ -48,6 +53,13 @@ def test_ui_result_contract_keeps_all_result_kinds_and_awaits_refresh_callbacks(
     assert "&kind=organic" not in api_source
     assert "await onUpdate(status)" in polling_source
     assert "await refreshCurrent(); await refreshOverview();" in app_source
+    assert "result-sort" in app_source
+    assert "result-snippet" in results_source
+    assert "await startSearch({preventDefault() {}})" in app_source
+    assert "createHistoricalDetailRow" in app_source
+    assert "if (searchSubmitting) return" in app_source
+    assert "finally { searchSubmitting = false" in app_source
+    assert ".search-settings-overlay[hidden]" in open("ui/static/css/pages.css", encoding="utf-8").read()
 
 
 def test_ui_proxy_reads_database_backed_history(monkeypatch, tmp_path):

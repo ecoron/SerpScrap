@@ -16,7 +16,7 @@ export const api = {
   configuration: () => request('/configuration'),
   analytics: () => request('/history/analytics'),
   history: query => request(`/history/searches${query ? `?query=${encodeURIComponent(query)}` : ''}`),
-  results: id => request(`/results?run_id=${encodeURIComponent(id)}&kind=organic`),
+  results: id => request(`/results?run_id=${encodeURIComponent(id)}`),
   failures: id => request(`/searches/${encodeURIComponent(id)}/failures`),
   status: id => request(`/searches/${encodeURIComponent(id)}`),
   engines: () => request('/engines'),

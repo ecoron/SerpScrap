@@ -82,3 +82,22 @@ Documentation changes
 Keep user instructions current with the actual CLI help, public Python method
 signatures, Compose ports, and MCP tool schemas. The historical implementation
 plan is kept separately from these user-facing pages.
+
+UI search-result contract
+=========================
+
+The search workspace keeps the active run ID as its source of truth. Polling
+awaits each status update and, when a run reaches ``completed`` or ``failed``,
+refreshes the current results before refreshing overview/history metrics. The
+results endpoint is not restricted to ``kind=organic`` so image, news,
+shopping, and video runs remain visible.
+
+Each normalized result is grouped by canonical URL within its selected run.
+Rows expose result type, relevance, contributing engines, and a ``Details``
+action. The detail panel displays title, snippet, source engine, relevance,
+and destination URL for live and historical runs.
+
+The same-origin UI proxy must preserve the incoming query string when
+forwarding API requests. In particular, ``run_id`` is required for historical
+results; dropping it causes the API to return the most recent results instead
+of the selected run.

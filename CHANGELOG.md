@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Fixed UI polling races by awaiting status-update callbacks and refreshing
+  completed-run results before overview/history data.
+- Kept non-organic result kinds visible and added live/historical result detail
+  panels with type, snippet, relevance, engine, and URL metadata.
+- Fixed the UI API proxy to forward query parameters such as ``run_id`` and
+  constrained result-table wrapping so historical inspection targets the
+  selected run and remains readable.
+
 - Removed the internal ``refactoring2026.md`` planning document from the
   public documentation navigation and updated the URL-scraping example to use
   the stable SerpScrap documentation site.

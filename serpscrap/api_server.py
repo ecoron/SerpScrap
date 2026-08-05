@@ -79,7 +79,23 @@ class ApiHandler(BaseHTTPRequestHandler):
                 )},
             )
         if path == "/api/v1/history/analytics":
-            return self._send(HTTPStatus.OK, self.service.store.analytics((query.get("query") or [None])[0]))
+            filters = {key: (values[0] if values else None) for key, values in query.items()}
+            return self._send(HTTPStatus.OK, self.service.store.analytics(filters=filters))
+        if path == "/api/v1/history/timeseries":
+            filters = {key: values[0] for key, values in query.items() if key not in {"interval", "metric"}}
+            return self._send(HTTPStatus.OK, self.service.store.timeseries(filters, (query.get("metric") or ["results"])[0]))
+        if path in {"/api/v1/history/providers", "/api/v1/history/queries", "/api/v1/history/domains"}:
+            filters = {key: values[0] for key, values in query.items()}
+            return self._send(HTTPStatus.OK, self.service.store.aggregates(path.rsplit("/", 1)[-1], filters))
+        if path == "/api/v1/history/compare":
+            left, right = tuple((query.get(key) or [None])[0] for key in ("left", "right"))
+            if not left or not right:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": "left and right are required"})
+            return self._send(HTTPStatus.OK, self.service.store.compare(left, right, min(int((query.get("limit") or [500])[0]), 500)))
+        if path == "/api/v1/history/export":
+            filters = {key: values[0] for key, values in query.items() if key != "format"}
+            body, content_type = self.service.store.export(filters, (query.get("format") or ["json"])[0])
+            encoded = body.encode("utf-8"); self.send_response(HTTPStatus.OK); self.send_header("Content-Type", content_type); self.send_header("Content-Length", str(len(encoded))); self.send_header("Content-Disposition", "attachment; filename=history-export." + ("csv" if content_type == "text/csv" else "json")); self.end_headers(); self.wfile.write(encoded); return
         prefix = "/api/v1/searches/"
         if path.startswith(prefix):
             remainder = path[len(prefix):]

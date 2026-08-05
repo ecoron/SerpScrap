@@ -6,6 +6,38 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Extended historical result detail fallbacks for provider-specific snippet
+  fields such as `description`, `summary`, `text`, `content`, and
+  `visible_link`, including legacy persisted Yandex results.
+
+- Aligned History run statuses with Recent Activity badges and added a
+  functional `Search again` action next to `Inspect` for every run.
+
+- Improved History Compare with automatic loading, explicit empty/same-run
+  states, and responsive selection updates. Replaced provider-count coverage
+  with the provider's percentage share of attributed results.
+
+- Fixed historical result detail rendering to use the normalized SERP fields
+  (`serp_title`, `serp_snippet`, `canonical_url`, and ranking metadata), so
+  inline History results no longer fall back to “Untitled result”.
+
+- Restored History run inspection after the analytics navigation update:
+  `Inspect` opens results inline below the run, and shared `?run=` links
+  automatically expand the requested run. Added focused History layout styles.
+
+- Completed the History dashboard foundation: date/query/status/provider/result
+  filters now affect API-backed metrics and views; added Runs, Trends, Coverage,
+  and Compare navigation with accessible trend tables and URL-preserved scope.
+
+- Implemented the Alpha 2.0.0 History & analysis API foundation: versioned
+  filtered analytics, daily timeseries, provider/query/domain aggregates,
+  two-run comparison, and bounded CSV/JSON exports with deterministic tests.
+
+- Added the Alpha 2.0.0 History & analysis expansion plan in
+  `docs/alpha-2.0.0-ui.md`, covering research use cases, analytics contracts,
+  trends, provider/query/domain views, run comparison, exports, tests, and
+  acceptance criteria.
+
 - Simplified the overview page around the primary search action and recent
   activity, removed redundant workflow/live-workspace panels, and fixed the
   provider metric to count enabled engines from the engine registry.

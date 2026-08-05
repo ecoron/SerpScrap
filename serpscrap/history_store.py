@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
+from collections import Counter, defaultdict
+from urllib.parse import urlparse
+import csv
+import io
 from pathlib import Path
 from typing import Any
 
@@ -307,27 +311,101 @@ class SearchHistoryStore:
             # applying that filter in Python.
             scan_limit = 10_000 if result_kind else max(1, offset + limit)
             statement = statement.limit(scan_limit)
-            rows = [json.loads(row.payload_json) for row in session.scalars(statement)]
+            records = list(session.scalars(statement))
+            rows = []
+            for record in records:
+                payload = json.loads(record.payload_json)
+                payload.setdefault("search_engine", record.search_engine)
+                rows.append(payload)
             if result_kind:
                 rows = [row for row in rows if row.get("result_kind", "organic") == result_kind]
             return rows[max(0, offset) : max(0, offset) + max(0, limit)]
 
-    def analytics(self, query: str | None = None) -> dict[str, Any]:
-        runs = self.list_runs(limit=10000, query=query)
+    @staticmethod
+    def _parse_date(value: str | None, end: bool = False) -> datetime | None:
+        if not value:
+            return None
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            parsed = datetime.combine(date.fromisoformat(value), datetime.min.time())
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed + (timedelta(days=1) if end and len(value) == 10 else timedelta())
+
+    def _filtered(self, filters: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        filters = filters or {}
+        runs = self.list_runs(limit=10000, query=filters.get("query"))
+        start, finish = self._parse_date(filters.get("from")), self._parse_date(filters.get("to"), True)
+        provider, status, kind, country, search_type = (filters.get(key) for key in ("provider", "status", "result_kind", "country", "search_type"))
+        selected = []
+        results = []
+        for run in runs:
+            created = self._parse_date(run["created_at"])
+            if (start and created < start) or (finish and created >= finish) or (status and run["status"] != status):
+                continue
+            options = run.get("options", {})
+            if country and str(options.get("country_code", "")).lower() != str(country).lower():
+                continue
+            if search_type and options.get("search_type") != search_type:
+                continue
+            selected.append(run)
+            for result in self.list_results(run_id=run["id"], engine=provider, limit=10000, result_kind=kind):
+                results.append({"run_id": run["id"], **result})
+        return selected, results
+
+    def analytics(self, query: str | None = None, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+        filters = {**(filters or {}), "query": query or (filters or {}).get("query")}
+        runs, results = self._filtered(filters)
         by_status: dict[str, int] = {}
         for run in runs:
             by_status[run["status"]] = by_status.get(run["status"], 0) + 1
-        results = []
-        for run in runs:
-            results.extend(self.list_results(run_id=run["id"], limit=10000))
         by_engine: dict[str, int] = {}
         for result in results:
             engine = str(result.get("search_engine") or "unknown")
             by_engine[engine] = by_engine.get(engine, 0) + 1
         return {
+            "schema_version": 1,
+            "scope": {key: value for key, value in filters.items() if value not in (None, "")},
+            "semantics": {"run_count": "run-scoped", "result_count": "deduplicated provider-attributed rows", "failure_count": "run-scoped"},
             "run_count": len(runs),
             "result_count": len(results),
             "failure_count": sum(run["failure_count"] for run in runs),
             "runs_by_status": by_status,
             "results_by_engine": by_engine,
         }
+
+    def timeseries(self, filters: dict[str, Any] | None = None, metric: str = "results") -> dict[str, Any]:
+        runs, results = self._filtered(filters)
+        buckets = defaultdict(lambda: {"searches": 0, "results": 0, "failures": 0})
+        for run in runs:
+            day = run["created_at"][:10]; buckets[day]["searches"] += 1; buckets[day]["failures"] += run["failure_count"]
+        for result in results: buckets[next(run["created_at"][:10] for run in runs if run["id"] == result["run_id"] )]["results"] += 1
+        keys = sorted(buckets)
+        return {"schema_version": 1, "scope": filters or {}, "interval": "day", "metric": metric, "points": [{"date": key, **buckets[key]} for key in keys]}
+
+    def aggregates(self, kind: str, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+        runs, results = self._filtered(filters); rows = defaultdict(lambda: {"runs": set(), "results": 0, "failures": 0, "providers": set()})
+        for run in runs:
+            key = run["query"] if kind == "queries" else None
+            if key: rows[key]["runs"].add(run["id"]); rows[key]["failures"] += run["failure_count"]
+        for result in results:
+            if kind == "providers": key = str(result.get("search_engine") or "unknown")
+            elif kind == "domains": key = urlparse(str(result.get("url") or result.get("link") or "")).netloc.lower() or "unknown"
+            else: key = next(run["query"] for run in runs if run["id"] == result["run_id"])
+            rows[key]["runs"].add(result["run_id"]); rows[key]["results"] += 1; rows[key]["providers"].add(result.get("search_engine", "unknown"))
+        items = [{"name": key, "run_count": len(value["runs"]), "result_count": value["results"], "failure_count": value["failures"], "provider_count": len(value["providers"])} for key, value in rows.items()]
+        items.sort(key=lambda item: (-item["result_count"], item["name"]))
+        return {"schema_version": 1, "scope": filters or {}, "items": items[:1000], "total": len(items)}
+
+    def compare(self, left: str, right: str, limit: int = 500) -> dict[str, Any]:
+        def keyed(run_id):
+            return {str(item.get("url") or item.get("link") or ""): item for item in self.list_results(run_id=run_id, limit=10000) if item.get("url") or item.get("link")}
+        a, b = keyed(left), keyed(right); shared = sorted(set(a) & set(b)); added = sorted(set(b) - set(a)); removed = sorted(set(a) - set(b))
+        return {"schema_version": 1, "scope": {"left": left, "right": right}, "left": left, "right": right, "shared": shared[:limit], "added": added[:limit], "removed": removed[:limit], "totals": {"shared": len(shared), "added": len(added), "removed": len(removed)}}
+
+    def export(self, filters: dict[str, Any] | None = None, fmt: str = "json") -> tuple[str, str]:
+        runs, results = self._filtered(filters); rows = [{"run_id": r["run_id"], "query": next(x["query"] for x in runs if x["id"] == r["run_id"]), "provider": r.get("search_engine"), "url": r.get("url") or r.get("link"), "result_kind": r.get("result_kind", "organic")} for r in results[:5000]]
+        if fmt == "csv":
+            stream = io.StringIO(); writer = csv.DictWriter(stream, fieldnames=list(rows[0]) if rows else ["run_id", "query", "provider", "url", "result_kind"]); writer.writeheader(); writer.writerows(rows); return stream.getvalue(), "text/csv"
+        return json.dumps({"schema_version": 1, "scope": filters or {}, "rows": rows}, ensure_ascii=False), "application/json"

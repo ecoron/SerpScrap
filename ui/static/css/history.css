@@ -1,0 +1,10 @@
+.filter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; }
+.filter-grid label { display:grid; gap:.3rem; color:var(--muted); font-size:.78rem; font-weight:700; }
+.filter-chips { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.8rem; }
+.filter-chip { border:1px solid #c8dce8; border-radius:999px; padding:.3rem .6rem; background:#f4f9fc; color:#31566e; cursor:pointer; }
+.history-tabs .is-active { font-weight:800; color:var(--accent-dark); }
+.history-inline-results { display:grid; gap:.7rem; max-height:48vh; overflow-y:auto; padding-top:.8rem; }
+.coverage-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem; }
+.compare-controls { display:flex; flex-wrap:wrap; gap:.6rem; margin-bottom:1rem; }
+.trend-chart { min-height:180px; padding:1rem 0; color:var(--accent); }
+.trend-chart svg { width:100%; height:180px; overflow:visible; }

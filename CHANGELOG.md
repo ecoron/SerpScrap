@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Updated the default active search engines to exclude disabled providers.
+
 - Fixed Ruff CI errors in the history export and aggregation logic.
 
 - Extended historical result detail fallbacks for provider-specific snippet

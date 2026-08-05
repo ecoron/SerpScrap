@@ -17,8 +17,8 @@ class Config:
         self.config: dict[str, Any] = {
             "use_own_ip": True,
             "search_engines": [
-                "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia", "startpage", "brave",
-                "swisscows", "mojeek", "good", "xprivo", "marginalia", "etools",
+                "bing", "yandex", "yahoo", "duckduckgo", "startpage", "brave", "swisscows",
+                "mojeek", "good", "xprivo", "marginalia", "etools",
             ],
             "supported_search_engines": [
                 "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia", "qwant",

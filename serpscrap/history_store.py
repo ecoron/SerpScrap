@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import json
-import os
-from datetime import datetime, timezone, date, timedelta
-from collections import Counter, defaultdict
-from urllib.parse import urlparse
 import csv
 import io
+import json
+import os
+from collections import defaultdict
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from sqlalchemy import DateTime, Integer, String, Text, create_engine, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
@@ -379,21 +379,33 @@ class SearchHistoryStore:
         runs, results = self._filtered(filters)
         buckets = defaultdict(lambda: {"searches": 0, "results": 0, "failures": 0})
         for run in runs:
-            day = run["created_at"][:10]; buckets[day]["searches"] += 1; buckets[day]["failures"] += run["failure_count"]
-        for result in results: buckets[next(run["created_at"][:10] for run in runs if run["id"] == result["run_id"] )]["results"] += 1
+            day = run["created_at"][:10]
+            buckets[day]["searches"] += 1
+            buckets[day]["failures"] += run["failure_count"]
+        for result in results:
+            day = next(run["created_at"][:10] for run in runs if run["id"] == result["run_id"])
+            buckets[day]["results"] += 1
         keys = sorted(buckets)
         return {"schema_version": 1, "scope": filters or {}, "interval": "day", "metric": metric, "points": [{"date": key, **buckets[key]} for key in keys]}
 
     def aggregates(self, kind: str, filters: dict[str, Any] | None = None) -> dict[str, Any]:
-        runs, results = self._filtered(filters); rows = defaultdict(lambda: {"runs": set(), "results": 0, "failures": 0, "providers": set()})
+        runs, results = self._filtered(filters)
+        rows = defaultdict(lambda: {"runs": set(), "results": 0, "failures": 0, "providers": set()})
         for run in runs:
             key = run["query"] if kind == "queries" else None
-            if key: rows[key]["runs"].add(run["id"]); rows[key]["failures"] += run["failure_count"]
+            if key:
+                rows[key]["runs"].add(run["id"])
+                rows[key]["failures"] += run["failure_count"]
         for result in results:
-            if kind == "providers": key = str(result.get("search_engine") or "unknown")
-            elif kind == "domains": key = urlparse(str(result.get("url") or result.get("link") or "")).netloc.lower() or "unknown"
-            else: key = next(run["query"] for run in runs if run["id"] == result["run_id"])
-            rows[key]["runs"].add(result["run_id"]); rows[key]["results"] += 1; rows[key]["providers"].add(result.get("search_engine", "unknown"))
+            if kind == "providers":
+                key = str(result.get("search_engine") or "unknown")
+            elif kind == "domains":
+                key = urlparse(str(result.get("url") or result.get("link") or "")).netloc.lower() or "unknown"
+            else:
+                key = next(run["query"] for run in runs if run["id"] == result["run_id"])
+            rows[key]["runs"].add(result["run_id"])
+            rows[key]["results"] += 1
+            rows[key]["providers"].add(result.get("search_engine", "unknown"))
         items = [{"name": key, "run_count": len(value["runs"]), "result_count": value["results"], "failure_count": value["failures"], "provider_count": len(value["providers"])} for key, value in rows.items()]
         items.sort(key=lambda item: (-item["result_count"], item["name"]))
         return {"schema_version": 1, "scope": filters or {}, "items": items[:1000], "total": len(items)}
@@ -401,11 +413,20 @@ class SearchHistoryStore:
     def compare(self, left: str, right: str, limit: int = 500) -> dict[str, Any]:
         def keyed(run_id):
             return {str(item.get("url") or item.get("link") or ""): item for item in self.list_results(run_id=run_id, limit=10000) if item.get("url") or item.get("link")}
-        a, b = keyed(left), keyed(right); shared = sorted(set(a) & set(b)); added = sorted(set(b) - set(a)); removed = sorted(set(a) - set(b))
+        a, b = keyed(left), keyed(right)
+        shared = sorted(set(a) & set(b))
+        added = sorted(set(b) - set(a))
+        removed = sorted(set(a) - set(b))
         return {"schema_version": 1, "scope": {"left": left, "right": right}, "left": left, "right": right, "shared": shared[:limit], "added": added[:limit], "removed": removed[:limit], "totals": {"shared": len(shared), "added": len(added), "removed": len(removed)}}
 
     def export(self, filters: dict[str, Any] | None = None, fmt: str = "json") -> tuple[str, str]:
-        runs, results = self._filtered(filters); rows = [{"run_id": r["run_id"], "query": next(x["query"] for x in runs if x["id"] == r["run_id"]), "provider": r.get("search_engine"), "url": r.get("url") or r.get("link"), "result_kind": r.get("result_kind", "organic")} for r in results[:5000]]
+        runs, results = self._filtered(filters)
+        rows = [{"run_id": r["run_id"], "query": next(x["query"] for x in runs if x["id"] == r["run_id"]), "provider": r.get("search_engine"), "url": r.get("url") or r.get("link"), "result_kind": r.get("result_kind", "organic")} for r in results[:5000]]
         if fmt == "csv":
-            stream = io.StringIO(); writer = csv.DictWriter(stream, fieldnames=list(rows[0]) if rows else ["run_id", "query", "provider", "url", "result_kind"]); writer.writeheader(); writer.writerows(rows); return stream.getvalue(), "text/csv"
+            stream = io.StringIO()
+            fieldnames = list(rows[0]) if rows else ["run_id", "query", "provider", "url", "result_kind"]
+            writer = csv.DictWriter(stream, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+            return stream.getvalue(), "text/csv"
         return json.dumps({"schema_version": 1, "scope": filters or {}, "rows": rows}, ensure_ascii=False), "application/json"

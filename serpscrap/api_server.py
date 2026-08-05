@@ -95,7 +95,15 @@ class ApiHandler(BaseHTTPRequestHandler):
         if path == "/api/v1/history/export":
             filters = {key: values[0] for key, values in query.items() if key != "format"}
             body, content_type = self.service.store.export(filters, (query.get("format") or ["json"])[0])
-            encoded = body.encode("utf-8"); self.send_response(HTTPStatus.OK); self.send_header("Content-Type", content_type); self.send_header("Content-Length", str(len(encoded))); self.send_header("Content-Disposition", "attachment; filename=history-export." + ("csv" if content_type == "text/csv" else "json")); self.end_headers(); self.wfile.write(encoded); return
+            encoded = body.encode("utf-8")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(encoded)))
+            extension = "csv" if content_type == "text/csv" else "json"
+            self.send_header("Content-Disposition", f"attachment; filename=history-export.{extension}")
+            self.end_headers()
+            self.wfile.write(encoded)
+            return
         prefix = "/api/v1/searches/"
         if path.startswith(prefix):
             remainder = path[len(prefix):]

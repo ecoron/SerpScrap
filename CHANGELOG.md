@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Behebt Ruff-CI-Fehler in History-Export und Aggregationslogik.
+
 - Extended historical result detail fallbacks for provider-specific snippet
   fields such as `description`, `summary`, `text`, `content`, and
   `visible_link`, including legacy persisted Yandex results.

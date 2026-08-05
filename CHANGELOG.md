@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Implemented the grouped configuration UI and schema-driven configuration
+  service: all supported `Config` values are represented, validated, persisted
+  in the database, redacted where sensitive, and resettable to fresh initial
+  defaults. Added deterministic service and UI contract tests.
+
 - Added `docs/a2ui-configuration.md`, an implementation plan for exposing the
   complete SerpScrap configuration through grouped, accessible, database-backed
   settings with initial-default and reset semantics.

@@ -1,5 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Configuration · SerpScrap{% endblock %}
 {% block content %}
-<section class="view-stack"><div class="page-heading"><div><p class="eyebrow">Workspace settings</p><h2>Configuration</h2><p>Choose defaults for future searches. Existing runs remain unchanged.</p></div></div><section class="panel narrow-panel"><form id="config-form"><fieldset><legend>Default engines</legend><div id="config-engines" class="engine-grid"></div></fieldset><div class="form-row"><label class="field">Country<input id="config-country" maxlength="2"></label><label class="field">Search type<select id="config-search-type"><option value="normal">Web</option><option value="image">Images</option><option value="news">News</option><option value="shopping">Shopping</option><option value="videos">Videos</option></select></label><label class="field">Pages<input id="config-pages" type="number" min="1" max="10"></label></div><div class="button-row"><button class="button button-primary" type="submit">Save configuration</button><button class="button button-ghost" id="reset-config" type="button">Reset defaults</button></div></form></section></section>
+<section class="view-stack configuration-page">
+  <div class="page-heading">
+    <div><p class="eyebrow">Workspace settings</p><h2>Configuration</h2><p>Configure defaults for future searches. Existing runs remain unchanged.</p></div>
+    <div id="config-source" class="configuration-source" aria-live="polite">Loading configuration…</div>
+  </div>
+  <form id="config-form" novalidate>
+    <div id="config-error-summary" class="notice error" role="alert" hidden></div>
+    <div id="configuration-groups" class="configuration-groups" aria-live="polite"><div class="panel"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+    <div class="configuration-actions sticky-toolbar">
+      <div><strong id="config-dirty-label">No unsaved changes</strong><small id="config-scope-label">Applies to new searches.</small></div>
+      <div class="button-row"><button class="button button-primary" id="save-config" type="submit">Save changes</button><button class="button button-ghost" id="reset-changes" type="button">Reset changes</button><button class="button button-danger" id="reset-config" type="button">Reset to initial defaults</button></div>
+    </div>
+  </form>
+</section>
 {% endblock %}

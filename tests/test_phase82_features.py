@@ -84,3 +84,20 @@ def test_frontend_polish_contract_covers_cancellation_responsive_states_and_moti
     assert "minmax" in layout
     assert "@media (max-width:700px)" in history
     assert "## Acceptance Criteria" in plan
+
+
+def test_configuration_ui_contract_uses_schema_groups_and_safe_save_reset_flow():
+    root = Path(__file__).parents[1]
+    template = (root / "ui" / "templates" / "pages" / "configuration.html").read_text(encoding="utf-8")
+    javascript = (root / "ui" / "static" / "js" / "views" / "configuration.js").read_text(encoding="utf-8")
+    styles = (root / "ui" / "static" / "css" / "pages.css").read_text(encoding="utf-8")
+    service = (root / "serpscrap" / "configuration_service.py").read_text(encoding="utf-8")
+
+    for marker in ("configuration-groups", "config-error-summary", "reset-config", "reset-changes", "config-dirty-label"):
+        assert marker in template
+    for marker in ("loaded.groups", "loaded.fields", "Unsaved changes", "/configuration/reset", "beforeunload", "data-config-key=\"search_engines\""):
+        assert marker in javascript
+    for marker in ("configuration-group", "configuration-actions", "config-engine-grid", "configuration-source"):
+        assert marker in styles
+    for marker in ("SCHEMA_VERSION = 2", "initial_defaults", "SENSITIVE_KEYS", "FIELD_DEFINITIONS"):
+        assert marker in service

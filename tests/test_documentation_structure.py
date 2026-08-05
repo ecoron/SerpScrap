@@ -71,3 +71,21 @@ def test_alpha_ui_development_plan_covers_research_limits_and_delivery_gates() -
         "stable/moved/new/lost",
     ):
         assert marker in content
+
+
+def test_configuration_ui_plan_covers_full_defaults_persistence_grouping_and_reset() -> None:
+    document = Path(__file__).parents[1] / "docs" / "a2ui-configuration.md"
+    content = document.read_text(encoding="utf-8")
+
+    for marker in (
+        "## Configuration Inventory and Grouping",
+        "## API and Persistence Contract",
+        "## Validation and Safety Rules",
+        "## Implementation Slices",
+        "## Acceptance Criteria",
+        "initial_defaults",
+        "schema_version",
+        "Reset deletes the persisted record",
+        "Sensitive values are redacted",
+    ):
+        assert marker in content

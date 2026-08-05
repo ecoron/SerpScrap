@@ -120,6 +120,50 @@ def test_configuration_defaults_persist_and_explicit_search_selection_overrides(
     assert reset["configuration"]["search_engines"] == Config().get()["search_engines"]
 
 
+def test_configuration_schema_covers_full_defaults_redacts_headers_and_resets(tmp_path):
+    store = SearchHistoryStore(f"sqlite:///{tmp_path / 'history.db'}")
+    configuration = SearchConfigurationService(store)
+
+    initial = configuration.get()
+    default_keys = set(Config().get())
+    assert default_keys.issubset(initial["configuration"])
+    assert initial["schema_version"] == 2
+    assert initial["source"] == "defaults"
+    assert initial["configuration"]["headers"] == {}
+    assert {field["key"] for field in initial["fields"]} >= {
+        "search_engines", "ranking.rrf_k", "request_delay_min", "store_history", "diagnostic_html"
+    }
+    assert any(group["id"] == "network" for group in initial["groups"])
+
+    payload = dict(initial["configuration"])
+    payload["headers"] = {"Authorization": "must-not-persist-from-ui"}
+    payload["num_workers"] = 6
+    payload["ranking"] = {**payload["ranking"], "rrf_k": 90}
+    saved = configuration.save(payload)
+    assert saved["source"] == "persisted"
+    assert saved["configuration"]["num_workers"] == 6
+    assert saved["configuration"]["ranking"]["rrf_k"] == 90
+    assert saved["configuration"]["headers"] == {}
+    assert store.get_configuration()["payload"]["headers"] != {"Authorization": "must-not-persist-from-ui"}
+
+    reset = configuration.reset()
+    assert reset["source"] == "defaults"
+    assert reset["revision"] == 0
+    assert reset["configuration"]["num_workers"] == Config().get()["num_workers"]
+
+
+def test_configuration_load_recovers_legacy_disabled_engine_selection(tmp_path):
+    store = SearchHistoryStore(f"sqlite:///{tmp_path / 'history.db'}")
+    configuration = SearchConfigurationService(store)
+    defaults = Config().get()
+    store.save_configuration({**defaults, "search_engines": ["metager", "bing"]})
+
+    loaded = configuration.get()
+
+    assert loaded["source"] == "persisted"
+    assert loaded["configuration"]["search_engines"] == ["bing"]
+
+
 def test_api_configuration_endpoints_expose_registry_and_persist_selection(tmp_path):
     store = SearchHistoryStore(f"sqlite:///{tmp_path / 'history.db'}")
     service = SearchJobService(FakeApplication(), store)

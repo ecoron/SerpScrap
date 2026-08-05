@@ -13,3 +13,9 @@ def test_ui_navigation_uses_separate_pages_and_global_header_search():
     assert 'id="sidebar-toggle"' in base
     assert "sidebar-collapsed" in app
     assert "localStorage" in app
+    assert "api.engines()" in app
+    assert "provider_count" in app
+    assert "Search again" in app
+    assert "renderProviderHealth" in app
+    assert "className = 'toolbar-actions'" in app
+    assert "attributed results" in app

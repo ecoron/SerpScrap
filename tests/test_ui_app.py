@@ -15,6 +15,10 @@ def test_flask_ui_renders_shell_and_healthcheck():
     page = client.get("/")
     assert page.status_code == 200
     assert b"Explore your search data" in page.data
+    assert b"Search activity at a glance" in page.data
+    assert b"A focused research loop" not in page.data
+    assert b"Turn SERP data into decisions" not in page.data
+    assert b"Provider coverage" in page.data
     assert b"static/css/tokens.css" in page.data
     assert b"static/js/app.js" in page.data
     for path, marker in (("/search", b"Search workspace"), ("/history", b"History & analysis"), ("/configuration", b"Configuration")):

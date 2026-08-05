@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Simplified the overview page around the primary search action and recent
+  activity, removed redundant workflow/live-workspace panels, and fixed the
+  provider metric to count enabled engines from the engine registry.
+- Added provider coverage/health visibility, result and failure counts on
+  recent searches, direct "Search again" actions, and a guided empty state.
+- Aligned recent-search status/actions into one right-side group and clarified
+  provider coverage with an attributed-results total matching analytics.
+
 - Fixed UI polling races by awaiting status-update callbacks and refreshing
   completed-run results before overview/history data.
 - Kept non-organic result kinds visible and added live/historical result detail

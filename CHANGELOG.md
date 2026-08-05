@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added `docs/a2ui-configuration.md`, an implementation plan for exposing the
+  complete SerpScrap configuration through grouped, accessible, database-backed
+  settings with initial-default and reset semantics.
+
+- Added the frontend polish plan and applied responsive, accessible CSS and
+  JavaScript reliability improvements across the dashboard and History views.
+
 - Implemented the Alpha 2.0.0 History & analysis increment: enriched
   analytics scope metadata, versioned canonical URL comparison, compatible
   SERP diff classifications, provider/query/domain coverage, cancellable

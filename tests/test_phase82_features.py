@@ -65,3 +65,22 @@ def test_history_exposes_progress_state(tmp_path):
     assert status["progress"]["total_jobs"] == 8
     assert status["progress"]["completed_jobs"] == 3
     assert status["progress"]["engine"] == "bing"
+
+
+def test_frontend_polish_contract_covers_cancellation_responsive_states_and_motion():
+    root = Path(__file__).parents[1] / "ui"
+    client = (root / "static" / "js" / "api-client.js").read_text(encoding="utf-8")
+    charts = (root / "static" / "js" / "charts.js").read_text(encoding="utf-8")
+    base = (root / "static" / "css" / "base.css").read_text(encoding="utf-8")
+    layout = (root / "static" / "css" / "layout.css").read_text(encoding="utf-8")
+    history = (root / "static" / "css" / "history.css").read_text(encoding="utf-8")
+    plan = (root.parent / "docs" / "a2ui-frontend-polish.md").read_text(encoding="utf-8")
+
+    assert "AbortController" in client
+    assert "setTimeout" in client
+    assert "Exact values are available in the table below." in charts
+    assert "prefers-reduced-motion" in base
+    assert "focus-visible" in base
+    assert "minmax" in layout
+    assert "@media (max-width:700px)" in history
+    assert "## Acceptance Criteria" in plan

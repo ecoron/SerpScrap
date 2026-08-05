@@ -1,6 +1,7 @@
 /** Accessible dependency-free SVG trend chart; the table remains the source of exact values. */
 export function renderTrend(root, points, metric = 'results') {
-  root.replaceChildren(); root.setAttribute('role', 'img'); root.setAttribute('aria-label', `${metric} per day`);
+  root.replaceChildren(); root.setAttribute('role', 'img'); root.setAttribute('aria-label', `${metric} per day`); root.classList.toggle('is-empty', !points.length);
+  if (!points.length) { root.textContent = 'No trend data in this scope.'; return; }
   const max = Math.max(1, ...points.map(point => Number(point[metric] || 0))); const line = points.map((point, index) => `${index * 100 / Math.max(1, points.length - 1)},${100 - Number(point[metric] || 0) * 90 / max}`).join(' ');
-  root.innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="${line}" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+  root.innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><title>${metric} per day</title><desc>Exact values are available in the table below.</desc><polyline points="${line}" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
 }

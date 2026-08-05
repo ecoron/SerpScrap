@@ -1,13 +1,24 @@
 const API_ROOT = '/api/v1';
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_ROOT}${path}`, {
-    headers: { Accept: 'application/json', ...(options.body ? {'Content-Type': 'application/json'} : {}) },
-    ...options,
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
-  return data;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.timeout || 30000);
+  const externalSignal = options.signal;
+  const abortFromCaller = () => controller.abort();
+  externalSignal?.addEventListener('abort', abortFromCaller, {once:true});
+  try {
+    const response = await fetch(`${API_ROOT}${path}`, {
+      headers: { Accept: 'application/json', ...(options.body ? {'Content-Type': 'application/json'} : {}) },
+      ...options,
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+    return data;
+  } finally {
+    clearTimeout(timeout);
+    externalSignal?.removeEventListener('abort', abortFromCaller);
+  }
 }
 
 export const api = {

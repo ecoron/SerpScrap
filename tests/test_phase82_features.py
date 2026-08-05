@@ -35,6 +35,7 @@ def test_ui_contract_contains_grouped_engine_and_delete_controls():
     root = Path(__file__).parents[1] / "ui"
     template = "\n".join((root / "templates" / "pages" / name).read_text(encoding="utf-8") for name in ("search.html", "history.html"))
     javascript = (root / "static" / "js" / "views" / "results.js").read_text(encoding="utf-8")
+    history_javascript = (root / "static" / "js" / "views" / "history.js").read_text(encoding="utf-8")
     app = (root / "static" / "js" / "app.js").read_text(encoding="utf-8")
     css = (root / "static" / "css" / "layout.css").read_text(encoding="utf-8")
     assert "groupResults" in javascript
@@ -48,6 +49,11 @@ def test_ui_contract_contains_grouped_engine_and_delete_controls():
     assert "grid-template-columns" in css
     assert "Inspect" in app
     assert "history-detail-row" in app
+    assert "AbortController" in history_javascript
+    assert "identity_key_version" not in history_javascript
+    assert "history-export-json" in template
+    assert "history-country" in template
+    assert "compare-moved" in template
 
 
 def test_history_exposes_progress_state(tmp_path):

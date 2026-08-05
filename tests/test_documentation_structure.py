@@ -50,3 +50,24 @@ def test_current_release_interfaces_are_documented() -> None:
         assert configuration_marker in mcp
     for option in ("--keyword", "--engine", "--search-type", "--output", "--diagnostic-html"):
         assert option in cli
+
+
+def test_alpha_ui_development_plan_covers_research_limits_and_delivery_gates() -> None:
+    document = Path(__file__).parents[1] / "docs" / "a2ui-development.md"
+    content = document.read_text(encoding="utf-8")
+
+    assert document.is_file()
+    for marker in (
+        "## Capability Assessment",
+        "## Best-Practice Review",
+        "## Detailed Functional Requirements",
+        "## API and Data Contract Work",
+        "## Implementation Slices",
+        "## Test Plan",
+        "## Acceptance Gates",
+        "heuristic",
+        "canonical URL",
+        "identity_key_version",
+        "stable/moved/new/lost",
+    ):
+        assert marker in content

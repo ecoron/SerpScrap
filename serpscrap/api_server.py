@@ -91,10 +91,19 @@ class ApiHandler(BaseHTTPRequestHandler):
             left, right = tuple((query.get(key) or [None])[0] for key in ("left", "right"))
             if not left or not right:
                 return self._send(HTTPStatus.BAD_REQUEST, {"error": "left and right are required"})
-            return self._send(HTTPStatus.OK, self.service.store.compare(left, right, min(int((query.get("limit") or [500])[0]), 500)))
+            try:
+                limit = min(max(int((query.get("limit") or [500])[0]), 1), 500)
+                return self._send(HTTPStatus.OK, self.service.store.compare(left, right, limit))
+            except KeyError:
+                return self._send(HTTPStatus.NOT_FOUND, {"error": "both comparison runs must exist"})
+            except ValueError as exc:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         if path == "/api/v1/history/export":
             filters = {key: values[0] for key, values in query.items() if key != "format"}
-            body, content_type = self.service.store.export(filters, (query.get("format") or ["json"])[0])
+            fmt = (query.get("format") or ["json"])[0].lower()
+            if fmt not in {"csv", "json"}:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": "format must be csv or json"})
+            body, content_type = self.service.store.export(filters, fmt)
             encoded = body.encode("utf-8")
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", content_type)

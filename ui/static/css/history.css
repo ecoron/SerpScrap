@@ -1,4 +1,7 @@
 .filter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; }
+.filter-groups { display:grid; gap:1rem; }
+.filter-groups fieldset { margin:0; padding:.75rem; border:1px solid #e8eef3; border-radius:10px; }
+.filter-groups legend { padding:0 .35rem; margin:0; }
 .filter-grid label { display:grid; gap:.3rem; color:var(--muted); font-size:.78rem; font-weight:700; }
 .filter-chips { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.8rem; }
 .filter-chip { border:1px solid #c8dce8; border-radius:999px; padding:.3rem .6rem; background:#f4f9fc; color:#31566e; cursor:pointer; }
@@ -6,5 +9,13 @@
 .history-inline-results { display:grid; gap:.7rem; max-height:48vh; overflow-y:auto; padding-top:.8rem; }
 .coverage-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem; }
 .compare-controls { display:flex; flex-wrap:wrap; gap:.6rem; margin-bottom:1rem; }
+.dashboard-state { display:grid; gap:.35rem; justify-items:center; padding:1.5rem; color:var(--muted); text-align:center; }
+.dashboard-state strong { color:var(--ink); }
+.dashboard-state .state-action { margin-top:.35rem; }
+.compare-compatibility { grid-column:1/-1; display:grid; gap:.2rem; padding:.75rem 1rem; border-radius:9px; background:#fff7e6; color:#79520b; }
+.compare-compatibility.is-compatible { background:#eaf7ef; color:#17653a; }
+.compare-compatibility.is-incompatible { background:#fff1f1; color:#8b2830; }
+.coverage-grid ul { display:grid; gap:.45rem; padding-left:1.2rem; }
+.coverage-grid li small { display:block; color:var(--muted); }
 .trend-chart { min-height:180px; padding:1rem 0; color:var(--accent); }
 .trend-chart svg { width:100%; height:180px; overflow:visible; }

@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Implemented the Alpha 2.0.0 History & analysis increment: enriched
+  analytics scope metadata, versioned canonical URL comparison, compatible
+  SERP diff classifications, provider/query/domain coverage, cancellable
+  grouped filters, explicit dashboard states, scoped exports, and 161 passing
+  deterministic tests.
+
+- Expanded `docs/a2ui-development.md` after a second `mcp-serpscrap`
+  best-practice review with explicit scope/freshness metadata, grouped and
+  cancellable filters, compatibility fingerprints, URL/domain change classes,
+  export manifests, standardized UI states, and performance/observability
+  tests.
+
+- Added `docs/a2ui-development.md`, an implementation-ready Alpha 2.0.0 UI
+  plan based on bounded `mcp-serpscrap` capability tests, with explicit
+  answerability limits, interface requirements, API contracts, slices, tests,
+  and acceptance gates.
+
 - Updated the default active search engines to exclude disabled providers.
 
 - Fixed Ruff CI errors in the history export and aggregation logic.

@@ -12,12 +12,12 @@ No provider network search is required for the deterministic test suite.
 
 ## Implementation Status
 
-- [ ] Define the analytics contract and time-filter semantics
-- [ ] Add time-series, provider, query, domain, and comparison API views
-- [ ] Add history filters, multi-selection, charts, and drill-down navigation
-- [ ] Add result diffs, exports, accessible alternatives, and deep links
-- [ ] Add deterministic API/UI tests and local visual smoke evidence
-- [ ] Update user/developer documentation and record delivery in `CHANGELOG.md`
+- [x] Define the analytics contract and time-filter semantics
+- [x] Add time-series, provider, query, domain, and comparison API views
+- [x] Add history filters, run selection, charts, and drill-down navigation
+- [x] Add canonical result diffs, bounded exports, accessible alternatives, and deep links
+- [x] Add deterministic API/UI tests; browser visual smoke remains opt-in
+- [x] Update user/developer documentation and record delivery in `CHANGELOG.md`
 
 ## Objective
 

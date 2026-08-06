@@ -79,7 +79,49 @@ class ApiHandler(BaseHTTPRequestHandler):
                 )},
             )
         if path == "/api/v1/history/analytics":
-            return self._send(HTTPStatus.OK, self.service.store.analytics((query.get("query") or [None])[0]))
+            filters = {key: (values[0] if values else None) for key, values in query.items()}
+            return self._send(HTTPStatus.OK, self.service.store.analytics(filters=filters))
+        if path == "/api/v1/history/timeseries":
+            filters = {key: values[0] for key, values in query.items() if key not in {"interval", "metric"}}
+            return self._send(HTTPStatus.OK, self.service.store.timeseries(filters, (query.get("metric") or ["results"])[0]))
+        if path in {"/api/v1/history/providers", "/api/v1/history/queries", "/api/v1/history/domains"}:
+            filters = {key: values[0] for key, values in query.items() if key not in {"limit", "offset"}}
+            limit = min(max(int((query.get("limit") or [1000])[0]), 1), 1000)
+            offset = min(max(int((query.get("offset") or [0])[0]), 0), 10000)
+            return self._send(HTTPStatus.OK, self.service.store.aggregates(path.rsplit("/", 1)[-1], filters, limit, offset))
+        if path == "/api/v1/history/compare":
+            left, right = tuple((query.get(key) or [None])[0] for key in ("left", "right"))
+            if not left or not right:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": "left and right are required"})
+            try:
+                limit = min(max(int((query.get("limit") or [500])[0]), 1), 500)
+                offset = min(max(int((query.get("offset") or [0])[0]), 0), 5000)
+                return self._send(HTTPStatus.OK, self.service.store.compare(left, right, limit, offset))
+            except KeyError:
+                return self._send(HTTPStatus.NOT_FOUND, {"error": "both comparison runs must exist"})
+            except ValueError as exc:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        if path == "/api/v1/history/export/preflight":
+            filters = {key: values[0] for key, values in query.items() if key not in {"format", "limit"}}
+            fmt = (query.get("format") or ["json"])[0].lower()
+            if fmt not in {"csv", "json"}:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": "format must be csv or json"})
+            return self._send(HTTPStatus.OK, self.service.store.export_preflight(filters, fmt, (query.get("limit") or [5000])[0]))
+        if path == "/api/v1/history/export":
+            filters = {key: values[0] for key, values in query.items() if key != "format"}
+            fmt = (query.get("format") or ["json"])[0].lower()
+            if fmt not in {"csv", "json"}:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": "format must be csv or json"})
+            body, content_type = self.service.store.export(filters, fmt)
+            encoded = body.encode("utf-8")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(encoded)))
+            extension = "csv" if content_type == "text/csv" else "json"
+            self.send_header("Content-Disposition", f"attachment; filename=history-export.{extension}")
+            self.end_headers()
+            self.wfile.write(encoded)
+            return
         prefix = "/api/v1/searches/"
         if path.startswith(prefix):
             remainder = path[len(prefix):]

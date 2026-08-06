@@ -60,6 +60,8 @@ def create_app() -> Flask:
             return Response(status=204)
         api_path = path[3:] if path == "v1" or path.startswith("v1/") else path
         target = f"{app.config['SERPSCRAP_API_URL']}/{api_path}".rstrip("/")
+        if request.query_string:
+            target = f"{target}?{request.query_string.decode('ascii')}"
         body = request.get_data() or None
         headers = {"Accept": "application/json"}
         if body:

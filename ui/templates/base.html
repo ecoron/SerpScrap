@@ -5,6 +5,7 @@
   <meta name="description" content="Dynamic multi-engine search and analysis workspace">
   <title>{% block title %}SerpScrap Console{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static_assets', filename='css/tokens.css') }}"><link rel="stylesheet" href="{{ url_for('static_assets', filename='css/base.css') }}"><link rel="stylesheet" href="{{ url_for('static_assets', filename='css/layout.css') }}"><link rel="stylesheet" href="{{ url_for('static_assets', filename='css/components.css') }}"><link rel="stylesheet" href="{{ url_for('static_assets', filename='css/pages.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static_assets', filename='css/history.css') }}">
 </head>
 <body data-page="{{ active_page }}">
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -21,7 +22,7 @@
     <main id="main-content" class="main-content">
       <header class="topbar">
         <div><p class="eyebrow">Search intelligence workspace</p><h1>Explore your search data</h1></div>
-        <div class="topbar-actions"><form class="header-search" id="global-search-form" action="{{ url_for('search_page') }}" method="get"><label class="sr-only" for="global-query">Search</label><input id="global-query" name="q" placeholder="Search the web…" autocomplete="off"><button class="button button-primary" type="submit">Search</button></form><button class="icon-button" id="refresh-all" type="button" title="Refresh data" aria-label="Refresh data">↻</button></div>
+        <div class="topbar-actions"><form class="header-search" id="global-search-form" action="{{ url_for('search_page') }}" method="get"><label class="sr-only" for="global-query">Search</label><input id="global-query" name="q" placeholder="Search the web…" autocomplete="off"><button class="button button-primary" type="submit">Search</button></form><button class="icon-button" id="search-settings-toggle" type="button" title="Search settings" aria-label="Open search settings" hidden>⚙</button><button class="icon-button" id="refresh-all" type="button" title="Refresh data" aria-label="Refresh data">↻</button></div>
       </header>
       <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
       {% block content %}{% endblock %}

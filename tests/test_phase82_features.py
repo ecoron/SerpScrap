@@ -35,6 +35,7 @@ def test_ui_contract_contains_grouped_engine_and_delete_controls():
     root = Path(__file__).parents[1] / "ui"
     template = "\n".join((root / "templates" / "pages" / name).read_text(encoding="utf-8") for name in ("search.html", "history.html"))
     javascript = (root / "static" / "js" / "views" / "results.js").read_text(encoding="utf-8")
+    history_javascript = (root / "static" / "js" / "views" / "history.js").read_text(encoding="utf-8")
     app = (root / "static" / "js" / "app.js").read_text(encoding="utf-8")
     css = (root / "static" / "css" / "layout.css").read_text(encoding="utf-8")
     assert "groupResults" in javascript
@@ -46,7 +47,13 @@ def test_ui_contract_contains_grouped_engine_and_delete_controls():
     assert "renderResults" in app
     assert "overflow-x: auto" in (root / "static" / "css" / "components.css").read_text(encoding="utf-8")
     assert "grid-template-columns" in css
-    assert "delete-historical" in template
+    assert "Inspect" in app
+    assert "history-detail-row" in app
+    assert "AbortController" in history_javascript
+    assert "identity_key_version" not in history_javascript
+    assert "history-export-json" in template
+    assert "history-country" in template
+    assert "compare-moved" in template
 
 
 def test_history_exposes_progress_state(tmp_path):
@@ -58,3 +65,39 @@ def test_history_exposes_progress_state(tmp_path):
     assert status["progress"]["total_jobs"] == 8
     assert status["progress"]["completed_jobs"] == 3
     assert status["progress"]["engine"] == "bing"
+
+
+def test_frontend_polish_contract_covers_cancellation_responsive_states_and_motion():
+    root = Path(__file__).parents[1] / "ui"
+    client = (root / "static" / "js" / "api-client.js").read_text(encoding="utf-8")
+    charts = (root / "static" / "js" / "charts.js").read_text(encoding="utf-8")
+    base = (root / "static" / "css" / "base.css").read_text(encoding="utf-8")
+    layout = (root / "static" / "css" / "layout.css").read_text(encoding="utf-8")
+    history = (root / "static" / "css" / "history.css").read_text(encoding="utf-8")
+    plan = (root.parent / "docs" / "a2ui-frontend-polish.md").read_text(encoding="utf-8")
+
+    assert "AbortController" in client
+    assert "setTimeout" in client
+    assert "Exact values are available in the table below." in charts
+    assert "prefers-reduced-motion" in base
+    assert "focus-visible" in base
+    assert "minmax" in layout
+    assert "@media (max-width:700px)" in history
+    assert "## Acceptance Criteria" in plan
+
+
+def test_configuration_ui_contract_uses_schema_groups_and_safe_save_reset_flow():
+    root = Path(__file__).parents[1]
+    template = (root / "ui" / "templates" / "pages" / "configuration.html").read_text(encoding="utf-8")
+    javascript = (root / "ui" / "static" / "js" / "views" / "configuration.js").read_text(encoding="utf-8")
+    styles = (root / "ui" / "static" / "css" / "pages.css").read_text(encoding="utf-8")
+    service = (root / "serpscrap" / "configuration_service.py").read_text(encoding="utf-8")
+
+    for marker in ("configuration-groups", "config-error-summary", "reset-config", "reset-changes", "config-dirty-label"):
+        assert marker in template
+    for marker in ("loaded.groups", "loaded.fields", "Unsaved changes", "/configuration/reset", "beforeunload", "data-config-key=\"search_engines\""):
+        assert marker in javascript
+    for marker in ("configuration-group", "configuration-actions", "config-engine-grid", "configuration-source"):
+        assert marker in styles
+    for marker in ("SCHEMA_VERSION = 2", "initial_defaults", "SENSITIVE_KEYS", "FIELD_DEFINITIONS"):
+        assert marker in service

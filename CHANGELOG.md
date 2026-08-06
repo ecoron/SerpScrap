@@ -6,6 +6,105 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added `docs/a2ui-final.md`, the final Alpha 2.0.0 UI gap list and release
+  gate, including English-language cleanup and the future Read the Docs
+  exclusion requirement for internal `alpha-2.0.0-ui.md` and `a2ui-*.md`
+  planning documents.
+
+- Completed the Alpha 2.0.0 analytics hardening: consistent semantics metadata,
+  insufficient-coverage states, comparison fingerprints and provenance,
+  provider overlap, bounded comparison offsets, export preflight metadata,
+  and Read the Docs exclusion of internal A2UI planning files.
+
+- Implemented the grouped configuration UI and schema-driven configuration
+  service: all supported `Config` values are represented, validated, persisted
+  in the database, redacted where sensitive, and resettable to fresh initial
+  defaults. Added deterministic service and UI contract tests.
+
+- Added `docs/a2ui-configuration.md`, an implementation plan for exposing the
+  complete SerpScrap configuration through grouped, accessible, database-backed
+  settings with initial-default and reset semantics.
+
+- Added the frontend polish plan and applied responsive, accessible CSS and
+  JavaScript reliability improvements across the dashboard and History views.
+
+- Implemented the Alpha 2.0.0 History & analysis increment: enriched
+  analytics scope metadata, versioned canonical URL comparison, compatible
+  SERP diff classifications, provider/query/domain coverage, cancellable
+  grouped filters, explicit dashboard states, scoped exports, and 161 passing
+  deterministic tests.
+
+- Expanded `docs/a2ui-development.md` after a second `mcp-serpscrap`
+  best-practice review with explicit scope/freshness metadata, grouped and
+  cancellable filters, compatibility fingerprints, URL/domain change classes,
+  export manifests, standardized UI states, and performance/observability
+  tests.
+
+- Added `docs/a2ui-development.md`, an implementation-ready Alpha 2.0.0 UI
+  plan based on bounded `mcp-serpscrap` capability tests, with explicit
+  answerability limits, interface requirements, API contracts, slices, tests,
+  and acceptance gates.
+
+- Updated the default active search engines to exclude disabled providers.
+
+- Fixed Ruff CI errors in the history export and aggregation logic.
+
+- Extended historical result detail fallbacks for provider-specific snippet
+  fields such as `description`, `summary`, `text`, `content`, and
+  `visible_link`, including legacy persisted Yandex results.
+
+- Aligned History run statuses with Recent Activity badges and added a
+  functional `Search again` action next to `Inspect` for every run.
+
+- Improved History Compare with automatic loading, explicit empty/same-run
+  states, and responsive selection updates. Replaced provider-count coverage
+  with the provider's percentage share of attributed results.
+
+- Fixed historical result detail rendering to use the normalized SERP fields
+  (`serp_title`, `serp_snippet`, `canonical_url`, and ranking metadata), so
+  inline History results no longer fall back to “Untitled result”.
+
+- Restored History run inspection after the analytics navigation update:
+  `Inspect` opens results inline below the run, and shared `?run=` links
+  automatically expand the requested run. Added focused History layout styles.
+
+- Completed the History dashboard foundation: date/query/status/provider/result
+  filters now affect API-backed metrics and views; added Runs, Trends, Coverage,
+  and Compare navigation with accessible trend tables and URL-preserved scope.
+
+- Implemented the Alpha 2.0.0 History & analysis API foundation: versioned
+  filtered analytics, daily timeseries, provider/query/domain aggregates,
+  two-run comparison, and bounded CSV/JSON exports with deterministic tests.
+
+- Added the Alpha 2.0.0 History & analysis expansion plan in
+  `docs/alpha-2.0.0-ui.md`, covering research use cases, analytics contracts,
+  trends, provider/query/domain views, run comparison, exports, tests, and
+  acceptance criteria.
+
+- Simplified the overview page around the primary search action and recent
+  activity, removed redundant workflow/live-workspace panels, and fixed the
+  provider metric to count enabled engines from the engine registry.
+- Added provider coverage/health visibility, result and failure counts on
+  recent searches, direct "Search again" actions, and a guided empty state.
+- Aligned recent-search status/actions into one right-side group and clarified
+  provider coverage with an attributed-results total matching analytics.
+
+- Fixed UI polling races by awaiting status-update callbacks and refreshing
+  completed-run results before overview/history data.
+- Kept non-organic result kinds visible and added live/historical result detail
+  panels with type, snippet, relevance, engine, and URL metadata.
+- Fixed the UI API proxy to forward query parameters such as ``run_id`` and
+  constrained result-table wrapping so historical inspection targets the
+  selected run and remains readable.
+- Replaced live and historical result tables with responsive result cards,
+  visible snippets, relevance/engine badges, sorting, and a desktop
+  master-detail workspace that stacks cleanly on smaller screens.
+- Moved historical results inline below their selected run and moved advanced
+  search controls into a settings overlay. Global ``q`` searches now start
+  automatically after the search workspace loads.
+- Fixed settings-overlay closing by honoring the HTML ``hidden`` attribute and
+  prevented duplicate searches by locking the submit action until a run ends.
+
 - Removed the internal ``refactoring2026.md`` planning document from the
   public documentation navigation and updated the URL-scraping example to use
   the stable SerpScrap documentation site.

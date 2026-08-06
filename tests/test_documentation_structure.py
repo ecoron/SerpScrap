@@ -50,3 +50,48 @@ def test_current_release_interfaces_are_documented() -> None:
         assert configuration_marker in mcp
     for option in ("--keyword", "--engine", "--search-type", "--output", "--diagnostic-html"):
         assert option in cli
+
+
+def test_alpha_ui_development_plan_covers_research_limits_and_delivery_gates() -> None:
+    document = Path(__file__).parents[1] / "docs" / "a2ui-development.md"
+    content = document.read_text(encoding="utf-8")
+
+    assert document.is_file()
+    for marker in (
+        "## Capability Assessment",
+        "## Best-Practice Review",
+        "## Detailed Functional Requirements",
+        "## API and Data Contract Work",
+        "## Implementation Slices",
+        "## Test Plan",
+        "## Acceptance Gates",
+        "heuristic",
+        "canonical URL",
+        "identity_key_version",
+        "stable/moved/new/lost",
+    ):
+        assert marker in content
+
+
+def test_configuration_ui_plan_covers_full_defaults_persistence_grouping_and_reset() -> None:
+    document = Path(__file__).parents[1] / "docs" / "a2ui-configuration.md"
+    content = document.read_text(encoding="utf-8")
+
+    for marker in (
+        "## Configuration Inventory and Grouping",
+        "## API and Persistence Contract",
+        "## Validation and Safety Rules",
+        "## Implementation Slices",
+        "## Acceptance Criteria",
+        "initial_defaults",
+        "schema_version",
+        "Reset deletes the persisted record",
+        "Sensitive values are redacted",
+    ):
+        assert marker in content
+
+
+def test_internal_alpha_ui_plans_are_excluded_from_readthedocs() -> None:
+    conf = (Path(__file__).parents[1] / "docs" / "conf.py").read_text(encoding="utf-8")
+    assert '"alpha-2.0.0-ui.md"' in conf
+    assert '"a2ui-*.md"' in conf

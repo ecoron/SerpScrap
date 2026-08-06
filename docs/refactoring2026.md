@@ -1118,33 +1118,31 @@ sets extend the page naturally. The browser's vertical scrollbar is the only
 scroll mechanism on desktop, avoiding nested scrollbars or clipped content;
 narrow screens retain the same accessible behavior.
 
-## Phase 7 - Abschlussstatus
+## Phase 7 - Completion Status
 
-Phase 7 ist abgeschlossen. Die homepage-basierte Selenium-Suche, die
-engine-spezifischen Browser-Verträge, sichtbare Fortschrittsmeldungen,
-korrelierte Diagnoseartefakte, typed Provider-/Empty-/Malformed-Outcomes,
-partielle Ergebnisse und die artefaktgestützten Selector-Korrekturen sind
-implementiert und dokumentiert.
+Phase 7 is complete. The homepage-based Selenium search, engine-specific
+browser contracts, visible progress messages, correlated diagnostic artifacts,
+typed provider/empty/malformed outcomes, partial results, and artifact-backed
+selector corrections are implemented and documented.
 
-Der praktische Lauf bestätigt stabile erfolgreiche Pfade für Bing, Yahoo,
-DuckDuckGo, Startpage, Brave, Swisscows und Mojeek. Yandex und Qwant werden
-als blockiert erkannt. Die automatische Consent-Ausführung für Google und
-Ecosia bleibt ein bewusst dokumentiertes TODO für eine spätere Phase: Die
-Provider liefern die Consent-Struktur dynamisch beziehungsweise über
-nachgelagerte Komponenten, die im aktuellen Selenium-Lauf nicht zuverlässig
-interagierbar sind. Das Verhalten bleibt deshalb sicher als
-`consent_required` klassifiziert.
+The practical run confirms stable successful paths for Bing, Yahoo,
+DuckDuckGo, Startpage, Brave, Swisscows, and Mojeek. Yandex and Qwant are
+recognized as blocked. Automatic consent handling for Google and Ecosia remains
+a deliberate documented TODO for a later phase: those providers deliver the
+consent structure dynamically or through downstream components that cannot be
+reliably interacted with in the current Selenium run. The behavior therefore
+remains safely classified as `consent_required`.
 
-### Abschluss-Checkliste
+### Completion Checklist
 
-- [x] Homepage-zu-SERP-Flow mit per Engine dokumentierten Verträgen
-- [x] Fortschritt, Korrelation, redigierte HTML-Artefakte und Manifeste
-- [x] Provider-Zustände, Empty-/Malformed-Semantik und Terminal-Summaries
-- [x] Fixture- und Regressionstests für die Phase-7-Korrekturen
-- [x] Konfiguration, CLI-Beispiele und Changelogs aktualisiert
-- [ ] Google-/Ecosia-Consent-Automation in einer späteren Phase stabilisieren
+- [x] Homepage-to-SERP flow with per-engine documented contracts
+- [x] Progress, correlation, redacted HTML artifacts, and manifests
+- [x] Provider states, empty/malformed semantics, and terminal summaries
+- [x] Fixtures and regression tests for the Phase 7 corrections
+- [x] Configuration, CLI examples, and changelogs updated
+- [ ] Stabilize Google/Ecosia consent automation in a later phase
 
-## Refactoring Phase 7.3 - Produktionsreife Provider-Zustände und Browser-Flow-Härtung
+## Refactoring Phase 7.3 - Production-Ready Provider States and Browser-Flow Hardening
 
 ### Objective
 

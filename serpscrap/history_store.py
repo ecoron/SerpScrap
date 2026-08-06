@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 import os
@@ -383,6 +384,13 @@ class SearchHistoryStore:
     def _scope(filters: dict[str, Any] | None, runs: list[dict[str, Any]], interval: str = "day") -> dict[str, Any]:
         filters = filters or {}
         created = [run.get("created_at") for run in runs if run.get("created_at")]
+        status = "complete" if runs else "empty"
+        if runs and (filters.get("from") or filters.get("to")):
+            observed = [SearchHistoryStore._parse_date(value) for value in created]
+            requested_start = SearchHistoryStore._parse_date(filters.get("from"))
+            requested_end = SearchHistoryStore._parse_date(filters.get("to"), True)
+            if (requested_start and requested_start < min(observed)) or (requested_end and requested_end > max(observed) + timedelta(days=1)):
+                status = "insufficient"
         return {
             "filters": {key: value for key, value in filters.items() if value not in (None, "") and key != "metric"},
             "timezone": "UTC",
@@ -390,7 +398,17 @@ class SearchHistoryStore:
             "coverage_start": min(created) if created else None,
             "coverage_end": max(created) if created else None,
             "freshness": _utc_now().isoformat(),
-            "data_status": "complete" if runs else "empty",
+            "data_status": status,
+        }
+
+    @staticmethod
+    def _semantics() -> dict[str, str]:
+        return {
+            "run_count": "run-scoped",
+            "result_count": "deduplicated provider-attributed rows",
+            "failure_count": "run-scoped failure records",
+            "provider_count": "distinct provider IDs in selected rows",
+            "ranking": "SERP rank when supplied by the normalized result",
         }
 
     @staticmethod
@@ -428,7 +446,7 @@ class SearchHistoryStore:
         return {
             "schema_version": ANALYTICS_SCHEMA_VERSION,
             "scope": self._scope(filters, runs),
-            "semantics": {"run_count": "run-scoped", "result_count": "deduplicated provider-attributed rows", "failure_count": "run-scoped"},
+            "semantics": self._semantics(),
             "run_count": len(runs),
             "result_count": len(results),
             "failure_count": sum(run["failure_count"] for run in runs),
@@ -456,12 +474,13 @@ class SearchHistoryStore:
         for point in points:
             point["success_rate"] = round((point["successful"] / point["searches"]) * 100, 2) if point["searches"] else None
         scope = self._scope(filters, runs, interval)
-        scope["data_status"] = "complete" if points else "empty"
-        return {"schema_version": ANALYTICS_SCHEMA_VERSION, "scope": scope, "interval": interval, "metric": metric, "points": points}
+        if not points:
+            scope["data_status"] = "empty"
+        return {"schema_version": ANALYTICS_SCHEMA_VERSION, "scope": scope, "semantics": self._semantics(), "interval": interval, "metric": metric, "points": points}
 
-    def aggregates(self, kind: str, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+    def aggregates(self, kind: str, filters: dict[str, Any] | None = None, limit: int = 1000, offset: int = 0) -> dict[str, Any]:
         runs, results = self._filtered(filters)
-        rows = defaultdict(lambda: {"runs": set(), "results": 0, "failures": 0, "providers": set()})
+        rows = defaultdict(lambda: {"runs": set(), "results": 0, "failures": 0, "providers": set(), "ranks": []})
         if kind == "providers":
             for run in runs:
                 for provider in run.get("options", {}).get("search_engines", []):
@@ -485,14 +504,19 @@ class SearchHistoryStore:
             rows[key]["runs"].add(result["run_id"])
             rows[key]["results"] += 1
             rows[key]["providers"].add(result.get("search_engine", "unknown"))
+            if result.get("serp_rank") is not None:
+                rows[key]["ranks"].append(result["serp_rank"])
         items = []
         for key, value in rows.items():
             state = "successful" if value["results"] else ("failed" if value["failures"] else "empty")
-            items.append({"name": key, "run_count": len(value["runs"]), "result_count": value["results"], "failure_count": value["failures"], "provider_count": len(value["providers"]), "state": state})
+            run_count = len(value["runs"])
+            items.append({"name": key, "run_count": run_count, "result_count": value["results"], "failure_count": value["failures"], "failure_rate": round(value["failures"] / max(1, run_count), 4), "provider_count": len(value["providers"]), "best_rank": min(value["ranks"]) if value["ranks"] else None, "selected": kind == "providers", "state": state, "reason": "results available" if value["results"] else ("provider failure" if value["failures"] else "no results")})
         items.sort(key=lambda item: (-item["result_count"], item["name"]))
-        return {"schema_version": ANALYTICS_SCHEMA_VERSION, "scope": self._scope(filters, runs), "items": items[:1000], "total": len(items)}
+        bounded_limit = min(max(int(limit), 1), 1000)
+        bounded_offset = min(max(int(offset), 0), 10000)
+        return {"schema_version": ANALYTICS_SCHEMA_VERSION, "scope": self._scope(filters, runs), "semantics": self._semantics(), "items": items[bounded_offset:bounded_offset + bounded_limit], "total": len(items), "limit": bounded_limit, "offset": bounded_offset}
 
-    def compare(self, left: str, right: str, limit: int = 500) -> dict[str, Any]:
+    def compare(self, left: str, right: str, limit: int = 500, offset: int = 0) -> dict[str, Any]:
         left_run, right_run = self.get_run(left), self.get_run(right)
         if not left_run or not right_run:
             raise KeyError("both comparison runs must exist")
@@ -503,7 +527,7 @@ class SearchHistoryStore:
                 source = item.get("canonical_url") or item.get("url") or item.get("link")
                 identity = _canonical_identity(source)
                 if identity:
-                    rows[identity] = {"identity": identity, "source_url": source, "rank": item.get("serp_rank"), "domain": item.get("serp_domain") or urlparse(identity).hostname or "", "provider": item.get("search_engine"), "result_kind": item.get("result_kind", "organic"), "title": item.get("serp_title") or item.get("title") or ""}
+                    rows[identity] = {"identity": identity, "source_url": source, "rank": item.get("serp_rank"), "domain": item.get("serp_domain") or urlparse(identity).hostname or "", "provider": item.get("search_engine"), "result_kind": item.get("result_kind", "organic"), "title": item.get("serp_title") or item.get("title") or "", "snippet": item.get("serp_snippet") or item.get("snippet") or item.get("description") or ""}
             return rows
 
         before, after = keyed(left), keyed(right)
@@ -522,6 +546,9 @@ class SearchHistoryStore:
         domain_before = {item["domain"] for item in before.values() if item.get("domain")}
         domain_after = {item["domain"] for item in after.values() if item.get("domain")}
         compatibility = self._comparison_context(left_run, right_run)
+        compatibility["fingerprint"] = hashlib.sha256(json.dumps({"left": compatibility["left"], "right": compatibility["right"]}, sort_keys=True).encode()).hexdigest()[:16]
+        provider_overlap = sorted({item.get("provider") for item in before.values() if item.get("provider")} & {item.get("provider") for item in after.values() if item.get("provider")})
+        changed_domains = sorted({item["before"].get("domain") for item in changed if item["before"].get("domain")})
         return {
             "schema_version": ANALYTICS_SCHEMA_VERSION,
             "identity_key_version": IDENTITY_KEY_VERSION,
@@ -529,11 +556,13 @@ class SearchHistoryStore:
             "right": right,
             "scope": {"left": left, "right": right, "compatibility": compatibility},
             "compatibility": compatibility,
-            "stable": stable[:limit],
-            "moved": changed[:limit],
-            "added": added[:limit],
-            "removed": removed[:limit],
-            "domains": {"entered": sorted(domain_after - domain_before)[:limit], "exited": sorted(domain_before - domain_after)[:limit]},
+            "semantics": self._semantics(),
+            "stable": stable[offset:offset + limit],
+            "moved": changed[offset:offset + limit],
+            "added": added[offset:offset + limit],
+            "removed": removed[offset:offset + limit],
+            "domains": {"entered": sorted(domain_after - domain_before)[:limit], "exited": sorted(domain_before - domain_after)[:limit], "rank_changed": changed_domains[:limit]},
+            "provider_overlap": provider_overlap,
             "totals": {"stable": len(stable), "moved": len(changed), "new": len(added), "lost": len(removed), "shared": len(shared_keys), "added": len(added), "removed": len(removed)},
         }
 
@@ -546,5 +575,12 @@ class SearchHistoryStore:
             writer = csv.DictWriter(stream, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(rows)
-            return stream.getvalue(), "text/csv"
+            scope = self._scope(filters, runs)
+            metadata = [f"# schema_version={ANALYTICS_SCHEMA_VERSION}", f"# identity_key_version={IDENTITY_KEY_VERSION}", f"# scope={json.dumps(scope, ensure_ascii=False, sort_keys=True)}", f"# generated_at={_utc_now().isoformat()}"]
+            return "\n".join(metadata) + "\n" + stream.getvalue(), "text/csv"
         return json.dumps({"schema_version": ANALYTICS_SCHEMA_VERSION, "identity_key_version": IDENTITY_KEY_VERSION, "scope": self._scope(filters, runs), "generated_at": _utc_now().isoformat(), "rows": rows}, ensure_ascii=False), "application/json"
+
+    def export_preflight(self, filters: dict[str, Any] | None = None, fmt: str = "json", limit: int = 5000) -> dict[str, Any]:
+        runs, results = self._filtered(filters)
+        bounded_limit = min(max(int(limit), 1), 5000)
+        return {"schema_version": ANALYTICS_SCHEMA_VERSION, "identity_key_version": IDENTITY_KEY_VERSION, "scope": self._scope(filters, runs), "format": fmt, "row_limit": bounded_limit, "estimated_rows": min(len(results), bounded_limit), "generated_at": _utc_now().isoformat()}

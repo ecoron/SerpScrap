@@ -21,6 +21,9 @@ def test_analytics_contract_and_provider_aggregation():
     assert "freshness" in payload["scope"]
     assert payload["result_count"] == 1
     assert store.aggregates("providers")["items"][0]["name"] == "bing"
+    assert store.aggregates("providers")["semantics"]["ranking"]
+    assert store.aggregates("providers", limit=1, offset=0)["limit"] == 1
+    assert store.timeseries()["semantics"]["run_count"] == "run-scoped"
 
 
 def test_timeseries_compare_and_bounded_export():
@@ -56,3 +59,18 @@ def test_compare_normalizes_urls_and_classifies_rank_changes():
     assert comparison["totals"]["moved"] == 1
     assert comparison["totals"]["new"] == 1
     assert comparison["totals"]["lost"] == 1
+    assert comparison["compatibility"]["fingerprint"]
+    assert comparison["provider_overlap"] == ["bing"]
+    assert comparison["domains"]["rank_changed"] == ["example.org"]
+
+
+def test_incomplete_scope_and_export_preflight_metadata():
+    store = _store()
+    scoped = store.analytics(filters={"from": "2000-01-01", "to": "2099-01-01"})
+    assert scoped["scope"]["data_status"] == "insufficient"
+    preflight = store.export_preflight({"provider": "bing"}, "csv", 99999)
+    assert preflight["row_limit"] == 5000
+    assert preflight["estimated_rows"] == 1
+    body, _ = store.export({"provider": "bing"}, "csv")
+    assert "# schema_version=2" in body
+    assert "# identity_key_version=1" in body

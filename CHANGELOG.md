@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added `docs/a2ui-final.md`, the final Alpha 2.0.0 UI gap list and release
+  gate, including English-language cleanup and the future Read the Docs
+  exclusion requirement for internal `alpha-2.0.0-ui.md` and `a2ui-*.md`
+  planning documents.
+
+- Completed the Alpha 2.0.0 analytics hardening: consistent semantics metadata,
+  insufficient-coverage states, comparison fingerprints and provenance,
+  provider overlap, bounded comparison offsets, export preflight metadata,
+  and Read the Docs exclusion of internal A2UI planning files.
+
 - Implemented the grouped configuration UI and schema-driven configuration
   service: all supported `Config` values are represented, validated, persisted
   in the database, redacted where sensitive, and resettable to fresh initial

@@ -131,7 +131,7 @@ and a compatible remote transport:
      "max_tokens": 1000,
      "messages": [{
        "role": "user",
-       "content": "Welche Suchwerkzeuge stehen zur Verfügung?"
+     "content": "Which search tools are available?"
      }],
      "mcp_servers": [{
        "type": "url",

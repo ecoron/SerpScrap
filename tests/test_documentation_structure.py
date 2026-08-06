@@ -89,3 +89,9 @@ def test_configuration_ui_plan_covers_full_defaults_persistence_grouping_and_res
         "Sensitive values are redacted",
     ):
         assert marker in content
+
+
+def test_internal_alpha_ui_plans_are_excluded_from_readthedocs() -> None:
+    conf = (Path(__file__).parents[1] / "docs" / "conf.py").read_text(encoding="utf-8")
+    assert '"alpha-2.0.0-ui.md"' in conf
+    assert '"a2ui-*.md"' in conf

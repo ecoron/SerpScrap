@@ -121,12 +121,20 @@ async function renderCompare(filters, signal) {
   };
   $('#compare-submit').onclick = compare; left.onchange = compare; right.onchange = compare; await compare();
 }
-function updateExportLinks(filters) {
+async function updateExportLinks(filters, signal) {
   ['json','csv'].forEach(format => { const link = $(`#history-export-${format}`); if (link) link.href = `/api/v1/history/export?${new URLSearchParams({...filters, format})}`; });
+  const scope = $('#history-export-scope');
+  if (!scope) return;
+  try {
+    const preview = await api.exportPreflight({...filters, format:'json'}, {signal});
+    scope.textContent = `Export scope: ${preview.estimated_rows} of ${preview.row_limit} rows · ${preview.format.toUpperCase()} · ${scopeText(preview.scope)}`;
+  } catch (error) {
+    if (error.name !== 'AbortError') scope.textContent = 'Export preflight unavailable; the server limit still applies.';
+  }
 }
 export async function refreshHistoryDashboard() {
   if (activeRequest) activeRequest.abort(); activeRequest = new AbortController(); const signal = activeRequest.signal;
-  const filters = params(); syncUrl(); chips(); updateExportLinks(filters);
+  const filters = params(); syncUrl(); chips(); updateExportLinks(filters, signal);
   const view = new URLSearchParams(location.search).get('view') || 'runs';
   document.querySelectorAll('[id^="history-"]:not(.history-filters):not(#history-live-status)').forEach(section => { if (section.tagName === 'SECTION') section.hidden = section.id !== `history-${view}`; });
   document.querySelectorAll('[data-view]').forEach(link => link.classList.toggle('is-active', link.dataset.view === view));

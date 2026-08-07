@@ -62,6 +62,13 @@ def test_consent_action_defaults_to_necessary_and_rejects_invalid_values():
         ValidatorConfig().validate(config)
 
 
+def test_validator_accepts_explicit_consent_accept_mode():
+    config = Config().get()
+    config["consent_action"] = "accept"
+
+    ValidatorConfig().validate(config)
+
+
 @pytest.mark.parametrize("search_type", ["normal", "image", "news", "shopping", "videos"])
 def test_validator_accepts_documented_google_search_types(search_type):
     config = Config().get()

@@ -29,8 +29,8 @@ class ValidatorConfig:
             raise ConfigurationError(
                 "search_type must be one of: normal, image, news, shopping, videos"
             )
-        if config.get("consent_action") not in {"necessary", "reject", "disabled"}:
-            raise ConfigurationError("consent_action must be one of: necessary, reject, disabled")
+        if config.get("consent_action") not in {"necessary", "reject", "accept", "disabled"}:
+            raise ConfigurationError("consent_action must be one of: necessary, reject, accept, disabled")
 
         engines = config.get("search_engines")
         if isinstance(engines, str):

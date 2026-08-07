@@ -166,6 +166,10 @@ covered.
   browser startup, terminal provider state, and sanitized navigation outcome.
 - Keep the comparison opt-in and diagnostic; do not suppress WebDriver signals
   or retry provider access-control challenges.
+
+The consent implementation also supports an explicit `accept` action for
+diagnostic comparisons. It is exposed as a per-search MCP option so a test can
+compare full consent without changing the persisted default of `necessary`.
 - Google and Ecosia are enabled by default only after dated live evidence shows
   both consent completion and an acceptable SERP access outcome for the
   supported market.

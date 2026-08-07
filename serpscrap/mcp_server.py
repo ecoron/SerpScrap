@@ -81,6 +81,11 @@ _SEARCH_OPTIONS_SCHEMA = {
             "minimum": 1,
             "maximum": 100,
         },
+        "consent_action": {
+            "type": "string",
+            "description": "Consent action for this search; accept is an explicit diagnostic mode.",
+            "enum": ["necessary", "reject", "accept", "disabled"],
+        },
     },
     "additionalProperties": False,
 }

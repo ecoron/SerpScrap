@@ -24,6 +24,10 @@ All notable changes to this project will be documented in this file.
   runs in headless and visible Chrome using the same disposable profile and
   network conditions.
 
+- Added an explicit opt-in `accept` consent action for controlled diagnostic
+  searches, including validation, CLI/MCP schemas, provider acceptance labels,
+  and regression coverage. The persisted default remains `necessary`.
+
 - Added `docs/a2ui-search.md`, an implementation-ready plan for separating
   verified Google/Ecosia consent clearance from hidden stale DOM nodes and
   later provider access-control challenges in the Selenium browser flow.

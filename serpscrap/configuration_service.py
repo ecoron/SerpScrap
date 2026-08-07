@@ -194,7 +194,7 @@ class SearchConfigurationService:
             elif path == "log_level":
                 field["options"] = [{"value": item, "label": item} for item in ("DEBUG", "INFO", "WARNING", "ERROR")]
             elif path == "consent_action":
-                field["options"] = [{"value": item, "label": item.title()} for item in ("necessary", "reject", "disabled")]
+                field["options"] = [{"value": item, "label": item.title()} for item in ("necessary", "reject", "accept", "disabled")]
             fields.append(field)
         return fields
 

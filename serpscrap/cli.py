@@ -138,7 +138,7 @@ def main(log_level: str, log_format: str) -> None:
 @click.option("--no-history", is_flag=True, default=None, help="Disable persistent SQLite history.")
 @click.option(
     "--consent-action",
-    type=click.Choice(["necessary", "reject", "disabled"]),
+    type=click.Choice(["necessary", "reject", "accept", "disabled"]),
     default=None,
     help="Handle consent dialogs using the privacy-preserving rejection action.",
 )

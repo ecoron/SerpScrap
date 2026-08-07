@@ -60,7 +60,9 @@ Core settings
 * ``consent_action``: provider consent handling. Defaults to ``necessary``
   and selects the privacy-preserving rejection action (Google's ``Alle
   ablehnen``); ``reject`` is an explicit alias and ``disabled`` preserves a
-  ``consent_required`` failure.
+  ``consent_required`` failure. ``accept`` is an explicit diagnostic mode
+  that selects the provider's full-consent action and should not be used as a
+  production default.
   If the provider does not expose an actionable control, the run safely remains
   ``consent_required`` instead of bypassing or guessing at consent.
   Consent progress events use ``consent_not_present``, ``consent_visible``,

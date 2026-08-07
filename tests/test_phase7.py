@@ -219,6 +219,32 @@ def test_consent_action_uses_privacy_preserving_button_label():
     assert reject.clicks == 1
 
 
+def test_consent_accept_action_uses_acceptance_label():
+    accept = FakeElement()
+    accept.text = "Alle akzeptieren"  # type: ignore[attr-defined]
+
+    class AcceptDriver(FakeDriver):
+        def find_elements(self, by, selector):
+            if selector == "button.consent":
+                return [accept]
+            return []
+
+    driver = AcceptDriver()
+    plugin = DemoPlugin()
+    contract = plugin.browser_interaction
+    assert contract is not None
+    plugin.browser_interaction = BrowserInteraction(
+        contract.homepage_url,
+        contract.search_input_selectors,
+        contract.submit_selectors,
+        contract.serp_ready_selectors,
+        contract.organic_card_selectors,
+        consent_button_selectors=("button.consent",),
+    )
+    assert HomepageSearchFlow()._apply_consent(driver, plugin, "accept") is True
+    assert accept.clicks == 1
+
+
 def test_clean_text_repairs_common_utf8_mojibake():
     assert _clean_text("Solarenergie erklÃ¤rt â€“ kompakt") == "Solarenergie erklärt – kompakt"
 

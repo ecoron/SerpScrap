@@ -180,7 +180,12 @@ class HomepageSearchFlow:
         assert spec is not None
         if action == "disabled":
             return False
-        labels = tuple(label.lower() for label in spec.consent_reject_labels)
+        if action not in {"necessary", "reject", "accept"}:
+            return False
+        source_labels = (
+            spec.consent_accept_labels if action == "accept" else spec.consent_reject_labels
+        )
+        labels = tuple(label.lower() for label in source_labels)
 
         if progress is not None:
             progress("consent_action_started")

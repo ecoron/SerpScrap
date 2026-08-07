@@ -95,6 +95,16 @@ class BrowserInteraction:
         "non-essential cookies",
         "refuse",
     )
+    consent_accept_labels: tuple[str, ...] = (
+        "accept",
+        "accept all",
+        "alle akzeptieren",
+        "akzeptieren",
+        "agree",
+        "agree all",
+        "zustimmen",
+        "allow all",
+    )
 
     def metadata(self) -> dict[str, Any]:
         return {
@@ -109,6 +119,7 @@ class BrowserInteraction:
             "consent_button_selectors": list(self.consent_button_selectors),
             "consent_manage_selectors": list(self.consent_manage_selectors),
             "consent_reject_labels": list(self.consent_reject_labels),
+            "consent_accept_labels": list(self.consent_accept_labels),
         }
 
 

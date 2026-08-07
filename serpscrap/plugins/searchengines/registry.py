@@ -37,6 +37,11 @@ class _GooglePlugin(SearchEnginePlugin):
     )
     homepage_consent_selectors = ("div[role='dialog'][aria-modal='true']",)
 
+    def classify(self, url: str, html: str, *, visible_text: str | None = None) -> str | None:
+        if any(fragment in url.lower() for fragment in ("/sorry/", "/sorry/index")):
+            return "blocked"
+        return super().classify(url, html, visible_text=visible_text)
+
     def build_url(self, query: str, page: int, country_code: str, search_type: str) -> str:
         from scrapcore.scraper.browser import GoogleSearchAdapter
 
@@ -132,7 +137,7 @@ def _alternatives() -> list[SearchEnginePlugin]:
         _TemplatePlugin("yandex", "https://yandex.com", "https://yandex.com/search/?text={query}&p={page_minus_one}", 2.50, "yandex", interaction("https://yandex.com/", ("input[name='text']", "input[type='search']"), ("form[action*='/search'] button[type='submit']",), ("[data-serp-item]", ".serp-item"), (".serp-item",)), (".serp-item",)),
         _TemplatePlugin("yahoo", "https://search.yahoo.com", "https://search.yahoo.com/search?p={query}&b={offset_plus_one}", 1.47, "bing", interaction("https://search.yahoo.com/", ("input[name='p']", "input[type='search']"), ("form[action*='/search'] button[type='submit']",), ("#web",), ("div.algo",)), ("div.algo",)),
         _TemplatePlugin("duckduckgo", "https://html.duckduckgo.com", "https://html.duckduckgo.com/html/?q={query}&s={offset}", 0.85, "bing", interaction("https://html.duckduckgo.com/html/", ("input[name='q']",), ("form[action='/html/'] input[type='submit']",), ("div.results",), (".result",)), (".result",)),
-        _TemplatePlugin("ecosia", "https://www.ecosia.org", "https://www.ecosia.org/search?q={query}&p={page}", 0.48, "mixed", interaction("https://www.ecosia.org/", ("input[name='q']", "input[type='search']"), ("form[action*='/search'] button[type='submit']",), ("main",), ("article",)), ("article",)),
+        _TemplatePlugin("ecosia", "https://www.ecosia.org", "https://www.ecosia.org/search?q={query}&p={page}", 0.48, "mixed", interaction("https://www.ecosia.org/", ("textarea[name='q']", "input[name='q']", "input[type='search']"), ("form[action*='/search'] button[type='submit']",), ("main",), ("article",)), ("article",)),
         _TemplatePlugin("qwant", "https://www.qwant.com", "https://www.qwant.com/?q={query}&t=web&locale={country}", None, "bing", interaction("https://www.qwant.com/", ("input[name='q']", "input[type='search']"), ("button[type='submit']",), ("main",), ("article",)), ("article",)),
         _TemplatePlugin("startpage", "https://www.startpage.com", "https://www.startpage.com/sp/search?q={query}", None, "google", interaction("https://www.startpage.com/", ("input[name='query']", "input[type='search']"), ("form[action*='/sp/search'] button[type='submit']",), ("a.result-title", ".w-gl"), ("a.result-title",)), ("a.result-title",)),
         _TemplatePlugin("brave", "https://search.brave.com", "https://search.brave.com/search?q={query}&source=web&offset={offset}", None, "brave", interaction("https://search.brave.com/", ("textarea#searchbox", "textarea[name='q']", "input[name='q']", "input[type='search']"), ("form button[type='submit']",), (".snippet",), (".snippet",)), (".snippet",)),

@@ -26,6 +26,12 @@ Core settings
 * ``user_agent``: optional explicit desktop Chrome identity. Empty resolves a
   user agent matching the installed Chrome major version, with a maintained
   current Chrome fallback when detection is unavailable.
+* ``chrome_profile_dir``: optional isolated Chrome profile directory for
+  controlled, disposable smoke tests. Do not use a personal Chrome profile;
+  profile data is not suitable for CI artifacts or source control.
+* ``interaction_settle_delay``: bounded wait after query entry and before
+  submit, allowing provider autocomplete/form validation to settle. It does
+  not hide WebDriver signals and defaults to ``0.35`` seconds.
 * ``request_delay_min`` and ``request_delay_max``: jittered delay range between
   Google navigations; no delay is added before the first navigation.
 * ``request_retry_limit``: bounded retries for transient timeout/WebDriver

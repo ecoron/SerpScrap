@@ -52,6 +52,7 @@ class SeleniumPageCapture:
                 progress=callback,
                 artifact_store=config.get("_artifact_store"),
                 consent_action=str(config.get("consent_action", "necessary")),
+                interaction_settle_delay=float(config.get("interaction_settle_delay", 0.0)),
             )
         finally:
             if driver is not None:

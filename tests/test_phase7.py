@@ -4,7 +4,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from selenium.common.exceptions import ElementNotInteractableException
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    ElementNotInteractableException,
+)
 
 from serpscrap.diagnostics import DiagnosticArtifactStore, ProgressCoordinator
 from serpscrap.plugins.searchengines.base import (
@@ -145,6 +148,19 @@ def test_homepage_flow_retries_when_first_search_field_is_not_interactable():
     HomepageSearchFlow(timeout=1).capture(driver, DemoPlugin(), "query", "DE", 1, "normal")
 
     assert fallback.value == "query"
+
+
+def test_homepage_flow_falls_back_to_keyboard_when_submit_is_intercepted():
+    driver = FakeDriver()
+
+    def intercepted_click() -> None:
+        raise ElementClickInterceptedException("autocomplete overlay")
+
+    driver.submit.click = intercepted_click  # type: ignore[method-assign]
+
+    HomepageSearchFlow(timeout=1).capture(driver, DemoPlugin(), "query", "DE", 1, "normal")
+
+    assert driver.input.keys
 
 
 def test_homepage_flow_dismisses_declared_overlay_before_query_entry():

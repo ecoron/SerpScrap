@@ -95,3 +95,21 @@ def test_internal_alpha_ui_plans_are_excluded_from_readthedocs() -> None:
     conf = (Path(__file__).parents[1] / "docs" / "conf.py").read_text(encoding="utf-8")
     assert '"alpha-2.0.0-ui.md"' in conf
     assert '"a2ui-*.md"' in conf
+
+
+def test_search_plan_covers_consent_boundary_and_live_smoke_gates() -> None:
+    document = Path(__file__).parents[1] / "docs" / "a2ui-search.md"
+    content = document.read_text(encoding="utf-8")
+
+    assert document.is_file()
+    for marker in (
+        "## Evidence and Current Diagnosis",
+        "## Solution Decision",
+        "## Implementation Slices",
+        "## Test Plan",
+        "## Acceptance Gates",
+        "consent_cleared",
+        "Hidden dialog nodes",
+        "access-control",
+    ):
+        assert marker in content

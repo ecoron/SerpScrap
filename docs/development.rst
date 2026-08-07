@@ -63,6 +63,22 @@ The browser smoke test requires Chrome and network access:
 
    SERPSCRAP_RUN_BROWSER=1 pipenv run python -m pytest -m browser
 
+Consent-flow verification
+=========================
+
+The homepage flow treats consent clearance and SERP access as separate gates.
+After a visible rejection action, the flow verifies the rendered state and
+ignores hidden stale consent markup left in ``page_source``. A later Google
+``/sorry`` response or Ecosia challenge remains a typed provider block; the
+flow must not hide the challenge, inject guessed cookies, call private provider
+JavaScript, or retry it as transient consent failure.
+
+Live consent checks are low-volume and opt-in. Use a disposable browser
+profile when repeated state is required and keep cookies, local storage,
+profiles, raw provider HTML, and query-bearing artifacts out of the repository
+and CI output. Record only sanitized provider state, date, market, selector
+decision, and correlation information.
+
 Architecture
 ============
 

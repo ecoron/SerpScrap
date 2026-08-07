@@ -6,6 +6,38 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Made the default browser identity resolve to the installed Chrome major
+  instead of pinning Chrome 150, preventing User-Agent drift on local Chrome
+  updates. Added opt-in isolated Chrome profile support for controlled smoke
+  diagnostics and documented headless/headful comparison guidance.
+
+- Replaced the Windows-specific browser-version lookup with Selenium Manager's
+  cross-platform installed-browser detection plus a generic executable
+  fallback.
+
+- Added a bounded post-input interaction settle delay for provider autocomplete
+  and form validation. The existing headless toggle and opt-in disposable
+  profile remain explicit diagnostic controls; WebDriver signals are not
+  concealed.
+
+- Recorded the next opt-in diagnostic TODO: compare identical Google/Ecosia
+  runs in headless and visible Chrome using the same disposable profile and
+  network conditions.
+
+- Added `docs/a2ui-search.md`, an implementation-ready plan for separating
+  verified Google/Ecosia consent clearance from hidden stale DOM nodes and
+  later provider access-control challenges in the Selenium browser flow.
+
+- Fixed the homepage browser flow to continue after verified Google/Ecosia
+  consent clearance even when hidden stale dialog markup remains in
+  `page_source`; added regression coverage for post-consent success and typed
+  provider blocking outcomes.
+
+- Updated the live Google/Ecosia browser contracts for the current Ecosia
+  textarea search field and Google autocomplete submit interception; live
+  smoke now records provider blocking after consent instead of selector drift
+  or malformed-state failures.
+
 - Added `docs/a2ui-final.md`, the final Alpha 2.0.0 UI gap list and release
   gate, including English-language cleanup and the future Read the Docs
   exclusion requirement for internal `alpha-2.0.0-ui.md` and `a2ui-*.md`

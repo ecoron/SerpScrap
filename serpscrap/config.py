@@ -44,7 +44,11 @@ class Config:
             "window_height": 900,
             "page_load_timeout": 30,
             "wait_timeout": 15,
-            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+            # Empty means: derive a desktop Chrome UA matching the installed
+            # browser. Keeping a fixed major here drifts from local Chrome.
+            "user_agent": "",
+            "chrome_profile_dir": os.environ.get("SERPSCRAP_CHROME_PROFILE_DIR", ""),
+            "interaction_settle_delay": 0.35,
             "request_delay_min": 0.75,
             "request_delay_max": 2.0,
             "request_retry_limit": 1,

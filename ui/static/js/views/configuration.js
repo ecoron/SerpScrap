@@ -91,15 +91,29 @@ function updateDirty() {
   $('#save-config').disabled = !dirty;
 }
 function showErrors(message, fieldKeys = []) {
+  fieldKeys.forEach(key => document.querySelector(`[data-field-wrapper="${CSS.escape(key)}"]`)?.closest('details')?.setAttribute('open', ''));
   const summary = $('#config-error-summary'); summary.textContent = message; summary.hidden = false;
   document.querySelectorAll('[data-error-for]').forEach(node => { const visible = fieldKeys.includes(node.dataset.errorFor); node.hidden = !visible; if (visible) node.textContent = message; });
   const target = fieldKeys[0] && document.querySelector(`[data-config-key="${CSS.escape(fieldKeys[0])}"]`); target?.focus();
 }
 function clearErrors() { $('#config-error-summary').hidden = true; document.querySelectorAll('[data-error-for]').forEach(node => { node.hidden = true; node.textContent = ''; }); }
 function populateFromResponse(response) { loaded = response; $('#config-source').textContent = `${response.source === 'persisted' ? 'Saved override' : 'Initial defaults'} · revision ${response.revision}${response.updated_at ? ` · updated ${new Date(response.updated_at).toLocaleString()}` : ''}`; $('#config-scope-label').textContent = 'Applies to new searches only.'; render(); }
-async function save(event) { event.preventDefault(); clearErrors(); const payload = serialize(); if (!payload.search_engines?.length) return showErrors('Select at least one search engine.', ['search_engines']); try { const response = await api.send('/configuration', 'PUT', payload); populateFromResponse(response); notify(`Configuration revision ${response.revision} saved.`); } catch (error) { showErrors(error.message || 'Configuration could not be saved.'); } }
+async function save(event) { event.preventDefault(); clearErrors(); const payload = serialize(); if (!payload.search_engines?.length) return showErrors('Select at least one search engine.', ['search_engines']); try { const response = await api.send('/configuration', 'PUT', payload); populateFromResponse(response); notify(`Configuration revision ${response.revision} saved.`); } catch (error) { const message = error.message || 'Configuration could not be saved.'; const fields = message.includes('proxy_file or proxy_sources') ? ['use_own_ip', 'proxy_sources'] : []; showErrors(message, fields); notify(message, 'error'); } }
 async function resetDefaults() { if (!window.confirm('Reset all configuration settings to the initial SerpScrap defaults?')) return; try { populateFromResponse(await api.send('/configuration/reset', 'POST')); notify('Initial defaults restored.'); } catch (error) { showErrors(error.message || 'Defaults could not be restored.'); } }
 async function load() { try { populateFromResponse(await api.configuration()); } catch (error) { $('#config-source').textContent = 'Configuration unavailable'; showErrors(error.message || 'Configuration could not be loaded.'); } }
+function renderProxyStatus(status) { const root = $('#proxy-status'); if (!root) return; if (!status.enabled) { root.textContent = 'Proxy use is disabled. Enable proxy_enabled or disable use_own_ip to activate it.'; return; } const summary = status.summary || {}; const rows = (status.proxies || []).map(proxy => `<tr><td><code>${esc(proxy.endpoint)}</code></td><td class="proxy-source">${esc(proxy.source || '—')}</td><td><span class="proxy-status-badge ${proxy.online ? 'is-online' : 'is-offline'}"><span class="proxy-status-dot"></span>${proxy.online ? 'Healthy' : 'Offline'}</span></td><td>${proxy.latency_ms == null ? '—' : `${Number(proxy.latency_ms).toFixed(1)} ms`}</td><td>${Number(proxy.failure_count || 0)}</td><td>${esc(proxy.last_error || '—')}</td></tr>`).join(''); root.innerHTML = `<div class="proxy-summary-line"><p><strong>${summary.healthy || 0}</strong> healthy · <strong>${summary.offline || 0}</strong> offline · ${summary.total || 0} total</p></div><details class="proxy-list" open><summary>Proxy entries <span>${summary.total || 0}</span></summary><div class="table-scroll"><table><thead><tr><th>Endpoint</th><th>Source</th><th>Status</th><th>Latency</th><th>Failures</th><th>Last error</th></tr></thead><tbody>${rows || '<tr><td colspan="6">No proxies configured.</td></tr>'}</tbody></table></div></details>`; }
+async function loadProxyStatus() { try { renderProxyStatus(await api.proxies()); } catch (error) { $('#proxy-status').textContent = error.message || 'Proxy status unavailable.'; } }
+async function runProxyAction(button, action, successMessage, failureMessage) {
+  if (!button || button.disabled) return;
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Checking proxies…';
+  try { renderProxyStatus(await action()); notify(successMessage); }
+  catch (error) { notify(error.message || failureMessage, 'error'); }
+  finally { button.disabled = false; button.textContent = original; }
+}
+async function testProxies() { return runProxyAction($('#test-proxies'), () => api.testProxies(), 'Proxy test completed.', 'Proxy test failed.'); }
+async function refreshProxies() { return runProxyAction($('#refresh-proxies'), () => api.refreshProxies(), 'Proxy health refreshed and saved.', 'Proxy refresh failed.'); }
 export function initConfigurationPage() {
   if (!initialized) {
     $('#config-form')?.addEventListener('submit', save);
@@ -107,8 +121,10 @@ export function initConfigurationPage() {
     $('#reset-changes')?.addEventListener('click', () => { if (loaded) { render(); notify('Unsaved changes discarded.'); } });
     $('#configuration-groups')?.addEventListener('input', updateDirty);
     $('#configuration-groups')?.addEventListener('change', updateDirty);
+    $('#test-proxies')?.addEventListener('click', testProxies);
+    $('#refresh-proxies')?.addEventListener('click', refreshProxies);
     window.addEventListener('beforeunload', event => { if ($('#config-dirty-label')?.classList.contains('is-dirty')) { event.preventDefault(); event.returnValue = ''; } });
     initialized = true;
   }
-  return load();
+  return load().then(loadProxyStatus);
 }

@@ -37,4 +37,7 @@ export const api = {
   failures: id => request(`/searches/${encodeURIComponent(id)}/failures`),
   status: id => request(`/searches/${encodeURIComponent(id)}`),
   engines: () => request('/engines'),
+  proxies: () => request('/proxies'),
+  refreshProxies: () => request('/proxies/refresh', {method: 'POST', body: '{}', timeout: 120000}),
+  testProxies: () => request('/proxies/test', {method: 'POST', body: '{}', timeout: 120000}),
 };

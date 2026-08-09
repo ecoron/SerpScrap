@@ -126,7 +126,13 @@ deployment explicitly permits editing them.
 - `url_connect_timeout`, `url_read_timeout`
 - `url_max_redirects`, `url_max_response_bytes`
 - `proxy_file`
-- `proxy_check_url`, `proxy_info_url`
+- `proxy_sources`
+- `proxy_source_timeout`, `proxy_source_max_bytes`
+- `proxy_cache_dir`, `proxy_cache_ttl`
+- `proxy_allowed_protocols`, `proxy_allowed_countries`
+- `proxy_max_age_seconds`, `proxy_max_endpoints`
+- `proxy_check_url`, `proxy_check_timeout`, `proxy_failure_threshold`, `proxy_info_url`
+- `proxy_auto_refresh_enabled`, `proxy_auto_refresh_interval_seconds`
 - `check_proxies`
 - `headers`
 

@@ -57,6 +57,11 @@ class ApiHandler(BaseHTTPRequestHandler):
             return self._send(HTTPStatus.OK, {"engines": self.service.configuration.engines()})
         if path == "/api/v1/configuration":
             return self._send(HTTPStatus.OK, self.service.configuration.get())
+        if path == "/api/v1/proxies":
+            try:
+                return self._send(HTTPStatus.OK, self.service.proxy_status())
+            except Exception as exc:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         if path == "/api/v1/results":
             limit = min(max(int((query.get("limit") or [100])[0]), 0), 1000)
             offset = max(int((query.get("offset") or [0])[0]), 0)
@@ -137,6 +142,16 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         path = self.path.rstrip("/")
+        if path == "/api/v1/proxies/refresh":
+            try:
+                return self._send(HTTPStatus.OK, self.service.refresh_proxies())
+            except Exception as exc:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        if path == "/api/v1/proxies/test":
+            try:
+                return self._send(HTTPStatus.OK, self.service.test_proxies())
+            except Exception as exc:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         if path == "/api/v1/configuration/reset":
             return self._send(HTTPStatus.OK, self.service.configuration.reset())
         if path != "/api/v1/searches":

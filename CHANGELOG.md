@@ -6,6 +6,28 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added `docs/a2ui-proxy.md` with the implementation plan for validated proxy
+  sources, health checks, search-engine-specific selection, bounded retries,
+  security limits, and migration from the legacy `proxy_file` flow.
+- Added the first proxy lifecycle implementation with typed endpoints,
+  file/directory/HTTPS sources, validation, bounded health checks, deduplication,
+  and engine-aware pool selection while retaining `proxy_file` compatibility.
+- Persisted proxy health metrics and engine-specific availability, restored
+  existing proxy state when building a pool, and added SQLite migrations for
+  the new health fields.
+- Added bounded Selenium proxy rotation for transient timeout and WebDriver
+  failures, including proxy failure/success reporting and explicit protection
+  against rotation on provider blocks, CAPTCHAs, or consent states.
+- Added a controlled local proxy end-to-end test and credential-free proxy
+  operations endpoints for status, test, and refresh/persist actions.
+- Added proxy status, health-test, and refresh controls to the configuration UI.
+- Improved configuration validation feedback so disabling own-IP mode opens the
+  relevant proxy fields and explains that a `proxy_file` or `proxy_sources`
+  entry is required.
+- Added JSON/CSV proxy-source parsing, country and protocol filters, freshness
+  and endpoint-count limits, and a bounded filesystem cache for HTTPS sources.
+- Updated the English proxy plan with the recommended public-list source
+  candidates and deployment configuration guidance.
 - Added an optional SearXNG/Valkey Compose profile and configurable HTTP
   SearXNG transport. SearXNG can be selected as an additional engine or run
   in configured fallback mode without changing the default engine set.
@@ -441,6 +463,12 @@ All notable changes to this project will be documented in this file.
 - Text processing tools removed
 - Fewer requirements
 ## Unreleased
+
+- Run public proxy health checks concurrently and order proxy status results with healthy, low-latency endpoints first so the configuration controls complete within the UI request window.
+- Extend proxy action requests to two minutes and show an explicit checking state while the configuration buttons are running.
+- Refine the configuration proxy panel with collapsible sections, compact online/offline badges, and clearer proxy list presentation.
+- Add a configurable background proxy refresh worker that reloads sources, checks endpoints, and persists health state every 15 minutes by default while retaining manual controls.
+- Run the first automatic proxy refresh immediately after API startup instead of waiting for the first interval.
 
 - Fixed the Selenium worker so optional screenshot failures or drivers without
   screenshot support do not discard successful pages or hide the original

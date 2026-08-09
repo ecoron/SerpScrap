@@ -121,8 +121,54 @@ class ValidatorConfig:
                     f"{plugin.engine_id} does not support search type {config.get('search_type')!r}"
                 )
 
-        if not config.get("use_own_ip", False) and not config.get("proxy_file"):
-            raise ConfigurationError("proxy_file is required when use_own_ip is disabled")
+        proxy_enabled = config.get("proxy_enabled", False)
+        if not isinstance(proxy_enabled, bool):
+            raise ConfigurationError("proxy_enabled must be a boolean")
+        proxy_requested = proxy_enabled or not config.get("use_own_ip", True)
+        if proxy_requested and not (
+            config.get("proxy_file") or config.get("proxy_sources")
+        ):
+            raise ConfigurationError(
+                "proxy_file or proxy_sources is required when proxy use is enabled"
+            )
+        if not isinstance(config.get("proxy_sources", []), (list, tuple, str)):
+            raise ConfigurationError("proxy_sources must be a sequence or string")
+        for key in ("proxy_source_timeout", "proxy_check_timeout"):
+            try:
+                if float(config.get(key, 0)) <= 0:
+                    raise ConfigurationError(f"{key} must be positive")
+            except (TypeError, ValueError) as exc:
+                raise ConfigurationError(f"{key} must be numeric") from exc
+        try:
+            if int(config.get("proxy_failure_threshold", 0)) < 1:
+                raise ConfigurationError("proxy_failure_threshold must be positive")
+        except (TypeError, ValueError) as exc:
+            raise ConfigurationError("proxy_failure_threshold must be an integer") from exc
+        for key in ("proxy_allowed_protocols", "proxy_allowed_countries"):
+            values = config.get(key, [])
+            if isinstance(values, str) or not isinstance(values, (list, tuple, set)):
+                raise ConfigurationError(f"{key} must be a sequence")
+            if any(not str(value).strip() for value in values):
+                raise ConfigurationError(f"{key} must not contain empty values")
+        if not set(str(value).lower() for value in config.get("proxy_allowed_protocols", [])) <= {"http", "socks4", "socks5"}:
+            raise ConfigurationError("proxy_allowed_protocols contains an unsupported protocol")
+        for key in ("proxy_source_max_bytes", "proxy_max_endpoints"):
+            try:
+                if int(config.get(key, 0)) < 1:
+                    raise ConfigurationError(f"{key} must be positive")
+            except (TypeError, ValueError) as exc:
+                raise ConfigurationError(f"{key} must be an integer") from exc
+        for key in ("proxy_cache_ttl", "proxy_max_age_seconds"):
+            try:
+                if float(config.get(key, 0)) < 0:
+                    raise ConfigurationError(f"{key} must not be negative")
+            except (TypeError, ValueError) as exc:
+                raise ConfigurationError(f"{key} must be numeric") from exc
+        try:
+            if float(config.get("proxy_auto_refresh_interval_seconds", 900)) < 60:
+                raise ConfigurationError("proxy_auto_refresh_interval_seconds must be at least 60 seconds")
+        except (TypeError, ValueError) as exc:
+            raise ConfigurationError("proxy_auto_refresh_interval_seconds must be numeric") from exc
         if config.get("screenshot") and not config.get("dir_screenshot"):
             raise ConfigurationError("dir_screenshot is required when screenshots are enabled")
         if config.get("do_caching") and not config.get("cachedir"):

@@ -9,6 +9,27 @@
 .configuration-group { overflow:hidden; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); }
 .configuration-group summary { display:flex; align-items:center; justify-content:space-between; gap:1rem; cursor:pointer; list-style:none; padding:1.1rem 1.35rem; }
 .configuration-group summary::-webkit-details-marker { display:none; }
+.proxy-operations { overflow: hidden; }
+.proxy-summary { display:flex; align-items:center; justify-content:space-between; gap:1rem; cursor:pointer; list-style:none; padding:1.1rem 1.2rem; }
+.proxy-summary::-webkit-details-marker, .proxy-list summary::-webkit-details-marker { display:none; }
+.proxy-summary h2 { margin:.2rem 0 .15rem; }
+.proxy-summary small { color:var(--muted); }
+.proxy-summary::after, .proxy-list summary::after { content:'+'; color:var(--muted); font-size:1.2rem; font-weight:700; }
+.proxy-operations[open] > .proxy-summary::after, .proxy-list[open] > summary::after { content:'−'; }
+.proxy-operations-body { padding:0 1.2rem 1.2rem; }
+.proxy-operations-body .panel-heading { min-height:2rem; }
+.proxy-summary-line { margin:.25rem 0 .8rem; color:var(--muted); }
+.proxy-summary-line p { margin:0; }
+.proxy-summary-line strong { color:var(--text, #294258); }
+.proxy-list { border:1px solid #e2ebf0; border-radius:12px; overflow:hidden; background:#fbfdfe; }
+.proxy-list summary { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.8rem 1rem; cursor:pointer; font-weight:800; color:#294258; list-style:none; }
+.proxy-list summary span { margin-left:auto; padding:.2rem .55rem; border-radius:999px; background:#edf3f7; color:var(--muted); font-size:.72rem; }
+.proxy-list .table-scroll { border-top:1px solid #e2ebf0; }
+.proxy-status-badge { display:inline-flex; align-items:center; gap:.35rem; border-radius:999px; padding:.22rem .55rem; font-size:.7rem; font-weight:800; white-space:nowrap; }
+.proxy-status-badge.is-online { background:#e5f7ef; color:#18794e; }
+.proxy-status-badge.is-offline { background:#fff0f0; color:#b23b3b; }
+.proxy-status-dot { width:.42rem; height:.42rem; border-radius:50%; background:currentColor; }
+.proxy-source { max-width:20rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .configuration-group summary::after { content:'+'; color:var(--accent-dark); font-size:1.3rem; font-weight:700; }
 .configuration-group[open] summary::after { content:'−'; }
 .configuration-group summary > span:first-child { display:grid; gap:.15rem; }

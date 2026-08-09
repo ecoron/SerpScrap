@@ -48,6 +48,27 @@ def test_flask_ui_serves_modular_assets():
     assert client.get("/static/js/views/results.js").status_code == 200
 
 
+def test_configuration_page_exposes_proxy_operations():
+    app = create_app()
+    app.config.update(TESTING=True)
+    page = app.test_client().get("/configuration")
+    assert b"Proxy status" in page.data
+    assert b"test-proxies" in page.data
+    assert b"refresh-proxies" in page.data
+    assert "proxy-list" in open("ui/static/js/views/configuration.js", encoding="utf-8").read()
+    assert "proxy-status-badge" in open("ui/static/css/pages.css", encoding="utf-8").read()
+
+    source = open("ui/static/js/views/configuration.js", encoding="utf-8").read()
+    api_source = open("ui/static/js/api-client.js", encoding="utf-8").read()
+    assert "api.testProxies()" in source
+    assert "api.refreshProxies()" in source
+    assert "refreshProxies" in api_source
+
+    configuration_source = open("ui/static/js/views/configuration.js", encoding="utf-8").read()
+    assert "proxy_file or proxy_sources" in configuration_source
+    assert "notify(message, 'error')" in configuration_source
+
+
 def test_ui_result_contract_keeps_all_result_kinds_and_awaits_refresh_callbacks():
     results_source = open("ui/static/js/views/results.js", encoding="utf-8").read()
     api_source = open("ui/static/js/api-client.js", encoding="utf-8").read()
@@ -85,6 +106,9 @@ def test_ui_proxy_reads_database_backed_history(monkeypatch, tmp_path):
         analytics = client.get("/api/v1/history/analytics")
         assert analytics.status_code == 200
         assert analytics.json["run_count"] == 1
+        proxies = client.get("/api/v1/proxies")
+        assert proxies.status_code == 200
+        assert proxies.json["enabled"] is False
     finally:
         server.shutdown()
         service.close(wait=False)

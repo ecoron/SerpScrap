@@ -1,4 +1,5 @@
 from scrapcore.jobs import ScrapeJob
+from scrapcore.proxy import ProxyEndpoint
 from scrapcore.scraper.selenium import SelScrape
 from serpscrap.config import Config
 
@@ -130,3 +131,67 @@ def test_worker_does_not_retry_explicit_google_block():
     assert driver.get_calls == 1
     assert result.failures[0].category == "blocked"
     assert result.failures[0].retryable is False
+
+
+def test_worker_rotates_proxy_for_transient_navigation_failure():
+    from selenium.common.exceptions import WebDriverException
+
+    first_proxy = ProxyEndpoint("http", "127.0.0.1", 8000)
+    second_proxy = ProxyEndpoint("http", "127.0.0.2", 8000)
+    first_driver = FakeDriver(error=WebDriverException("first proxy failed"))
+    second_driver = FakeDriver()
+
+    class RotatingFactory:
+        def __init__(self):
+            self.calls = []
+            self.drivers = iter((first_driver, second_driver))
+
+        def create(self, proxy=None):
+            self.calls.append(proxy)
+            return next(self.drivers)
+
+    factory = RotatingFactory()
+    config = Config().get()
+    config.update(
+        {
+            "request_retry_limit": 1,
+            "request_delay_min": 0,
+            "request_delay_max": 0,
+            "request_backoff_base": 0,
+            "request_backoff_max": 0,
+        }
+    )
+    selected = []
+    scraper = SelScrape(
+        config,
+        ScrapeJob(query="test", proxy=first_proxy),
+        driver_factory=factory,
+        proxy_selector=lambda engine, current: second_proxy,
+        proxy_failure_reporter=lambda proxy, error: selected.append((proxy, str(error))),
+    )
+
+    result = scraper.retrieve()
+
+    assert not result.failures
+    assert factory.calls == [first_proxy, second_proxy]
+    assert selected[0][0] == first_proxy
+    assert result.pages[0].requested_by == "127.0.0.2:8000"
+
+
+def test_worker_does_not_rotate_proxy_for_explicit_block():
+    first_proxy = ProxyEndpoint("http", "127.0.0.1", 8000)
+    driver = FakeDriver()
+    driver.page_source = "Our systems have detected unusual traffic"
+    calls = []
+    config = Config().get()
+    config.update({"request_delay_min": 0, "request_delay_max": 0})
+
+    result = SelScrape(
+        config,
+        ScrapeJob(query="test", proxy=first_proxy),
+        driver_factory=FakeFactory(driver),
+        proxy_selector=lambda engine, current: calls.append(current),
+    ).retrieve()
+
+    assert result.failures[0].category == "blocked"
+    assert calls == []

@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any
 
+from scrapcore.database import Proxy, SearchEngine, SearchEngineProxyStatus, fixtures, get_session
+from scrapcore.proxy import ProxyPool
 from serpscrap.application import SearchApplication
 from serpscrap.configuration_service import SearchConfigurationService
 from serpscrap.history_store import SearchHistoryStore
 from serpscrap.models import SearchRequest
+
+logger = logging.getLogger(__name__)
 
 
 class SearchJobService:
@@ -33,7 +38,41 @@ class SearchJobService:
         self._executor = ThreadPoolExecutor(max_workers=self.max_active_jobs, thread_name_prefix="serpscrap-job")
         self._futures: set[Future[None]] = set()
         self._lock = threading.Lock()
+        self._proxy_refresh_lock = threading.Lock()
+        self._proxy_worker_stop = threading.Event()
         self._closed = False
+        self._proxy_worker = threading.Thread(
+            target=self._proxy_refresh_loop,
+            name="serpscrap-proxy-refresh",
+            daemon=True,
+        )
+        self._proxy_worker.start()
+
+    def _proxy_refresh_loop(self) -> None:
+        """Refresh configured proxy sources and persist health on a schedule."""
+
+        first_run = True
+        while not self._proxy_worker_stop.is_set():
+            try:
+                configuration = self.configuration.get(include_sensitive=True)["configuration"]
+                if not configuration.get("proxy_auto_refresh_enabled", True):
+                    first_run = False
+                else:
+                    self.proxy_status(refresh=True, persist=True)
+                    logger.info("Background proxy refresh completed")
+            except Exception:
+                logger.exception("Background proxy refresh failed")
+            if self._proxy_worker_stop.wait(0 if first_run else self._proxy_refresh_interval()):
+                break
+            first_run = False
+
+    def _proxy_refresh_interval(self) -> float:
+        try:
+            return max(60.0, float(self.configuration.get(include_sensitive=True)["configuration"].get(
+                "proxy_auto_refresh_interval_seconds", 900
+            )))
+        except (TypeError, ValueError):
+            return 900.0
 
     def submit(self, request: SearchRequest, configuration: dict[str, Any] | None = None) -> str:
         run_id = uuid.uuid4().hex
@@ -86,6 +125,9 @@ class SearchJobService:
                 return
             self._closed = True
         self._executor.shutdown(wait=wait, cancel_futures=not wait)
+        self._proxy_worker_stop.set()
+        if wait and self._proxy_worker.is_alive():
+            self._proxy_worker.join(timeout=2)
         self.store.close()
 
     def _run(self, run_id: str, request: SearchRequest) -> None:
@@ -117,3 +159,72 @@ class SearchJobService:
 
     def resolve_options(self, options: dict[str, Any] | None) -> tuple[dict[str, Any], dict[str, Any]]:
         return self.configuration.resolve_options(options)
+
+    def proxy_status(self, *, refresh: bool = False, persist: bool = False) -> dict[str, Any]:
+        """Return a credential-free proxy snapshot for operations and the UI."""
+
+        configuration = self.configuration.get(include_sensitive=True)["configuration"]
+        enabled = bool(configuration.get("proxy_enabled") or not configuration.get("use_own_ip", True))
+        if not enabled:
+            return {"enabled": False, "proxies": [], "summary": {"total": 0, "healthy": 0, "offline": 0}}
+        with self._proxy_refresh_lock:
+            pool = ProxyPool.from_config(configuration, refresh=False)
+        session = get_session(configuration)()
+        try:
+            engines = list(configuration.get("search_engines") or [])
+            fixtures(configuration, session)
+            pool.restore_from_db(session)
+            if refresh:
+                pool.refresh_health()
+            if persist:
+                pool.persist(session, engines)
+            records = {
+                (record.ip, int(record.port)): record
+                for record in session.query(Proxy).all()
+            }
+            engine_ids = {engine.id: engine.name for engine in session.query(SearchEngine).all()}
+            rows = []
+            for endpoint in pool.endpoints:
+                health = pool.health[endpoint.key]
+                record = records.get((endpoint.host, endpoint.port))
+                statuses = {
+                    engine_ids[item.search_engine_id]: bool(item.available)
+                    for item in session.query(SearchEngineProxyStatus).filter(
+                        SearchEngineProxyStatus.proxy_id == (record.id if record else -1)
+                    ).all()
+                    if item.search_engine_id in engine_ids
+                }
+                rows.append({
+                    "endpoint": endpoint.redacted,
+                    "source": endpoint.source,
+                    "online": bool(health.online),
+                    "latency_ms": health.latency_ms,
+                    "failure_count": health.failures,
+                    "cooldown_until": health.cooldown_until,
+                    "last_error": health.last_error,
+                    "engines": statuses,
+                })
+            rows.sort(key=lambda row: (
+                not row["online"],
+                row["latency_ms"] is None,
+                row["latency_ms"] if row["latency_ms"] is not None else float("inf"),
+                row["endpoint"],
+            ))
+            return {
+                "enabled": True,
+                "refreshed": bool(refresh),
+                "proxies": rows,
+                "summary": {
+                    "total": len(rows),
+                    "healthy": sum(1 for row in rows if row["online"]),
+                    "offline": sum(1 for row in rows if not row["online"]),
+                },
+            }
+        finally:
+            session.close()
+
+    def refresh_proxies(self) -> dict[str, Any]:
+        return self.proxy_status(refresh=True, persist=True)
+
+    def test_proxies(self) -> dict[str, Any]:
+        return self.proxy_status(refresh=True, persist=False)

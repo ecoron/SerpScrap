@@ -8,6 +8,8 @@ The Compose deployment runs the complete Version 2 alpha application:
 * ``serpscrap-app`` provides the API and executes browser searches.
 * ``serpscrap-ui`` provides the operator web interface.
 * ``serpscrap-mcp`` provides the MCP-compatible JSON-RPC gateway.
+* ``searxng`` provides the local metasearch service and web UI.
+* ``searxng-valkey`` provides SearXNG's rate-limit/cache backend.
 
 All three project services use the single image built by
 ``docker/Dockerfile``. Compose changes only the service command, ports,
@@ -28,6 +30,8 @@ From the repository root:
    docker compose -f docker/compose.yml up --build
 
 The Flask/Jinja UI runs inside ``serpscrap-ui`` at ``http://localhost:8080``.
+The bundled SearXNG UI is available at ``http://localhost:8888``; SerpScrap
+reaches the same service internally at ``http://searxng:8080``.
 The API is at
 ``http://localhost:8000/api/v1`` and the MCP gateway is at
 ``http://localhost:8001``.
@@ -63,8 +67,16 @@ Compose. The database password must be changed outside local development:
 
 Important variables include ``POSTGRES_DB``, ``POSTGRES_USER``,
 ``POSTGRES_PASSWORD``, ``SERPSCRAP_MAX_ACTIVE_JOBS``, and
-``SERPSCRAP_MAX_QUEUED_JOBS``. The MCP service uses ``SERPSCRAP_API_URL``
-internally; see :doc:`mcp` for client usage.
+``SERPSCRAP_MAX_QUEUED_JOBS``. SearXNG uses ``SEARXNG_SECRET`` and defaults to
+the local development value ``change-me-local-only``; replace it in any
+non-local deployment. ``SERPSCRAP_SEARXNG_URL`` defaults to
+``http://searxng:8080``. The MCP service uses ``SERPSCRAP_API_URL`` internally;
+see :doc:`mcp` for client usage.
+
+SearXNG is enabled by default when its URL is configured. Use the
+configuration UI or the persisted ``searxng_enabled`` setting to disable it.
+The Compose deployment mounts ``docker/searxng/settings.yml`` and
+``docker/searxng/limiter.toml`` for the local instance.
 
 Health and operations
 =====================

@@ -29,11 +29,14 @@ services:
       SERPSCRAP_DATA_DIR: /var/lib/serpscrap
       SERPSCRAP_CACHE_DIR: /var/lib/serpscrap/cache
       SERPSCRAP_DIAGNOSTICS_DIR: /var/lib/serpscrap/diagnostics
+      SERPSCRAP_SCREENSHOT_DIR: /var/lib/serpscrap/screenshots
       SERPSCRAP_MAX_ACTIVE_JOBS: ${SERPSCRAP_MAX_ACTIVE_JOBS:-4}
       SERPSCRAP_MAX_QUEUED_JOBS: ${SERPSCRAP_MAX_QUEUED_JOBS:-16}
+      SERPSCRAP_SEARXNG_URL: ${SERPSCRAP_SEARXNG_URL:-http://searxng:8080}
     volumes:
       - ../data/cache:/var/lib/serpscrap/cache
       - ../data/diagnostics:/var/lib/serpscrap/diagnostics
+      - ../data/screenshots:/var/lib/serpscrap/screenshots
       - ../data/exports:/var/lib/serpscrap/exports
       - ../logs:/var/log/serpscrap
     depends_on:
@@ -79,6 +82,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks: [serpscrap]
+
+  searxng-valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    networks: [serpscrap]
+
+  searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    environment:
+      SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://localhost:8888/}
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-change-me-local-only}
+      SEARXNG_VALKEY_URL: valkey://searxng-valkey:6379/0
+    volumes:
+      - ./searxng:/etc/searxng
+      - ../data/searxng:/var/cache/searxng
+    depends_on: [searxng-valkey]
+    ports: ["8888:8080"]
     networks: [serpscrap]
 
 networks:

@@ -7,6 +7,7 @@ from collections.abc import Callable
 from typing import Any
 
 from selenium.common.exceptions import (
+    ElementClickInterceptedException,
     ElementNotInteractableException,
     InvalidElementStateException,
     StaleElementReferenceException,
@@ -77,6 +78,34 @@ class HomepageSearchFlow:
             getattr(driver, "page_source", "") or "",
             visible_text=visible_text,
         )
+
+    def _classify_after_consent(self, driver: Any, plugin: SearchEnginePlugin) -> str | None:
+        """Classify the rendered homepage after a consent action.
+
+        Consent managers commonly leave their dialog markup in ``page_source``
+        after hiding it.  The initial homepage classification must inspect the
+        DOM to discover that dialog, but the post-action check must use the
+        rendered state and visible provider markers only.  Otherwise a hidden
+        stale dialog turns a verified ``consent_cleared`` state back into
+        ``consent_required``.
+        """
+        current_url = str(getattr(driver, "current_url", "") or "")
+        visible_text = self._visible_text(driver)
+        state = plugin.classify_homepage(
+            current_url,
+            html="",
+            visible_text=visible_text,
+        )
+        if state in {"blocked", "rate_limited"}:
+            return state
+        if any(
+            any(self._usable(element) for element in driver.find_elements(By.CSS_SELECTOR, selector))
+            for selector in plugin.homepage_consent_selectors
+        ):
+            return "consent_required"
+        if "consent.google." in current_url.lower():
+            return "consent_required"
+        return None
 
     def _wait_for_input(self, driver: Any, plugin: SearchEnginePlugin) -> Any:
         def locate(_: Any) -> Any:
@@ -151,7 +180,12 @@ class HomepageSearchFlow:
         assert spec is not None
         if action == "disabled":
             return False
-        labels = tuple(label.lower() for label in spec.consent_reject_labels)
+        if action not in {"necessary", "reject", "accept"}:
+            return False
+        source_labels = (
+            spec.consent_accept_labels if action == "accept" else spec.consent_reject_labels
+        )
+        labels = tuple(label.lower() for label in source_labels)
 
         if progress is not None:
             progress("consent_action_started")
@@ -265,6 +299,7 @@ class HomepageSearchFlow:
         progress: Callable[..., Any] | None = None,
         artifact_store: Any | None = None,
         consent_action: str = "necessary",
+        interaction_settle_delay: float = 0.0,
     ) -> EnginePage:
         spec = plugin.browser_interaction
         if spec is None:
@@ -318,7 +353,7 @@ class HomepageSearchFlow:
                         f"provider homepage returned consent_required for {plugin.engine_id}",
                         url=getattr(driver, "current_url", None),
                 )
-                homepage_state = self._classify(driver, plugin, homepage=True)
+                homepage_state = self._classify_after_consent(driver, plugin)
             elif homepage_state is None:
                 emit("consent_not_present")
             if homepage_state in {"blocked", "consent_required", "rate_limited"}:
@@ -332,6 +367,16 @@ class HomepageSearchFlow:
             self._dismiss_overlays(driver, plugin)
             field = self._enter_query(driver, plugin, query)
             emit("query_entered")
+            if interaction_settle_delay < 0 or interaction_settle_delay > 5:
+                raise BrowserFlowError(
+                    "configuration",
+                    "interaction_settle_delay must be between 0 and 5 seconds",
+                )
+            if interaction_settle_delay:
+                # Give provider autocomplete and form validation time to settle.
+                # This is a bounded UI synchronization, not an automation
+                # fingerprint or WebDriver concealment mechanism.
+                time.sleep(interaction_settle_delay)
 
             submit = next(
                 (element for element in self._elements(driver, spec.submit_selectors) if self._usable(element)),
@@ -340,7 +385,13 @@ class HomepageSearchFlow:
             submitted_url = getattr(driver, "current_url", "")
             emit("pre_submit", selector_key=spec.submit_selectors[0] if submit is not None else "keyboard-enter")
             if submit is not None:
-                submit.click()
+                try:
+                    submit.click()
+                except ElementClickInterceptedException:
+                    # Google can keep its autocomplete layer above the submit
+                    # control after query entry. Keyboard submission uses the
+                    # same rendered form without bypassing the provider UI.
+                    field.send_keys(Keys.ENTER)
             else:
                 field.send_keys(Keys.ENTER)
             if plugin.engine_id == "etools" and getattr(driver, "current_url", "") == submitted_url:

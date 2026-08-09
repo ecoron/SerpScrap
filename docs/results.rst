@@ -18,6 +18,7 @@ converted to strings.
            'query_page_number': 1,
            'serp_domain': 'example.com',
            'serp_rank': 1,
+           'fusion_rank': 1,
            'serp_rating': None,
            'serp_source': None,
            'serp_date': None,
@@ -39,9 +40,18 @@ converted to strings.
 Multi-engine searches add ``search_engine`` and uppercase ISO 3166-1
 ``country_code`` to every row. Results that resolve to the same canonical URL
 are fused into one row with ``relevance_score``, ``engine_match_count``,
-``best_rank``, ``independent_provider_count``, and ``matched_engines``. The
-fusion report uses schema version 2 and records the active market-share
-snapshot and fallback weights in report metadata.
+``best_rank``, ``fusion_rank``, ``independent_provider_count``, and
+``matched_engines``. ``serp_rank`` remains the position reported by the
+selected provider; ``best_rank`` is the best provider position among matching
+rows. ``fusion_rank`` is the final per-query position after relevance fusion,
+starting at 1, and is ordered by ``relevance_score``. The fusion report uses
+schema version 2 and records the active market-share snapshot and fallback
+weights in report metadata.
+
+The History inspection view displays ``fusion_rank`` as ``Rank`` and the
+provider-specific ``serp_rank`` as ``Provider rank``. Older persisted rows
+that predate ``fusion_rank`` use their stored result order as a display
+fallback.
 
 For example, four engines can be queried with a hard limit of four concurrent
 search requests:

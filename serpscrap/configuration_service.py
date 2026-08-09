@@ -7,7 +7,7 @@ import re
 from typing import Any
 
 from scrapcore.validator_config import ValidatorConfig
-from serpscrap.config import Config
+from serpscrap.config import DEFAULT_SEARXNG_ENGINES, SEARXNG_ENGINE_GROUPS, Config
 from serpscrap.history_store import SearchHistoryStore
 from serpscrap.plugins.searchengines.registry import SearchEngineRegistry, default_registry
 
@@ -28,7 +28,11 @@ GROUPS = (
 
 
 FIELD_DEFINITIONS = (
-    ("search_engines", "search", "Search engines", "engine-list", "Choose the providers used for new searches.", True, False, None, None),
+    ("search_engines", "search", "Search engines", "combined-engine-list", "Choose direct SerpScrap providers and the engines queried through SearXNG.", True, False, None, None),
+    ("searxng_enabled", "search", "Enable SearXNG", "boolean", "Enable the configured self-hosted SearXNG instance.", True, False, None, None),
+    ("searxng_url", "search", "SearXNG URL", "url", "Base URL of the self-hosted SearXNG service.", True, False, None, None),
+    ("searxng_fallback", "search", "Use SearXNG additionally", "boolean", "Run SearXNG alongside selected providers when enabled.", True, False, None, None),
+    ("searxng_engines", "search", "SearXNG engines", "searxng-engine-list", "Engines requested from the SearXNG instance.", True, False, None, None),
     ("country_code", "search", "Country code", "text", "ISO 3166-1 alpha-2 code, for example DE.", True, True, 2, 2),
     ("search_type", "search", "Search type", "select", "The result family requested from every selected provider.", True, False, None, None),
     ("num_pages_for_keyword", "search", "Pages per query", "number", "More pages increase coverage and runtime.", True, True, 1, 20),
@@ -53,7 +57,9 @@ FIELD_DEFINITIONS = (
     ("executable_path", "browser", "ChromeDriver path", "text", "Deployment-provided driver path.", False, False, None, None),
     ("page_load_timeout", "browser", "Page-load timeout", "number", "Maximum page-load wait in seconds.", True, True, 1, 300),
     ("wait_timeout", "browser", "Element wait timeout", "number", "Maximum wait for provider result markers in seconds.", True, True, 1, 300),
-    ("user_agent", "browser", "User agent", "text", "Browser identity sent to providers.", True, False, None, None),
+    ("user_agent", "browser", "User agent", "text", "Optional browser identity; empty derives the installed Chrome major.", True, False, None, None),
+    ("chrome_profile_dir", "browser", "Chrome profile directory", "text", "Optional disposable profile directory for controlled smoke tests.", True, False, None, None),
+    ("interaction_settle_delay", "browser", "Interaction settle delay", "number", "Short wait after query entry so provider autocomplete can settle before submit.", True, True, 0, 5),
     ("request_delay_min", "browser", "Minimum request delay", "number", "Lower bound for delay between provider requests in seconds.", True, True, 0, 60),
     ("request_delay_max", "browser", "Maximum request delay", "number", "Upper bound for delay between provider requests in seconds.", True, True, 0, 60),
     ("request_retry_limit", "browser", "Request retry limit", "number", "Retries for retryable provider failures.", True, True, 0, 10),
@@ -62,6 +68,7 @@ FIELD_DEFINITIONS = (
     ("request_backoff_max", "browser", "Backoff maximum", "number", "Maximum retry backoff in seconds.", True, True, 0, 600),
     ("block_threshold", "browser", "Block threshold", "number", "Provider blocks before the engine is stopped.", True, True, 1, 20),
     ("url_connect_timeout", "network", "Connect timeout", "number", "Connection timeout in seconds.", True, True, 1, 300),
+    ("searxng_timeout", "network", "SearXNG timeout", "number", "Maximum HTTP wait for the SearXNG JSON API.", True, True, 1, 300),
     ("url_read_timeout", "network", "Read timeout", "number", "Response read timeout in seconds.", True, True, 1, 600),
     ("url_max_redirects", "network", "Maximum redirects", "number", "Maximum redirects followed for a URL.", True, True, 0, 20),
     ("url_max_response_bytes", "network", "Maximum response size", "number", "Maximum downloaded response size in bytes.", True, True, 1024, 100000000),
@@ -113,10 +120,14 @@ def _set_path(payload: dict[str, Any], path: str, value: Any) -> None:
 class SearchConfigurationService:
     def __init__(self, store: SearchHistoryStore, registry: SearchEngineRegistry | None = None) -> None:
         self.store = store
-        self.registry = registry or default_registry()
+        self.registry = registry or default_registry(Config().get())
 
     def engines(self) -> list[dict[str, Any]]:
         return [dict(item) for item in self.registry.metadata()]
+
+    @staticmethod
+    def searxng_engines() -> list[dict[str, str]]:
+        return [{"engine_id": engine, "display_name": engine.replace("_", " ").title(), "group": SEARXNG_ENGINE_GROUPS[engine], "requires_api_key": False} for engine in DEFAULT_SEARXNG_ENGINES]
 
     def _default_payload(self) -> dict[str, Any]:
         defaults = copy.deepcopy(Config().get())
@@ -192,7 +203,7 @@ class SearchConfigurationService:
             elif path == "log_level":
                 field["options"] = [{"value": item, "label": item} for item in ("DEBUG", "INFO", "WARNING", "ERROR")]
             elif path == "consent_action":
-                field["options"] = [{"value": item, "label": item.title()} for item in ("necessary", "reject", "disabled")]
+                field["options"] = [{"value": item, "label": item.title()} for item in ("necessary", "reject", "accept", "disabled")]
             fields.append(field)
         return fields
 
@@ -202,7 +213,7 @@ class SearchConfigurationService:
         public["headers"] = {}
         public_defaults = copy.deepcopy(defaults)
         public_defaults["headers"] = {}
-        return {"schema_version": SCHEMA_VERSION, "source": source, "revision": revision, "updated_at": updated_at, "configuration": public, "initial_defaults": public_defaults, "groups": [dict(group) for group in GROUPS], "fields": self._field_schema(configuration, defaults), "engines": self.engines(), "capabilities": {"editable_keys": sorted(self._editable_keys()), "read_only_keys": sorted(READ_ONLY_KEYS), "sensitive_keys": sorted(SENSITIVE_KEYS)}}
+        return {"schema_version": SCHEMA_VERSION, "source": source, "revision": revision, "updated_at": updated_at, "configuration": public, "initial_defaults": public_defaults, "groups": [dict(group) for group in GROUPS], "fields": self._field_schema(configuration, defaults), "engines": self.engines(), "searxng_engines": self.searxng_engines(), "capabilities": {"editable_keys": sorted(self._editable_keys()), "read_only_keys": sorted(READ_ONLY_KEYS), "sensitive_keys": sorted(SENSITIVE_KEYS)}}
 
     def get(self, include_sensitive: bool = False) -> dict[str, Any]:
         record = self.store.get_configuration()

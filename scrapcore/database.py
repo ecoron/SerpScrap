@@ -83,6 +83,9 @@ class SearchEngineResultsPage(Base):
     query = Column(String)
     effective_query = Column(String, default='')
     no_results = Column(Boolean, default=False)
+    # Persist the browser artifact so API/MCP consumers can retrieve it after
+    # the SQLAlchemy session has been closed.
+    screenshot = Column(String, nullable=True)
 
     def __str__(self):
         return (f"{self.search_engine_name} has [{self.num_results}] link results "
@@ -310,6 +313,11 @@ def get_engine(config, path=None):
         with engine.begin() as connection:
             for column in sorted(added_columns):
                 connection.exec_driver_sql(f'ALTER TABLE link ADD COLUMN "{column}" VARCHAR')
+
+    existing_serp = {column["name"] for column in inspect(engine).get_columns("serp")}
+    if "screenshot" not in existing_serp:
+        with engine.begin() as connection:
+            connection.exec_driver_sql('ALTER TABLE serp ADD COLUMN "screenshot" VARCHAR')
 
     return engine
 

@@ -59,10 +59,35 @@ def test_browser_settings_map_explicit_config():
     assert "HeadlessChrome" not in settings.user_agent
 
 
+def test_default_config_resolves_user_agent_to_detected_browser_major():
+    config = Config().get()
+    assert config["user_agent"] == ""
+
+    settings = BrowserSettings.from_config(
+        config,
+        identity_provider=ChromeIdentityProvider(version_reader=lambda _binary: 151),
+    )
+
+    assert "Chrome/151.0.0.0" in settings.user_agent
+
+
+def test_browser_settings_supports_an_opt_in_isolated_profile(tmp_path):
+    settings = BrowserSettings.from_config(
+        {"chrome_profile_dir": str(tmp_path / "provider-profile")},
+        identity_provider=ChromeIdentityProvider(version_reader=lambda _binary: 151),
+    )
+
+    assert settings.profile_directory == str(tmp_path / "provider-profile")
+
+
 def test_identity_matches_detected_chrome_major_and_validates_overrides():
     provider = ChromeIdentityProvider(version_reader=lambda _binary: 155)
 
     assert "Chrome/155.0.0.0" in provider.resolve(None)
+    assert "Chrome/155.0.0.0" in provider.resolve(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+    )
     fallback = ChromeIdentityProvider(version_reader=lambda _binary: None).resolve(None)
     expected_fallback = FALLBACK_CHROME_USER_AGENT
     if os.name != "nt":
@@ -78,6 +103,17 @@ def test_identity_fallback_has_an_enforced_maintenance_window():
     ChromeIdentityProvider.ensure_fallback_fresh()
     with pytest.raises(BrowserConfigurationError, match="stale"):
         ChromeIdentityProvider.ensure_fallback_fresh(date(2027, 1, 1))
+
+
+def test_detect_installed_major_reads_chrome_version_output(monkeypatch):
+    class Completed:
+        stdout = "Google Chrome 151.0.7922.76"
+        stderr = ""
+
+    monkeypatch.setattr("scrapcore.scraper.browser.shutil.which", lambda name: "chrome")
+    monkeypatch.setattr("scrapcore.scraper.browser.subprocess.run", lambda *args, **kwargs: Completed())
+
+    assert ChromeIdentityProvider.detect_installed_major() == 151
 
 
 def test_request_pacer_skips_first_delay_and_circuit_breaker_opens():
@@ -133,6 +169,36 @@ def test_chrome_factory_applies_effective_identity_to_options_and_cdp(monkeypatc
     assert "--lang=de-DE" in captured["arguments"]
     assert captured["cdp"][1]["userAgent"] == settings.user_agent
     assert captured["cdp"][1]["acceptLanguage"] == "de-DE"
+
+
+def test_chrome_factory_applies_opt_in_profile_directory(monkeypatch, tmp_path):
+    captured = {}
+
+    class Driver:
+        def execute_cdp_cmd(self, command, values):
+            captured["cdp"] = (command, values)
+
+        def set_page_load_timeout(self, timeout):
+            pass
+
+        def set_window_size(self, width, height):
+            pass
+
+    def create_driver(*, service, options):
+        captured["arguments"] = options.arguments
+        return Driver()
+
+    monkeypatch.setattr("scrapcore.scraper.browser.webdriver.Chrome", create_driver)
+    profile = tmp_path / "provider-profile"
+    settings = BrowserSettings(
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/151.0.0.0 Safari/537.36",
+        profile_directory=str(profile),
+    )
+
+    ChromeDriverFactory(settings).create()
+
+    assert profile.is_dir()
+    assert f"--user-data-dir={profile}" in captured["arguments"]
 
 
 def test_adapter_classifies_block_and_consent_states():

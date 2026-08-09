@@ -17,7 +17,8 @@ SerpScrap
 SerpScrap retrieves structured search results for SEO, research, and
 automation. It is available as a Python package, a CLI, a Docker application,
 and an MCP-compatible server. Results are JSON-compatible and preserve the
-source engine, rank, URL, title, snippets, result type, and typed failures.
+fusion rank, provider rank, source engine, URL, title, snippets, result type,
+and typed failures.
 
 Version 2.0.0-alpha.1
 =====================
@@ -86,8 +87,11 @@ gateway:
 
 Open ``http://localhost:8080`` for the UI, use the API at
 ``http://localhost:8000/api/v1``, and connect MCP clients to
-``http://localhost:8001``. See the :doc:`docs/docker` guide for health checks,
-mounts, operations, and security boundaries.
+``http://localhost:8001``. The standard stack also starts SearXNG at
+``http://localhost:8888`` and connects SerpScrap to it internally. SearXNG is
+enabled by default and can be disabled from the configuration page. See the
+:doc:`docs/docker` guide for health checks, mounts, operations, and security
+boundaries.
 
 MCP server
 ==========

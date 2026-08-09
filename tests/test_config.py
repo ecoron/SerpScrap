@@ -10,12 +10,18 @@ from serpscrap.config import Config
 def test_default_search_engines_activate_public_candidates_without_disabled_defaults():
     config = Config().get()
 
-    assert config["search_engines"] == [
+    expected = [
         "bing", "yandex", "yahoo", "duckduckgo", "startpage", "brave",
         "swisscows", "mojeek", "good", "xprivo", "marginalia", "etools",
     ]
+    if config["searxng_url"]:
+        expected.append("searxng")
+    assert config["search_engines"] == expected
     assert {"google", "ecosia", "qwant"}.isdisjoint(config["search_engines"])
     assert set(config["search_engines"]).issubset(config["supported_search_engines"])
+    assert "google" in config["searxng_engines"]
+    assert "brave" in config["searxng_engines"]
+    assert "arxiv" in config["searxng_engines"]
 
 
 def test_config_preserves_attribute_and_dictionary_access():
@@ -34,9 +40,34 @@ def test_config_defaults_are_cross_platform():
     assert Path(config["database_name"]).is_absolute()
 
 
+def test_screenshots_are_enabled_and_use_requested_directory():
+    config = Config().get()
+
+    assert config["screenshot"] is True
+    assert Path(config["dir_screenshot"]).as_posix() == "C:/tmp/screenshots"
+
+
 def test_validator_accepts_registered_alternative_engine():
     config = Config().get()
     config["search_engines"] = ["bing"]
+
+    ValidatorConfig().validate(config)
+
+
+def test_validator_accepts_enabled_local_searxng_engine():
+    config = Config().get()
+    config.update({
+        "searxng_enabled": True,
+        "searxng_url": "http://searxng:8080",
+        "search_engines": ["searxng"],
+    })
+
+    ValidatorConfig().validate(config)
+
+
+def test_validator_accepts_separate_searxng_engine_selection():
+    config = Config().get()
+    config["searxng_engines"] = ["duckduckgo", "brave"]
 
     ValidatorConfig().validate(config)
 
@@ -60,6 +91,13 @@ def test_consent_action_defaults_to_necessary_and_rejects_invalid_values():
 
     with pytest.raises(ConfigurationError, match="consent_action"):
         ValidatorConfig().validate(config)
+
+
+def test_validator_accepts_explicit_consent_accept_mode():
+    config = Config().get()
+    config["consent_action"] = "accept"
+
+    ValidatorConfig().validate(config)
 
 
 @pytest.mark.parametrize("search_type", ["normal", "image", "news", "shopping", "videos"])

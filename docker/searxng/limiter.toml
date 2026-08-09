@@ -1,0 +1,13 @@
+[botdetection]
+# The default Compose stack has no reverse proxy, so forwarded headers are
+# not trusted globally.
+
+[botdetection.ip_limit]
+link_token = true
+
+[botdetection.ip_lists]
+pass_ip = [
+  "127.0.0.1/32",
+  "::1/128",
+  "172.16.0.0/12",
+]

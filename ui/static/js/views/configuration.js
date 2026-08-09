@@ -22,6 +22,13 @@ function defaultText(field) {
   return field.default ?? '—';
 }
 function isChanged(field) { return JSON.stringify(field.value) !== JSON.stringify(field.default); }
+function engineOption(engine, selected, readOnly = false, source = '') {
+  const unavailable = engine.readiness !== undefined && engine.readiness !== 'enabled';
+  const note = engine.readiness !== undefined
+    ? (engine.readiness === 'enabled' ? engine.provider_family || 'Ready' : engine.disable_reason || 'Unavailable')
+    : 'Available through SearXNG · no API key';
+  return `<label class="engine-option ${unavailable ? 'is-disabled' : ''}"><input type="checkbox" value="${esc(engine.engine_id)}" data-engine-source="${esc(source)}" ${selected?.includes(engine.engine_id) ? 'checked' : ''} ${readOnly || unavailable ? 'disabled' : ''}><span><strong>${esc(engine.display_name || engine.engine_id)}</strong><small>${esc(note)}</small></span></label>`;
+}
 function renderField(field) {
   const id = `config-${field.key.replaceAll('.', '-')}`;
   const attrs = [`id="${esc(id)}"`, `data-config-key="${esc(field.key)}"`, `aria-describedby="${esc(id)}-help ${esc(id)}-default"`];
@@ -32,7 +39,15 @@ function renderField(field) {
   let control;
   if (field.type === 'boolean') control = `<input type="checkbox" ${attrs.join(' ')} ${field.value ? 'checked' : ''}>`;
   else if (field.type === 'select') control = `<select ${attrs.join(' ')}>${(field.options || []).map(option => `<option value="${esc(option.value)}" ${String(option.value) === String(field.value) ? 'selected' : ''}>${esc(option.label)}</option>`).join('')}</select>`;
-  else if (field.type === 'engine-list') control = `<div class="config-engine-grid" ${attrs.slice(1).join(' ')}>${(loaded.engines || []).map(engine => `<label class="engine-option ${engine.readiness !== 'enabled' ? 'is-disabled' : ''}"><input type="checkbox" value="${esc(engine.engine_id)}" ${field.value?.includes(engine.engine_id) ? 'checked' : ''} ${field.read_only || engine.readiness !== 'enabled' ? 'disabled' : ''}><span><strong>${esc(engine.display_name || engine.engine_id)}</strong><small>${esc(engine.readiness === 'enabled' ? engine.provider_family || 'Ready' : engine.disable_reason || 'Unavailable')}</small></span></label>`).join('')}</div>`;
+  else if (field.type === 'engine-list') { const options = loaded.engines || []; control = `<div class="config-engine-grid" ${attrs.slice(1).join(' ')}>${options.map(engine => engineOption(engine, field.value, field.read_only, 'direct')).join('')}</div>`; }
+  else if (field.type === 'combined-engine-list') {
+    const direct = (loaded.engines || []).filter(engine => engine.engine_id !== 'searxng');
+    const searxng = loaded.searxng_engines || [];
+    const groups = [...new Set(searxng.map(engine => engine.group || 'Other'))];
+    const directOptions = direct.map(engine => engineOption(engine, field.value, field.read_only, 'direct')).join('');
+    const searxngOptions = groups.map(group => `<h4 class="config-engine-group-title">${esc(group)}</h4>${searxng.filter(engine => (engine.group || 'Other') === group).map(engine => engineOption(engine, loaded.configuration.searxng_engines, field.read_only, 'searxng')).join('')}`).join('');
+    control = `<div class="config-engine-grid config-combined-engine-grid" ${attrs.slice(1).join(' ')}><h4 class="config-engine-group-title config-engine-section-title">SerpScrap engines</h4>${directOptions}<h4 class="config-engine-group-title config-engine-section-title">SearXNG engines</h4>${searxngOptions}</div>`;
+  }
   else if (field.type === 'map-number' || field.type === 'json') control = `<textarea class="config-control config-code" rows="4" ${attrs.join(' ')}>${esc(valueText(field))}</textarea>`;
   else control = `<input class="config-control" type="${field.type === 'url' ? 'url' : field.type === 'number' ? 'number' : 'text'}" value="${esc(valueText(field))}" ${attrs.join(' ')}>`;
   return `<div class="config-field ${field.read_only ? 'is-readonly' : ''}" data-field-wrapper="${esc(field.key)}"><label for="${esc(id)}"><span class="config-label">${esc(field.label)}${field.read_only ? ' <em>Read-only</em>' : ''}</span>${control}<small id="${esc(id)}-help" class="config-help">${esc(field.description)}</small><small id="${esc(id)}-default" class="config-default">Default: ${esc(defaultText(field))}${isChanged(field) ? ' · Changed from default' : ''}</small><small class="config-error" data-error-for="${esc(field.key)}" hidden></small></label></div>`;
@@ -41,7 +56,7 @@ function render() {
   const root = $('#configuration-groups'); root.replaceChildren();
   loaded.groups.forEach(group => {
     const details = document.createElement('details'); details.className = 'configuration-group'; details.open = Boolean(group.expanded);
-    const fields = loaded.fields.filter(field => field.group === group.id);
+    const fields = loaded.fields.filter(field => field.group === group.id && field.key !== 'searxng_engines');
     details.innerHTML = `<summary><span><strong>${esc(group.title)}</strong><small>${esc(group.description)}</small></span><span class="configuration-group-count">${fields.length} settings</span></summary><div class="configuration-group-body">${fields.map(renderField).join('')}</div>`;
     root.append(details);
   });
@@ -62,8 +77,11 @@ function serialize() {
     else value = control.value;
     pathSet(result, key, value);
   });
-  const engines = [...document.querySelectorAll('.config-engine-grid[data-config-key="search_engines"] input[type="checkbox"]:checked')].map(input => input.value);
+  const engines = [...document.querySelectorAll('.config-combined-engine-grid input[data-engine-source="direct"]:checked')].map(input => input.value);
+  const searxngEnabled = Boolean(result.searxng_enabled);
+  if (searxngEnabled) engines.push('searxng');
   if (engines.length) result.search_engines = engines;
+  result.searxng_engines = [...document.querySelectorAll('.config-combined-engine-grid input[data-engine-source="searxng"]:checked')].map(input => input.value);
   return result;
 }
 function updateDirty() {

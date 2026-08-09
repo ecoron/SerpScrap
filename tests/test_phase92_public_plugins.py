@@ -65,9 +65,48 @@ def test_searxng_requires_explicit_instance_and_remains_auth_free():
     assert plugin.engine_id == "searxng"
     assert plugin.search_url.startswith("https://public.example/searxng/search")
     assert plugin.authentication == "none"
-    assert plugin.readiness == "experimental"
-    assert "explicit trusted public instance" in plugin.disable_reason
+    assert plugin.readiness == "enabled"
+    assert plugin.capabilities.transport == "http"
     assert plugin.validate_contract() == ()
+
+
+def test_searxng_parses_json_results_without_browser():
+    plugin = searxng_plugin("http://searxng:8080")
+    parsed = plugin.parse(
+        '{"results":[{"url":"https://example.test/a","title":"Example","content":"Snippet","engine":"dummy"}]}',
+        query="test", page=1, search_type="normal",
+    )
+    assert len(parsed) == 1
+    assert parsed[0].url == "https://example.test/a"
+    assert parsed[0].source == "SearXNG:dummy"
+
+
+def test_searxng_preserves_upstream_engine_in_result_source():
+    plugin = searxng_plugin("http://searxng:8080")
+    parsed = plugin.parse(
+        '{"results":[{"url":"https://example.test/a","title":"Example","engine":"brave"}]}',
+        query="test", page=1, search_type="normal",
+    )
+
+    assert parsed[0].source == "SearXNG:brave"
+    assert parsed[0].extras["searxng_engine"] == "brave"
+
+
+def test_searxng_normalizes_display_engine_names_for_fusion():
+    plugin = searxng_plugin("http://searxng:8080")
+    parsed = plugin.parse(
+        '{"results":[{"url":"https://example.test/a","title":"Paper","engine":"semantic scholar"}]}',
+        query="test", page=1, search_type="normal",
+    )
+
+    assert parsed[0].source == "SearXNG:semantic_scholar"
+
+
+def test_searxng_does_not_block_partial_results_for_one_upstream_captcha():
+    plugin = searxng_plugin("http://searxng:8080")
+    payload = '{"results":[{"url":"https://example.test/a","title":"Example"}],"errors":[{"engine":"startpage","exception":"captcha"}]}'
+
+    assert plugin.classify("http://searxng:8080/search", payload) is None
 
 
 def test_metager_is_not_selected_without_a_public_no_auth_route():

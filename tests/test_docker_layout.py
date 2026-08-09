@@ -22,6 +22,18 @@ def test_docker_uses_one_project_dockerfile_and_shared_image():
     assert "http://localhost:8080/healthz" in compose
     assert "../data/postgres:/var/lib/postgresql/data" in compose
     assert "../logs:/var/log/serpscrap" in compose
+    assert "searxng-valkey:" in compose
+    assert "profiles: [searxng]" not in compose
+    assert "SERPSCRAP_SEARXNG_URL" in compose
+    searxng_settings = (docker_dir / "searxng" / "settings.yml").read_text(encoding="utf-8")
+    limiter = (docker_dir / "searxng" / "limiter.toml").read_text(encoding="utf-8")
+    for engine in ("ahmia", "torch", "wikidata", "startpage", "arxiv", "pubmed", "openalex", "crossref", "stackoverflow", "askubuntu", "superuser", "reuters"):
+        assert f"name: {engine}" in searxng_settings
+        assert "inactive: true" in searxng_settings
+    assert "[botdetection.ip_limit]" in limiter
+    assert '"127.0.0.1/32"' in limiter
+    assert '"172.16.0.0/12"' in limiter
+    assert "name: semantic scholar" in searxng_settings
 
 
 def test_shared_image_contains_all_runtime_payloads_and_safe_defaults():

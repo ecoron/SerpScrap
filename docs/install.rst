@@ -47,4 +47,34 @@ The browser smoke test is opt-in because it requires Chrome and network access:
 
    SERPSCRAP_RUN_BROWSER=1 python -m pytest -m browser
 
+Consent and live provider smoke tests
+--------------------------------------
+
+Google and Ecosia consent is handled through visible, provider-scoped browser
+controls. A successful ``consent_cleared`` event only proves that the visible
+overlay is gone; it does not guarantee that the provider will allow a later
+SERP request. Google ``/sorry`` pages and Ecosia challenge pages are reported
+as typed ``blocked`` outcomes and are not bypassed or retried as consent.
+
+For a local Pipenv smoke run, Chrome and ChromeDriver must be available. With
+Selenium Manager enabled, the first run may download a compatible driver from
+the official Chrome-for-Testing source. Controlled environments can instead
+provide explicit paths:
+
+.. code-block:: powershell
+
+   $env:SERPSCRAP_CHROME_BINARY = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+   $env:SERPSCRAP_CHROMEDRIVER = 'C:\tools\chromedriver.exe'
+   pipenv run python -m pytest -m browser
+
+Live runs are low-volume and opt-in. Do not commit browser profiles, cookies,
+local storage, raw provider pages, or query-bearing diagnostic artifacts.
+For repeated consent diagnostics, set ``SERPSCRAP_CHROME_PROFILE_DIR`` to a
+dedicated disposable directory. To compare headless and visible execution,
+use the existing CLI ``--visible`` option with the same network and profile
+conditions; this is a diagnostic comparison, not an access-control bypass.
+The default ``interaction_settle_delay`` only synchronizes the rendered form
+before submission. It is intentionally bounded and does not attempt to hide
+WebDriver automation signals.
+
 iOS is not supported.

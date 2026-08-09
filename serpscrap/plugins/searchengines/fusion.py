@@ -40,6 +40,15 @@ class ResultFusion:
         if self.settings.rrf_k < 1:
             raise ValueError("rrf_k must be positive")
 
+    @staticmethod
+    def provider_key(row: dict[str, Any]) -> str:
+        """Resolve the effective provider behind a transport such as SearXNG."""
+
+        source = str(row.get("serp_source") or "")
+        if source.startswith("SearXNG:") and source.partition(":")[2]:
+            return source.partition(":")[2]
+        return str(row.get("search_engine") or "unknown")
+
     def fuse(self, rows: Iterable[dict[str, Any]], weights: dict[str, float], families: dict[str, str | None] | None = None) -> list[dict[str, Any]]:
         families = families or {}
         grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
@@ -51,7 +60,7 @@ class ResultFusion:
         for (_, normalized), matches in grouped.items():
             best_by_engine: dict[str, dict[str, Any]] = {}
             for row in matches:
-                engine = str(row["search_engine"])
+                engine = self.provider_key(row)
                 rank = int(row.get("serp_rank") or 0)
                 current = best_by_engine.get(engine)
                 if current is None or rank < int(current.get("serp_rank") or 0):
@@ -68,7 +77,7 @@ class ResultFusion:
             representative = min(
                 matches,
                 key=lambda row: (
-                    -float(weights.get(str(row["search_engine"]), 0.0)) / (self.settings.rrf_k + max(1, int(row.get("serp_rank") or 1))),
+                    -float(weights.get(self.provider_key(row), 0.0)) / (self.settings.rrf_k + max(1, int(row.get("serp_rank") or 1))),
                     int(row.get("serp_rank") or 0),
                     str(row.get("search_engine") or ""),
                     str(row.get("serp_url") or ""),
@@ -79,7 +88,9 @@ class ResultFusion:
             representative["engine_match_count"] = len(best_by_engine)
             representative["independent_provider_count"] = len(seen_families)
             representative["best_rank"] = min(int(row.get("serp_rank") or 0) for row in matches)
-            representative["matched_engines"] = sorted(best_by_engine)
+            representative["matched_engines"] = sorted(
+                {str(row.get("serp_source") or row.get("search_engine") or "unknown") for row in matches}
+            )
             representative["fusion_id"] = sha256(normalized.encode("utf-8")).hexdigest()[:16]
             ranked.append(representative)
         ranked.sort(

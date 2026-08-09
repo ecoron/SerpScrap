@@ -12,6 +12,7 @@ def test_tools_have_strict_schemas_and_side_effect_annotations():
     assert tools["start_search"]["inputSchema"]["properties"]["options"]["additionalProperties"] is False
     assert tools["get_configuration"]["annotations"]["readOnlyHint"] is True
     assert tools["update_configuration"]["annotations"]["readOnlyHint"] is False
+    assert "accept" in tools["start_search"]["inputSchema"]["properties"]["options"]["properties"]["consent_action"]["enum"]
 
 
 def test_argument_validation_rejects_unknown_and_unbounded_values():

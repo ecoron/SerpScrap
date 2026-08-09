@@ -63,13 +63,27 @@ async function openRun(run, row) {
   const target = detail.querySelector('.history-inline-results'); state(target, 'Loading results', 'Reading the persisted normalized results.');
   try {
     const payload = await api.results(run.id);
-    target.innerHTML = payload.results.length ? payload.results.map(result => {
+    const results = payload.results || [];
+    const fallbackRanks = new Map();
+    results.forEach(result => {
+      const query = result.query || '';
+      fallbackRanks.set(query, (fallbackRanks.get(query) || 0) + 1);
+      result._provider_rank = result.serp_rank;
+      result.serp_rank = result.fusion_rank ?? fallbackRanks.get(query);
+    });
+    target.innerHTML = results.length ? results.map((result, index) => {
       const url = result.canonical_url || result.serp_url || result.url || result.link || '';
       const title = result.serp_title || result.title || url || 'Untitled result';
       const snippet = result.serp_snippet || result.snippet || result.description || result.summary || result.text || result.content || result.visible_link || 'No snippet available.';
       const domain = result.serp_domain || (() => { try { return new URL(url).hostname; } catch { return 'Unknown domain'; } })();
       return `<article class="result-card"><span class="result-source">${esc(result.search_engine || 'unknown')} · ${esc(domain)}</span><h3>${esc(title)}</h3><a class="result-url" href="${esc(url)}" target="_blank" rel="noreferrer">${esc(url || 'Unavailable')}</a><p class="result-snippet">${esc(snippet)}</p><div class="result-footer"><span class="result-badge">Type ${esc(result.result_kind || 'organic')}</span><span class="result-badge">Rank ${esc(result.serp_rank ?? '—')}</span></div></article>`;
     }).join('') : '<p class="empty-cell">No results persisted for this run.</p>';
+    target.querySelectorAll('.result-card').forEach((card, index) => {
+      const badge = document.createElement('span');
+      badge.className = 'result-badge';
+      badge.textContent = `Provider rank ${results[index]?._provider_rank ?? '—'}`;
+      card.querySelector('.result-footer')?.append(badge);
+    });
   } catch (error) { state(target, 'Results unavailable', error.message, {label:'Retry', run:() => openRun(run, row)}); }
 }
 async function renderRuns(filters, signal) {

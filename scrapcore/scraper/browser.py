@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
 import subprocess
+import tempfile
 import threading
 import time
 from collections.abc import Callable
@@ -65,6 +67,10 @@ class ChromeIdentityProvider:
 
     @classmethod
     def detect_installed_major(cls, binary_location: str | None = None) -> int | None:
+        manager_major = cls._detect_with_selenium_manager(binary_location)
+        if manager_major is not None:
+            return manager_major
+
         candidates = [binary_location] if binary_location else []
         if os.name == "nt":
             try:
@@ -73,16 +79,20 @@ class ChromeIdentityProvider:
                 # the import is still performed only on Windows at runtime.
                 winreg = cast(Any, __import__("winreg"))
 
+                registry_paths = (
+                    r"Software\Google\Chrome\BLBeacon",
+                    r"Software\WOW6432Node\Google\Chrome\BLBeacon",
+                    r"Software\Chromium\BLBeacon",
+                )
                 for registry_root in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
-                    try:
-                        with winreg.OpenKey(
-                            registry_root, r"Software\Google\Chrome\BLBeacon"
-                        ) as key:
-                            version = str(winreg.QueryValueEx(key, "version")[0])
-                            if version.split(".", 1)[0].isdigit():
-                                return int(version.split(".", 1)[0])
-                    except OSError:
-                        continue
+                    for registry_path in registry_paths:
+                        try:
+                            with winreg.OpenKey(registry_root, registry_path) as key:
+                                version = str(winreg.QueryValueEx(key, "version")[0])
+                                if version.split(".", 1)[0].isdigit():
+                                    return int(version.split(".", 1)[0])
+                        except OSError:
+                            continue
             except ImportError:
                 pass
             for environment_name in ("PROGRAMFILES", "PROGRAMFILES(X86)", "LOCALAPPDATA"):
@@ -103,13 +113,15 @@ class ChromeIdentityProvider:
                 candidates.append(discovered)
         for candidate in dict.fromkeys(candidates):
             try:
-                completed = subprocess.run(
-                    [candidate, "--version"],
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                    timeout=3,
-                )
+                with tempfile.TemporaryDirectory(prefix="serpscrap-chrome-version-") as profile:
+                    command = [candidate, "--version", f"--user-data-dir={profile}"]
+                    completed = subprocess.run(
+                        command,
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                        timeout=3,
+                    )
             except (OSError, subprocess.SubprocessError):
                 continue
             match = cls.version_pattern.search(completed.stdout or completed.stderr)
@@ -117,9 +129,51 @@ class ChromeIdentityProvider:
                 return int(match.group(1))
         return None
 
+    @staticmethod
+    def _detect_with_selenium_manager(binary_location: str | None = None) -> int | None:
+        """Read Selenium Manager's cross-platform installed-browser detection."""
+
+        try:
+            from selenium.webdriver.common.selenium_manager import SeleniumManager
+
+            command = [
+                str(SeleniumManager._get_binary()),
+                "--browser",
+                "chrome",
+                "--offline",
+                "--debug",
+                "--language-binding",
+                "python",
+                "--output",
+                "json",
+            ]
+            if binary_location:
+                command[3:3] = ["--browser-path", binary_location]
+            completed = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            payload = json.loads(completed.stdout or "{}")
+            pattern = re.compile(r"Detected browser:\s+\S+\s+(\d+)(?:\.\d+){0,3}")
+            for item in payload.get("logs", []):
+                match = pattern.search(str(item.get("message", "")))
+                if match:
+                    return int(match.group(1))
+        except (OSError, subprocess.SubprocessError, TypeError, ValueError, json.JSONDecodeError):
+            return None
+        return None
+
     def resolve(self, configured: str | None, binary_location: str | None = None) -> str:
         if configured:
-            self.validate_user_agent(configured)
+            configured_major = self.validate_user_agent(configured)
+            detected_major = self.version_reader(binary_location)
+            if detected_major and detected_major != configured_major:
+                return re.sub(
+                    r"\bChrome/\d+(?=\.)", f"Chrome/{detected_major}", configured
+                )
             return configured
         major = self.version_reader(binary_location)
         fallback = self.fallback_user_agent
@@ -223,6 +277,7 @@ class BrowserSettings:
     executable_path: str | None = None
     binary_location: str | None = None
     user_agent: str = FALLBACK_CHROME_USER_AGENT
+    profile_directory: str | None = None
     language: str = "de-DE"
     window_width: int = 1366
     window_height: int = 900
@@ -244,6 +299,7 @@ class BrowserSettings:
             executable_path=config.get("executable_path") or None,
             binary_location=binary_location,
             user_agent=provider.resolve(config.get("user_agent") or None, binary_location),
+            profile_directory=config.get("chrome_profile_dir") or None,
             language=str(config.get("language", "de-DE")),
             window_width=int(config.get("window_width", 1366)),
             window_height=int(config.get("window_height", 900)),
@@ -284,6 +340,10 @@ class ChromeDriverFactory:
             options.add_argument("--no-sandbox")
         if self.settings.user_agent:
             options.add_argument(f"--user-agent={self.settings.user_agent}")
+        if self.settings.profile_directory:
+            profile_directory = Path(self.settings.profile_directory).expanduser()
+            profile_directory.mkdir(parents=True, exist_ok=True)
+            options.add_argument(f"--user-data-dir={profile_directory}")
         if self.settings.binary_location:
             options.binary_location = self.settings.binary_location
         if proxy:
@@ -392,7 +452,7 @@ def safe_artifact_name(query: str) -> str:
     return (normalized or "query")[:80]
 
 
-def screenshot_path(config: dict[str, Any], query: str, correlation_id: str, page: int) -> Path:
+def screenshot_path(config: dict[str, Any], query: str, correlation_id: str, page: int, engine: str = "google") -> Path:
     root = Path(config["dir_screenshot"]) / config["today"]
     root.mkdir(parents=True, exist_ok=True)
-    return root / f"google_{safe_artifact_name(query)}_{correlation_id[:8]}-p{page}.png"
+    return root / f"{safe_artifact_name(engine)}_{safe_artifact_name(query)}_{correlation_id[:8]}-p{page}.png"

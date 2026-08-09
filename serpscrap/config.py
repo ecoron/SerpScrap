@@ -8,6 +8,23 @@ from pathlib import Path
 from tempfile import gettempdir
 from typing import Any
 
+DEFAULT_SEARXNG_ENGINES = [
+    "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia", "qwant",
+    "startpage", "brave", "swisscows", "mojeek", "marginalia", "etools",
+    "wiby", "mwmbl", "searchmysite", "wikipedia",
+    "arxiv", "pubmed", "openalex", "crossref", "semantic_scholar",
+    "stackoverflow", "askubuntu", "superuser", "reuters",
+]
+
+SEARXNG_ENGINE_GROUPS = {
+    **{engine: "Web search" for engine in DEFAULT_SEARXNG_ENGINES[:17]},
+    **{engine: "Scientific search" for engine in ("arxiv", "pubmed", "openalex", "crossref", "semantic_scholar")},
+    **{engine: "Developer and Q&A" for engine in ("stackoverflow", "askubuntu", "superuser")},
+    "reuters": "News",
+}
+
+SEARXNG_QUERY_NAMES = {"semantic_scholar": "semantic scholar"}
+
 
 class Config:
     """Mutable configuration facade retained for the public API."""
@@ -19,12 +36,17 @@ class Config:
             "search_engines": [
                 "bing", "yandex", "yahoo", "duckduckgo", "startpage", "brave", "swisscows",
                 "mojeek", "good", "xprivo", "marginalia", "etools",
-            ],
+            ] + (["searxng"] if os.environ.get("SERPSCRAP_SEARXNG_URL", "") else []),
+            "searxng_url": os.environ.get("SERPSCRAP_SEARXNG_URL", ""),
+            "searxng_enabled": bool(os.environ.get("SERPSCRAP_SEARXNG_URL", "")),
+            "searxng_fallback": False,
+            "searxng_engines": list(DEFAULT_SEARXNG_ENGINES),
+            "searxng_timeout": 20.0,
             "supported_search_engines": [
                 "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia", "qwant",
                 "startpage", "brave", "swisscows", "mojeek", "metager", "good", "xprivo",
                 "marginalia", "etools",
-            ],
+            ] + (["searxng"] if os.environ.get("SERPSCRAP_SEARXNG_URL", "") else []),
             "country_code": "DE",
             "engine_workers": 1,
             "engine_workers_by_engine": {},
@@ -44,7 +66,11 @@ class Config:
             "window_height": 900,
             "page_load_timeout": 30,
             "wait_timeout": 15,
-            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+            # Empty means: derive a desktop Chrome UA matching the installed
+            # browser. Keeping a fixed major here drifts from local Chrome.
+            "user_agent": "",
+            "chrome_profile_dir": os.environ.get("SERPSCRAP_CHROME_PROFILE_DIR", ""),
+            "interaction_settle_delay": 0.35,
             "request_delay_min": 0.75,
             "request_delay_max": 2.0,
             "request_retry_limit": 1,
@@ -55,8 +81,8 @@ class Config:
             "language": "de-DE",
             "do_caching": True,
             "cachedir": str(temp_root / ".serpscrap"),
-            "screenshot": False,
-            "dir_screenshot": str(temp_root / "serpscrap-screenshots"),
+            "screenshot": True,
+            "dir_screenshot": os.environ.get("SERPSCRAP_SCREENSHOT_DIR", str(Path("C:/tmp/screenshots"))),
             "database_name": str(temp_root / "serpscrap"),
             "minimize_caching_files": False,
             "clean_cache_after": 24,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from threading import Lock, Semaphore
 from typing import Any, Protocol
@@ -41,7 +41,7 @@ class SeleniumPageCapture:
             callback = config.get("_progress_callback")
             if callback is not None:
                 callback("driver_created", elapsed_ms=0)
-            return HomepageSearchFlow(float(config.get("wait_timeout", 15))).capture(
+            captured_page = HomepageSearchFlow(float(config.get("wait_timeout", 15))).capture(
                 driver,
                 plugin,
                 query,
@@ -52,10 +52,62 @@ class SeleniumPageCapture:
                 progress=callback,
                 artifact_store=config.get("_artifact_store"),
                 consent_action=str(config.get("consent_action", "necessary")),
+                interaction_settle_delay=float(config.get("interaction_settle_delay", 0.0)),
             )
+            if config.get("screenshot", False):
+                from scrapcore.scraper.browser import screenshot_path
+
+                path = screenshot_path(
+                    config,
+                    query,
+                    str(config.get("_correlation_id") or "run"),
+                    page,
+                    engine=plugin.engine_id,
+                )
+                driver.save_screenshot(str(path))
+                captured_page = replace(captured_page, screenshot=str(path))
+            return captured_page
         finally:
             if driver is not None:
                 driver.quit()
+
+
+class SearxngPageCapture:
+    """Fetch a configured local SearXNG instance through its JSON API."""
+
+    def __call__(self, plugin, query, country_code, page, config):
+        from urllib.request import Request, urlopen
+
+        url = plugin.build_url(query, page, country_code, "normal")
+        selected_engines = [str(engine).strip() for engine in config.get("searxng_engines", []) if str(engine).strip()]
+        if selected_engines:
+            from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+            from serpscrap.config import SEARXNG_QUERY_NAMES
+
+            parts = urlsplit(url)
+            params = dict(parse_qsl(parts.query, keep_blank_values=True))
+            params["engines"] = ",".join(SEARXNG_QUERY_NAMES.get(engine, engine) for engine in selected_engines)
+            url = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(params), parts.fragment))
+        request = Request(
+            url,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "SerpScrap/2",
+                # The bundled SearXNG instance is reached directly over the
+                # private Compose network. Supplying the client identity lets
+                # its limiter distinguish SerpScrap from anonymous callers.
+                "X-Real-IP": "127.0.0.1",
+                "X-Forwarded-For": "127.0.0.1",
+            },
+        )
+        try:
+            with urlopen(request, timeout=float(config.get("searxng_timeout", 20))) as response:
+                payload = response.read().decode("utf-8")
+        except Exception as exc:
+            raise BrowserFlowError("network", f"SearXNG request failed: {exc}", url=url) from exc
+        return EnginePage(url=url, html=payload, query=query, engine=plugin.engine_id,
+                          country_code=country_code, page=page)
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,14 +129,20 @@ class MultiEngineRunner:
         fusion: ResultFusion | None = None,
     ) -> None:
         self.registry = registry or default_registry()
-        self.capture = capture or SeleniumPageCapture()
+        self.capture = capture
         self.fusion = fusion or ResultFusion()
 
     def execute(self, request: SearchRequest) -> SearchReport:
         config = request.to_config()
         country = str(config.get("country_code", "DE")).upper()
-        engines = tuple(config.get("search_engines") or ("google",))
+        engines = list(config.get("search_engines") or ("google",))
+        if config.get("searxng_fallback") and "searxng" not in engines:
+            engines.append("searxng")
+        if "searxng" in engines:
+            self.registry = default_registry(config)
+        engines = tuple(engines)
         self.registry.validate_selection(engines)
+        capture = self.capture or SeleniumPageCapture()
         pages = int(config.get("num_pages_for_keyword", 1))
         workers = int(config.get("num_workers", 1))
         jobs = [
@@ -156,7 +214,8 @@ class MultiEngineRunner:
                     page=job.page,
                     state="job_started",
                 )
-                page = self.capture(plugin, job.query, job.country_code, job.page, job_config)
+                selected_capture = SearxngPageCapture() if plugin.transport == "http" else capture
+                page = selected_capture(plugin, job.query, job.country_code, job.page, job_config)
             state = plugin.classify(page.url, page.html, visible_text=page.visible_text)
             if state:
                 raise RuntimeError(f"{state}: {job.engine} rejected the request")
@@ -196,6 +255,7 @@ class MultiEngineRunner:
             ]
             for value in values:
                 value["query_num_results_page"] = len(parsed)
+                value["screenshot"] = page.screenshot
             emit_progress(
                 correlation_id=job.correlation_id,
                 engine=job.engine,
@@ -300,7 +360,10 @@ class MultiEngineRunner:
         weights = {plugin.engine_id: float(plugin.market_share or 0.0) for plugin in self.registry}
         configured = config.get("engine_weights") or {}
         weights.update({str(key): float(value) for key, value in configured.items()})
-        active = {engine: weight for engine, weight in weights.items() if engine in engines}
+        effective_engines = set(engines)
+        if "searxng" in engines:
+            effective_engines.update(str(engine) for engine in config.get("searxng_engines", []) if str(engine).strip())
+        active = {engine: weight for engine, weight in weights.items() if engine in effective_engines}
         unreported = [engine for engine in engines if active.get(engine, 0.0) == 0.0]
         fallback = float(config.get("other_market_share", 0.63)) / max(1, len(unreported))
         for engine in unreported:
@@ -328,6 +391,11 @@ class MultiEngineRunner:
         # Preserve query order while keeping fusion deterministic within each query.
         query_index = {query: index for index, query in enumerate(request.queries)}
         ranked.sort(key=lambda row: (query_index.get(str(row.get("query")), len(query_index)), -float(row.get("relevance_score") or 0.0), str(row.get("serp_url") or "")))
+        fusion_ranks: dict[str, int] = {}
+        for row in ranked:
+            query = str(row.get("query") or "")
+            fusion_ranks[query] = fusion_ranks.get(query, 0) + 1
+            row["fusion_rank"] = fusion_ranks[query]
         stopped = datetime.now(timezone.utc)
         return SearchReport(
             results=ranked,

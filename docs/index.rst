@@ -24,7 +24,8 @@ Choose the interface that matches your workflow:
 * :doc:`install` — install the package, Chrome, and development dependencies.
 * :doc:`examples` — complete Python and CLI examples.
 * :doc:`cli` — all important CLI commands and options.
-* :doc:`docker` — run the API, UI, PostgreSQL, and MCP services with Compose.
+* :doc:`docker` — run the API, UI, PostgreSQL, MCP, SearXNG, and Valkey services
+  with Compose.
 * :doc:`mcp` — connect an MCP client and call search/history/configuration tools.
 * :doc:`results` — understand result rows, fusion, failures, and JSON output.
 * :doc:`configuration` — configure engines, markets, concurrency, caching, and

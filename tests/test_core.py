@@ -1,7 +1,9 @@
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 
 from scrapcore.core import Core
+from scrapcore.database import SearchEngineResultsPage, get_session
 from scrapcore.jobs import CapturedPage, ScrapeJobResult
 from serpscrap.config import Config
 
@@ -26,6 +28,33 @@ class FixtureWorkerFactory:
             for page in job.pages
         )
         return ScrapeJobResult(job=job, pages=pages)
+
+
+def test_core_persists_screenshot_path_for_mcp_results(tmp_path):
+    config = Config().get()
+    config.update({
+        "keywords": ["screenshot query"],
+        "search_engines": ["google"],
+        "database_name": str(tmp_path / "serpscrap"),
+        "cachedir": str(tmp_path / "cache"),
+        "do_caching": False,
+        "store_history": True,
+    })
+
+    class ScreenshotWorkerFactory(FixtureWorkerFactory):
+        def execute(self, job):
+            result = super().execute(job)
+            page = result.pages[0]
+            return ScrapeJobResult(job=job, pages=(replace(page, screenshot="C:/tmp/screenshots/test.png"),))
+
+    Core(worker_factory=ScreenshotWorkerFactory(FIXTURE.read_text(encoding="utf-8"))).run(config)
+    session = get_session(config)()
+    try:
+        serp = session.query(SearchEngineResultsPage).filter_by(query="screenshot query").first()
+        assert serp is not None
+        assert serp.screenshot == "C:/tmp/screenshots/test.png"
+    finally:
+        session.close()
 
 
 def test_core_parses_and_persists_captured_pages(tmp_path):

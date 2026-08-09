@@ -4,7 +4,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from selenium.common.exceptions import ElementNotInteractableException
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    ElementNotInteractableException,
+)
 
 from serpscrap.diagnostics import DiagnosticArtifactStore, ProgressCoordinator
 from serpscrap.plugins.searchengines.base import (
@@ -147,6 +150,19 @@ def test_homepage_flow_retries_when_first_search_field_is_not_interactable():
     assert fallback.value == "query"
 
 
+def test_homepage_flow_falls_back_to_keyboard_when_submit_is_intercepted():
+    driver = FakeDriver()
+
+    def intercepted_click() -> None:
+        raise ElementClickInterceptedException("autocomplete overlay")
+
+    driver.submit.click = intercepted_click  # type: ignore[method-assign]
+
+    HomepageSearchFlow(timeout=1).capture(driver, DemoPlugin(), "query", "DE", 1, "normal")
+
+    assert driver.input.keys
+
+
 def test_homepage_flow_dismisses_declared_overlay_before_query_entry():
     driver = FakeDriver()
     overlay_close = FakeElement()
@@ -201,6 +217,32 @@ def test_consent_action_uses_privacy_preserving_button_label():
 
     assert HomepageSearchFlow()._apply_consent(driver, plugin, "necessary") is True
     assert reject.clicks == 1
+
+
+def test_consent_accept_action_uses_acceptance_label():
+    accept = FakeElement()
+    accept.text = "Alle akzeptieren"  # type: ignore[attr-defined]
+
+    class AcceptDriver(FakeDriver):
+        def find_elements(self, by, selector):
+            if selector == "button.consent":
+                return [accept]
+            return []
+
+    driver = AcceptDriver()
+    plugin = DemoPlugin()
+    contract = plugin.browser_interaction
+    assert contract is not None
+    plugin.browser_interaction = BrowserInteraction(
+        contract.homepage_url,
+        contract.search_input_selectors,
+        contract.submit_selectors,
+        contract.serp_ready_selectors,
+        contract.organic_card_selectors,
+        consent_button_selectors=("button.consent",),
+    )
+    assert HomepageSearchFlow()._apply_consent(driver, plugin, "accept") is True
+    assert accept.clicks == 1
 
 
 def test_clean_text_repairs_common_utf8_mojibake():

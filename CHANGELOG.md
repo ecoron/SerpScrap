@@ -6,6 +6,87 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added an optional SearXNG/Valkey Compose profile and configurable HTTP
+  SearXNG transport. SearXNG can be selected as an additional engine or run
+  in configured fallback mode without changing the default engine set.
+- SearXNG and Valkey now start with the standard Compose stack; the local
+  development secret and internal service URL have safe defaults.
+- Disabled optional SearXNG engines that fail during startup in the default
+  container profile and added the local limiter configuration.
+- Added internal client identity headers and a loopback limiter pass-list entry
+  so SerpScrap requests are not rejected by the private SearXNG limiter.
+- Disabled Startpage in the bundled SearXNG profile after its upstream CAPTCHA
+  response and preserved partial SearXNG results when one upstream engine fails.
+- Added separate `searxng_engines` configuration and preserved the originating
+  SearXNG engine in normalized result source metadata.
+- Added a separate SearXNG engine selector to the configuration UI with
+  defaults covering all currently mapped SerpScrap/SearXNG engines.
+- Merged direct SerpScrap and SearXNG engine selection into one grouped
+  configuration overview while keeping SearXNG globally toggleable.
+- Updated README, Docker, configuration, MCP, examples, search-engine, and
+  architecture documentation for the standard SearXNG/Valkey deployment and
+  unified engine-selection UI.
+- Added no-key SearXNG sources for web, scientific, developer/Q&A, and news
+  groups, with grouped configuration UI presentation.
+- Added the SearXNG display-name mapping for `semantic scholar` so its module
+  name does not get sent as an invalid underscored engine name.
+- Updated result grouping and source labels to display the originating
+  SearXNG engine instead of collapsing all results under the `searxng` transport.
+- Added an explicit per-query fusion rank to persisted search results and
+  separated it from the provider-specific rank in the History inspection view.
+- Documented the distinction between fusion rank, provider rank, and best
+  provider rank in the result schema and usage examples.
+- Updated result fusion to use the originating SearXNG engine's weight and
+  provider family for relevance calculations.
+
+- Captured and propagated screenshots for the multi-engine browser pipeline,
+  including engine-specific artifact paths in MCP results.
+
+- Added a Docker screenshot volume and configurable screenshot directory so
+  browser artifacts are visible on the host under `data/screenshots`.
+
+- Persisted Selenium screenshot paths in the SERP history schema so API and
+  MCP result responses no longer lose the `screenshot` field.
+
+- Enabled screenshots by default and changed their default directory to
+  `C:\\tmp\\screenshots`.
+
+- Made the default browser identity resolve to the installed Chrome major
+  instead of pinning Chrome 150, preventing User-Agent drift on local Chrome
+  updates. Added opt-in isolated Chrome profile support for controlled smoke
+  diagnostics and documented headless/headful comparison guidance.
+
+- Replaced the Windows-specific browser-version lookup with Selenium Manager's
+  cross-platform installed-browser detection plus a generic executable
+  fallback.
+
+- Added a bounded post-input interaction settle delay for provider autocomplete
+  and form validation. The existing headless toggle and opt-in disposable
+  profile remain explicit diagnostic controls; WebDriver signals are not
+  concealed.
+
+- Recorded the next opt-in diagnostic TODO: compare identical Google/Ecosia
+  runs in headless and visible Chrome using the same disposable profile and
+  network conditions.
+
+- Added an explicit opt-in `accept` consent action for controlled diagnostic
+  searches, including validation, CLI/MCP schemas, provider acceptance labels,
+  and regression coverage. The persisted default remains `necessary`.
+
+- Added `docs/a2ui-search.md`, an implementation-ready plan for separating
+  verified Google/Ecosia consent clearance from hidden stale DOM nodes and
+  later provider access-control challenges in the Selenium browser flow.
+
+- Fixed the homepage browser flow to continue after verified Google/Ecosia
+  consent clearance even when hidden stale dialog markup remains in
+  `page_source`; added regression coverage for post-consent success and typed
+  provider blocking outcomes.
+
+- Updated the live Google/Ecosia browser contracts for the current Ecosia
+  textarea search field and Google autocomplete submit interception; live
+  smoke now records provider blocking after consent instead of selector drift
+  or malformed-state failures.
+
 - Added `docs/a2ui-final.md`, the final Alpha 2.0.0 UI gap list and release
   gate, including English-language cleanup and the future Read the Docs
   exclusion requirement for internal `alpha-2.0.0-ui.md` and `a2ui-*.md`
@@ -360,6 +441,11 @@ All notable changes to this project will be documented in this file.
 - Text processing tools removed
 - Fewer requirements
 ## Unreleased
+
+- Fixed the Selenium worker so optional screenshot failures or drivers without
+  screenshot support do not discard successful pages or hide the original
+  navigation failure; made the screenshot-directory regression test portable
+  across Windows and Linux CI runners.
 
 - Added the Phase 9.2 implementation plan for a typed, capability-driven,
   developer-friendly search-engine plugin structure, including registry

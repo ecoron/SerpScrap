@@ -130,6 +130,10 @@ def test_configuration_schema_covers_full_defaults_redacts_headers_and_resets(tm
     assert initial["schema_version"] == 2
     assert initial["source"] == "defaults"
     assert initial["configuration"]["headers"] == {}
+    assert initial["searxng_engines"]
+    assert {item["group"] for item in initial["searxng_engines"]} >= {"Web search", "Scientific search", "Developer and Q&A", "News"}
+    assert any(field["key"] == "search_engines" and field["type"] == "combined-engine-list" for field in initial["fields"])
+    assert any(field["key"] == "searxng_engines" and field["type"] == "searxng-engine-list" for field in initial["fields"])
     assert {field["key"] for field in initial["fields"]} >= {
         "search_engines", "ranking.rrf_k", "request_delay_min", "store_history", "diagnostic_html"
     }

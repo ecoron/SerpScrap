@@ -29,13 +29,25 @@ class ValidatorConfig:
             raise ConfigurationError(
                 "search_type must be one of: normal, image, news, shopping, videos"
             )
-        if config.get("consent_action") not in {"necessary", "reject", "disabled"}:
-            raise ConfigurationError("consent_action must be one of: necessary, reject, disabled")
+        if config.get("consent_action") not in {"necessary", "reject", "accept", "disabled"}:
+            raise ConfigurationError("consent_action must be one of: necessary, reject, accept, disabled")
+        searxng_engines = config.get("searxng_engines", [])
+        if isinstance(searxng_engines, str) or not isinstance(searxng_engines, (list, tuple, set)):
+            raise ConfigurationError("searxng_engines must be a sequence")
+        if any(not str(engine).strip() for engine in searxng_engines):
+            raise ConfigurationError("searxng_engines must contain non-empty engine IDs")
 
         engines = config.get("search_engines")
         if isinstance(engines, str):
             engines = [item.strip() for item in engines.split(",") if item.strip()]
-        supported = set(default_registry().ids())
+        try:
+            searxng_url = str(config.get("searxng_url") or "")
+            if config.get("searxng_enabled") and not searxng_url.startswith(("http://", "https://")):
+                raise ConfigurationError("searxng_url must be an absolute HTTP(S) URL when enabled")
+            registry = default_registry(config)
+        except ValueError as exc:
+            raise ConfigurationError(str(exc)) from exc
+        supported = set(registry.ids())
         if not engines or set(engines) - supported:
             unknown = sorted(set(engines or ()) - supported)
             raise ConfigurationError(
@@ -44,7 +56,7 @@ class ValidatorConfig:
         if len(set(engines)) != len(engines):
             raise ConfigurationError("duplicate search engine IDs are not allowed")
         try:
-            plugins = default_registry().validate_selection(engines)
+            plugins = registry.validate_selection(engines)
         except ValueError as exc:
             raise ConfigurationError(str(exc)) from exc
         country_code = str(config.get("country_code", "DE"))
@@ -115,6 +127,8 @@ class ValidatorConfig:
             raise ConfigurationError("dir_screenshot is required when screenshots are enabled")
         if config.get("do_caching") and not config.get("cachedir"):
             raise ConfigurationError("cachedir is required when caching is enabled")
+        if float(config.get("searxng_timeout", 20)) <= 0:
+            raise ConfigurationError("searxng_timeout must be positive")
 
         try:
             BrowserSettings.from_config(config)

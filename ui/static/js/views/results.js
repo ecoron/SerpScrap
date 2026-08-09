@@ -5,7 +5,7 @@ export function groupResults(rows = []) {
   rows.forEach(row => {
     const url = row.canonical_url || row.serp_url || `result-${groups.size}`;
     const group = groups.get(url) || {row, engines: new Set(), relevance: 0, matches: []};
-    group.engines.add(row.search_engine || 'unknown');
+    group.engines.add(row.serp_source || row.search_engine || 'unknown');
     group.relevance = Math.max(group.relevance, Number(row.relevance || row.relevance_score || 0));
     group.matches.push(row);
     if (!group.row.serp_snippet && row.serp_snippet) group.row = row;
@@ -35,7 +35,7 @@ export function renderResults(target, rows, onSelect, sort = 'relevance') {
   grouped.forEach(group => {
     const row = group.row;
     const card = document.createElement('article'); card.className = 'result-card';
-    const source = document.createElement('div'); source.className = 'result-source'; source.textContent = `${row.search_engine || 'unknown'} · ${text(row.serp_domain || row.canonical_url || row.serp_url)}`;
+    const source = document.createElement('div'); source.className = 'result-source'; source.textContent = `${row.serp_source || row.search_engine || 'unknown'} · ${text(row.serp_domain || row.canonical_url || row.serp_url)}`;
     const title = document.createElement('h3');
     const titleLink = document.createElement('a'); titleLink.href = row.canonical_url || row.serp_url || '#'; titleLink.target = '_blank'; titleLink.rel = 'noopener'; titleLink.textContent = row.serp_title || 'Untitled result'; title.append(titleLink);
     const url = document.createElement('div'); url.className = 'result-url'; url.textContent = row.canonical_url || row.serp_url || 'Unavailable';
@@ -55,7 +55,7 @@ export function renderResultDetail(target, group) {
   const header = document.createElement('div'); header.className = 'detail-heading';
   const eyebrow = document.createElement('p'); eyebrow.className = 'eyebrow'; eyebrow.textContent = 'Selected result';
   const title = document.createElement('h3'); title.textContent = row.serp_title || 'Untitled result'; header.append(eyebrow, title);
-  const source = document.createElement('p'); source.className = 'detail-source'; source.textContent = `${row.search_engine || 'unknown'} · ${row.serp_domain || 'Unknown domain'}`;
+  const source = document.createElement('p'); source.className = 'detail-source'; source.textContent = `${row.serp_source || row.search_engine || 'unknown'} · ${row.serp_domain || 'Unknown domain'}`;
   const snippet = document.createElement('p'); snippet.className = 'detail-snippet'; snippet.textContent = row.serp_snippet || 'No snippet available.';
   const metadata = document.createElement('div'); metadata.className = 'detail-metadata'; metadata.append(badge('Type', row.result_kind || 'organic'), badge('Relevance', Number(group.relevance || 0).toFixed(4)), badge('Engines', [...(group.engines || [])].sort().join(', ')));
   const url = document.createElement('a'); url.className = 'detail-url'; url.href = row.canonical_url || row.serp_url || '#'; url.target = '_blank'; url.rel = 'noopener'; url.textContent = row.canonical_url || row.serp_url || 'Unavailable';

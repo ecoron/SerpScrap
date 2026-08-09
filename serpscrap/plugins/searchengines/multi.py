@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from threading import Lock, Semaphore
 from typing import Any, Protocol
@@ -41,7 +41,7 @@ class SeleniumPageCapture:
             callback = config.get("_progress_callback")
             if callback is not None:
                 callback("driver_created", elapsed_ms=0)
-            return HomepageSearchFlow(float(config.get("wait_timeout", 15))).capture(
+            captured_page = HomepageSearchFlow(float(config.get("wait_timeout", 15))).capture(
                 driver,
                 plugin,
                 query,
@@ -54,6 +54,19 @@ class SeleniumPageCapture:
                 consent_action=str(config.get("consent_action", "necessary")),
                 interaction_settle_delay=float(config.get("interaction_settle_delay", 0.0)),
             )
+            if config.get("screenshot", False):
+                from scrapcore.scraper.browser import screenshot_path
+
+                path = screenshot_path(
+                    config,
+                    query,
+                    str(config.get("_correlation_id") or "run"),
+                    page,
+                    engine=plugin.engine_id,
+                )
+                driver.save_screenshot(str(path))
+                captured_page = replace(captured_page, screenshot=str(path))
+            return captured_page
         finally:
             if driver is not None:
                 driver.quit()
@@ -197,6 +210,7 @@ class MultiEngineRunner:
             ]
             for value in values:
                 value["query_num_results_page"] = len(parsed)
+                value["screenshot"] = page.screenshot
             emit_progress(
                 correlation_id=job.correlation_id,
                 engine=job.engine,

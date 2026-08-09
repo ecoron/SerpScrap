@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Captured and propagated screenshots for the multi-engine browser pipeline,
+  including engine-specific artifact paths in MCP results.
+
+- Added a Docker screenshot volume and configurable screenshot directory so
+  browser artifacts are visible on the host under `data/screenshots`.
+
+- Persisted Selenium screenshot paths in the SERP history schema so API and
+  MCP result responses no longer lose the `screenshot` field.
+
+- Enabled screenshots by default and changed their default directory to
+  `C:\\tmp\\screenshots`.
+
 - Made the default browser identity resolve to the installed Chrome major
   instead of pinning Chrome 150, preventing User-Agent drift on local Chrome
   updates. Added opt-in isolated Chrome profile support for controlled smoke

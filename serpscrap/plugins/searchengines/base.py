@@ -50,7 +50,7 @@ class EngineResult:
             "serp_duration": self.extras.get("duration"),
             "serp_image_url": self.extras.get("image_url"),
             "serp_thumbnail_url": self.extras.get("thumbnail_url"),
-            "screenshot": None,
+            "screenshot": self.extras.get("screenshot"),
             "search_engine": engine,
             "country_code": country_code,
         }
@@ -67,6 +67,7 @@ class EnginePage:
     country_code: str
     page: int
     visible_text: str | None = None
+    screenshot: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -34,6 +34,13 @@ def test_config_defaults_are_cross_platform():
     assert Path(config["database_name"]).is_absolute()
 
 
+def test_screenshots_are_enabled_and_use_requested_directory():
+    config = Config().get()
+
+    assert config["screenshot"] is True
+    assert config["dir_screenshot"] == "C:\\tmp\\screenshots"
+
+
 def test_validator_accepts_registered_alternative_engine():
     config = Config().get()
     config["search_engines"] = ["bing"]

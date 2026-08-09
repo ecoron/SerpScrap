@@ -452,7 +452,7 @@ def safe_artifact_name(query: str) -> str:
     return (normalized or "query")[:80]
 
 
-def screenshot_path(config: dict[str, Any], query: str, correlation_id: str, page: int) -> Path:
+def screenshot_path(config: dict[str, Any], query: str, correlation_id: str, page: int, engine: str = "google") -> Path:
     root = Path(config["dir_screenshot"]) / config["today"]
     root.mkdir(parents=True, exist_ok=True)
-    return root / f"google_{safe_artifact_name(query)}_{correlation_id[:8]}-p{page}.png"
+    return root / f"{safe_artifact_name(engine)}_{safe_artifact_name(query)}_{correlation_id[:8]}-p{page}.png"

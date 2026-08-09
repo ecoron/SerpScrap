@@ -29,11 +29,13 @@ services:
       SERPSCRAP_DATA_DIR: /var/lib/serpscrap
       SERPSCRAP_CACHE_DIR: /var/lib/serpscrap/cache
       SERPSCRAP_DIAGNOSTICS_DIR: /var/lib/serpscrap/diagnostics
+      SERPSCRAP_SCREENSHOT_DIR: /var/lib/serpscrap/screenshots
       SERPSCRAP_MAX_ACTIVE_JOBS: ${SERPSCRAP_MAX_ACTIVE_JOBS:-4}
       SERPSCRAP_MAX_QUEUED_JOBS: ${SERPSCRAP_MAX_QUEUED_JOBS:-16}
     volumes:
       - ../data/cache:/var/lib/serpscrap/cache
       - ../data/diagnostics:/var/lib/serpscrap/diagnostics
+      - ../data/screenshots:/var/lib/serpscrap/screenshots
       - ../data/exports:/var/lib/serpscrap/exports
       - ../logs:/var/log/serpscrap
     depends_on:

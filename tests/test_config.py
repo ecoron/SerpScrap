@@ -44,7 +44,7 @@ def test_screenshots_are_enabled_and_use_requested_directory():
     config = Config().get()
 
     assert config["screenshot"] is True
-    assert config["dir_screenshot"] == "C:\\tmp\\screenshots"
+    assert Path(config["dir_screenshot"]).as_posix() == "C:/tmp/screenshots"
 
 
 def test_validator_accepts_registered_alternative_engine():

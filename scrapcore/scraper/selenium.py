@@ -104,10 +104,20 @@ class SelScrape:
     def _save_screenshot(self, driver, page_number: int) -> str | None:
         if not self.config.get("screenshot", False):
             return None
+        save_screenshot = getattr(driver, "save_screenshot", None)
+        if not callable(save_screenshot):
+            logger.debug("Selenium driver does not support screenshots")
+            return None
         path = screenshot_path(
             self.config, self.job.query, self.job.correlation_id, page_number
         )
-        driver.save_screenshot(str(path))
+        try:
+            save_screenshot(str(path))
+        except (OSError, WebDriverException) as exc:
+            # Screenshots are diagnostic artifacts and must never turn a
+            # successfully captured SERP into a failed request.
+            logger.warning("Could not save SERP screenshot %s: %s", path, exc)
+            return None
         return str(path)
 
     def _failure(

@@ -442,6 +442,11 @@ All notable changes to this project will be documented in this file.
 - Fewer requirements
 ## Unreleased
 
+- Fixed the Selenium worker so optional screenshot failures or drivers without
+  screenshot support do not discard successful pages or hide the original
+  navigation failure; made the screenshot-directory regression test portable
+  across Windows and Linux CI runners.
+
 - Added the Phase 9.2 implementation plan for a typed, capability-driven,
   developer-friendly search-engine plugin structure, including registry
   validation, fixture contracts, migration slices, and acceptance criteria.

@@ -87,6 +87,32 @@ def test_ui_result_contract_keeps_all_result_kinds_and_awaits_refresh_callbacks(
     assert ".search-settings-overlay[hidden]" in open("ui/static/css/pages.css", encoding="utf-8").read()
 
 
+def test_history_ui_contract_handles_long_content_and_collapsible_filters():
+    root = "ui"
+    template = open(f"{root}/templates/pages/history.html", encoding="utf-8").read()
+    history_js = open(f"{root}/static/js/views/history.js", encoding="utf-8").read()
+    history_css = open(f"{root}/static/css/history.css", encoding="utf-8").read()
+    pages_css = open(f"{root}/static/css/pages.css", encoding="utf-8").read()
+    components_css = open(f"{root}/static/css/components.css", encoding="utf-8").read()
+    assert 'class="history-filter-disclosure"' in template
+    assert 'class="history-table history-runs-table"' in template
+    assert 'class="compare-list"' in template
+    assert 'class="coverage-grid compare-grid"' in template
+    assert 'statusBadge' in history_js
+    assert 'compactUrl' in history_js
+    assert 'data-filter-summary' in history_js
+    assert 'table-layout:fixed' in history_css
+    assert 'overflow-wrap:anywhere' in history_css
+    assert '#history-coverage .coverage-grid { grid-template-columns:minmax(0,1fr); }' in history_css
+    assert '#history-coverage .coverage-grid > div' in history_css
+    assert 'grid-template-columns:repeat(3,minmax(0,1fr))' in history_css
+    assert 'height:4.35rem' in history_css
+    assert 'height:min(28rem,60vh)' in history_css
+    assert 'overflow-y:auto' in history_css
+    assert 'status-dot' in pages_css
+    assert 'max-width: 100%' in components_css
+
+
 def test_ui_proxy_reads_database_backed_history(monkeypatch, tmp_path):
     store = SearchHistoryStore(f"sqlite:///{tmp_path / 'history.db'}")
     store.create_run("run-ui", "database-backed query", {"search_engines": ["bing"]})

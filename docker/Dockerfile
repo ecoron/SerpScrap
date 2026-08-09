@@ -35,7 +35,8 @@ COPY serpscrap ./serpscrap
 COPY scrapcore ./scrapcore
 COPY ui ./ui
 
-RUN pip install --no-cache-dir -r requirements.lock && \
+RUN python -m pip install --no-cache-dir --upgrade "pip==26.1.2" && \
+    pip install --no-cache-dir -r requirements.lock && \
     pip install --no-cache-dir --no-deps . && \
     mkdir -p /var/lib/serpscrap/cache /var/lib/serpscrap/diagnostics \
       /var/lib/serpscrap/exports /var/log/serpscrap && \

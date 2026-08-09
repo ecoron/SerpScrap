@@ -16,7 +16,7 @@ def test_docker_uses_one_project_dockerfile_and_shared_image():
 
     compose = (docker_dir / "compose.yml").read_text(encoding="utf-8")
     assert "context: .." in compose
-    assert compose.count("image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}") == 3
+    assert compose.count("image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.2}") == 3
     assert compose.count("dockerfile: docker/Dockerfile") == 1
     assert 'entrypoint: ["python", "-m", "ui.app"]' in compose
     assert "http://localhost:8080/healthz" in compose
@@ -25,6 +25,10 @@ def test_docker_uses_one_project_dockerfile_and_shared_image():
     assert "searxng-valkey:" in compose
     assert "profiles: [searxng]" not in compose
     assert "SERPSCRAP_SEARXNG_URL" in compose
+    assert "POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD" in compose
+    assert "SEARXNG_SECRET:?Set SEARXNG_SECRET" in compose
+    assert "127.0.0.1:8000" in compose
+    assert "127.0.0.1:8001" in compose
     searxng_settings = (docker_dir / "searxng" / "settings.yml").read_text(encoding="utf-8")
     limiter = (docker_dir / "searxng" / "limiter.toml").read_text(encoding="utf-8")
     for engine in ("ahmia", "torch", "wikidata", "startpage", "arxiv", "pubmed", "openalex", "crossref", "stackoverflow", "askubuntu", "superuser", "reuters"):

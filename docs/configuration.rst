@@ -55,7 +55,9 @@ Core settings
   run circuit breaker and stop new navigation.
 * ``window_width`` and ``window_height``: Chrome viewport dimensions.
 * ``language``: Google ``hl`` query parameter.
-* ``screenshot``: save diagnostic screenshots; defaults to ``False``.
+* ``screenshot``: save diagnostic screenshots; defaults to ``True``. Keep the
+  screenshot directory outside source control and disable this for sensitive
+  searches.
 * ``dir_screenshot``: base directory for screenshots.
 * ``do_caching`` and ``cachedir``: enable and locate captured-HTML caching.
 * ``store_history``: persist SQLite run history; defaults to ``True``.

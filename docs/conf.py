@@ -6,7 +6,7 @@ project = "SerpScrap"
 copyright = f"2017-{date.today().year}, ecoron"
 author = "ecoron"
 version = "2.0"
-release = "2.0.0-alpha.1"
+release = "2.0.0-alpha.2"
 
 needs_sphinx = "7.4"
 extensions = [
@@ -20,7 +20,7 @@ extensions = [
 source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
 master_doc = "index"
 language = "en"
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "alpha-2.0.0-ui.md", "a2ui-*.md"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 pygments_style = "sphinx"
 todo_include_todos = True
 

@@ -14,6 +14,8 @@ Set a secret token before starting the stack because the MCP gateway is
 published on port 8001:
 
 ```powershell
+$env:POSTGRES_PASSWORD = "replace-with-a-database-secret"
+$env:SEARXNG_SECRET = "replace-with-a-long-random-secret"
 $env:MCP_AUTH_TOKEN = "replace-with-a-secret"
 ```
 
@@ -30,7 +32,7 @@ docker compose -f docker/compose.yml up --build
 To use a prebuilt or pinned image, set `SERPSCRAP_IMAGE` and skip the build:
 
 ```powershell
-$env:SERPSCRAP_IMAGE = "serpscrap:2.0.0-alpha.1"
+$env:SERPSCRAP_IMAGE = "serpscrap:2.0.0-alpha.2"
 docker compose -f docker/compose.yml up -d
 ```
 
@@ -39,9 +41,9 @@ The UI is available at `http://localhost:8080`, the API at
 
 ## SearXNG integration
 
-SearXNG and Valkey start with the normal Compose stack. For local development
-the Compose file supplies a placeholder secret; set a strong value in
-production. SerpScrap points at the internal SearXNG service by default:
+SearXNG and Valkey start with the normal Compose stack. ``SEARXNG_SECRET`` is
+required before startup. SerpScrap points at the internal SearXNG service by
+default:
 
 The bundled configuration disables optional `ahmia`, `torch`, and `wikidata`
 engines because they can fail during startup independently of the core search
@@ -50,7 +52,6 @@ network as an explicitly local client range without trusting forwarded headers
 globally.
 
 ```powershell
-$env:SEARXNG_SECRET = "replace-with-a-long-random-secret"
 docker compose -f docker/compose.yml up -d --build
 ```
 

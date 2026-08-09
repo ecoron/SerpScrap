@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import replace
+from urllib.parse import urlencode
 
 from serpscrap.plugins.searchengines.base import (
     BrowserInteraction,
@@ -232,36 +233,91 @@ def _alternatives() -> list[SearchEnginePlugin]:
     return plugins
 
 
-def searxng_plugin(instance_url: str) -> SearchEnginePlugin:
-    """Create an auth-free plugin for one explicitly trusted SearXNG instance.
+class _SearxngPlugin(GenericHtmlPlugin):
+    engine_id = "searxng"
+    display_name = "SearXNG"
+    transport = "http"
+    authentication = "none"
+    search_types = ("normal",)
+    pagination_strategy = "page"
+    provider_family = "searxng"
+    readiness = "enabled"
+    disable_reason = None
+
+    def __init__(self, instance_url: str) -> None:
+        self.instance_url = instance_url.rstrip("/")
+        self.card_selectors = ()
+
+    @property
+    def search_url(self) -> str:
+        return f"{self.instance_url}/search?q={{query}}&format=json&pageno={{page}}"
+
+    def _build_url(self, query: str, page: int, country_code: str) -> str:
+        del country_code
+        return f"{self.instance_url}/search?{urlencode({'q': query, 'format': 'json', 'pageno': page})}"
+
+    def parse(self, html: str, *, query: str, page: int, search_type: str):
+        import json
+
+        from serpscrap.plugins.searchengines.base import EngineResult
+
+        del query, search_type
+        try:
+            payload = json.loads(html)
+        except (TypeError, ValueError):
+            return super().parse(html, query="", page=page, search_type="normal")
+        results = []
+        for index, item in enumerate(payload.get("results", []), start=1):
+            url = str(item.get("url") or "")
+            title = str(item.get("title") or "").strip()
+            if not url or not title:
+                continue
+            upstream_engine = str(item.get("engine") or "").strip().replace(" ", "_") or None
+            results.append(EngineResult(
+                url=url,
+                title=title,
+                snippet=item.get("content"),
+                rank=index,
+                visible_link=item.get("pretty_url") or item.get("url"),
+                domain=None,
+                source=f"SearXNG:{upstream_engine}" if upstream_engine else "SearXNG",
+                extras={"searxng_engine": upstream_engine},
+            ))
+        return results
+
+    def classify(self, url: str, html: str, *, visible_text: str | None = None) -> str | None:
+        """Treat per-engine SearXNG errors as partial results, not total blocks."""
+
+        import json
+
+        del url, visible_text
+        try:
+            payload = json.loads(html)
+        except (TypeError, ValueError):
+            return super().classify("", html)
+        if payload.get("results"):
+            return None
+        errors = json.dumps(payload.get("errors", []), ensure_ascii=False).lower()
+        if "captcha" in errors or "too many requests" in errors or "429" in errors:
+            return "blocked"
+        return None
+
+
+def searxng_plugin(instance_url: str, *, enabled: bool = True) -> SearchEnginePlugin:
+    """Create an auth-free HTTP plugin for one explicitly trusted SearXNG instance.
 
     SearXNG is instance-scoped: the instance controls enabled engines, locale,
-    theme, limiter, and result markup. No public instance is selected by
-    default and no instance rotation is performed.
+    limiter, and result policy. No public instance is selected by default and
+    no instance rotation is performed.
     """
 
-    normalized = instance_url.rstrip("/")
-    return _TemplatePlugin(
-        "searxng",
-        normalized,
-        f"{normalized}/search?q={{query}}&format=html&pageno={{page}}",
-        None,
-        "searxng",
-        BrowserInteraction(
-            homepage_url=f"{normalized}/",
-            search_input_selectors=("input[name='q']", "input[type='search']"),
-            submit_selectors=("form[action='/'] button[type='submit']", "form button[type='submit']"),
-            serp_ready_selectors=("#results", "main", "article.result"),
-            organic_card_selectors=("article.result", ".result", ".result_header"),
-            observed_at=None,
-            verification_status="candidate",
-        ),
-        ("article.result", ".result"),
-        display_name="SearXNG instance",
-        readiness="experimental",
-        disable_reason="requires explicit trusted public instance and fixture verification",
-        pagination_strategy="page",
-    )
+    if not instance_url:
+        raise ValueError("searxng_url is required when SearXNG is enabled")
+    plugin = _SearxngPlugin(instance_url)
+    if not enabled:
+        plugin.readiness = "disabled"
+        plugin.disable_reason = "SearXNG is disabled by configuration"
+    return plugin
 
 
 class SearchEngineRegistry:
@@ -340,5 +396,9 @@ class SearchEngineRegistry:
         return [plugin.metadata() for plugin in self._plugins.values()]
 
 
-def default_registry() -> SearchEngineRegistry:
-    return SearchEngineRegistry([_GooglePlugin(), *_alternatives()])
+def default_registry(config: dict | None = None) -> SearchEngineRegistry:
+    plugins = [_GooglePlugin(), *_alternatives()]
+    settings = config or {}
+    if settings.get("searxng_enabled") or settings.get("searxng_url"):
+        plugins.append(searxng_plugin(str(settings.get("searxng_url") or "")))
+    return SearchEngineRegistry(plugins)

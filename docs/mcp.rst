@@ -176,8 +176,9 @@ content remains inert data and is bounded before it leaves the gateway.
 
 ``start_search``
    Start a job. Arguments include ``query`` or ``queries`` and optional
-   ``options`` such as ``search_engines``, ``country_code``, page count, and
-   worker limits. The response contains the job ``id``.
+   ``options`` such as ``search_engines``, ``searxng_enabled``,
+   ``searxng_engines``, ``country_code``, page count, and worker limits. The
+   response contains the job ``id``.
 ``get_search_status``
    Read status and partial results for a job using its ``id``.
 ``list_results``
@@ -193,7 +194,9 @@ content remains inert data and is bounded before it leaves the gateway.
    Read the effective persisted/default engine configuration.
 ``update_configuration``
    Persist a validated configuration. The payload must contain a non-empty
-   ``search_engines`` list.
+   ``search_engines`` list. Local SearXNG settings can additionally include
+   ``searxng_enabled``, ``searxng_url``, ``searxng_fallback``, and
+   ``searxng_engines``.
 ``reset_configuration``
    Restore the default configuration.
 

@@ -2,7 +2,8 @@
 
 The Docker-specific files are grouped in this directory:
 
-- `compose.yml` defines the four-container deployment.
+- `compose.yml` defines the application, database, UI, MCP, SearXNG, and
+  Valkey services.
 - `Dockerfile` builds the single browser-enabled SerpScrap runtime image.
 
 Compose reuses that image for the application, UI, and MCP services. The UI
@@ -35,3 +36,34 @@ docker compose -f docker/compose.yml up -d
 
 The UI is available at `http://localhost:8080`, the API at
 `http://localhost:8000`, and the MCP gateway at `http://localhost:8001`.
+
+## SearXNG integration
+
+SearXNG and Valkey start with the normal Compose stack. For local development
+the Compose file supplies a placeholder secret; set a strong value in
+production. SerpScrap points at the internal SearXNG service by default:
+
+The bundled configuration disables optional `ahmia`, `torch`, and `wikidata`
+engines because they can fail during startup independently of the core search
+service. The limiter configuration is included locally and uses the Compose
+network as an explicitly local client range without trusting forwarded headers
+globally.
+
+```powershell
+$env:SEARXNG_SECRET = "replace-with-a-long-random-secret"
+docker compose -f docker/compose.yml up -d --build
+```
+
+SearXNG is enabled by default in the standard Compose deployment. The
+configuration page at `http://localhost:8080/configuration` provides one
+grouped overview for direct SerpScrap engines and the engines queried through
+SearXNG. The global `searxng_enabled` setting can disable SearXNG for new
+searches. `searxng_fallback: true` adds it alongside the selected engines when
+it is enabled; otherwise select `searxng` in `search_engines`.
+
+Use `searxng_engines` to choose the engines inside the SearXNG instance, for
+example `['duckduckgo', 'brave']`. The default selects all currently mapped
+no-key sources, grouped as web, scientific, developer/Q&A, and news engines.
+This includes sources such as `wiby`, `pubmed`, and `askubuntu`. Results expose
+their originating source as `SearXNG:<engine>` when SearXNG provides that
+metadata; this source is also used by relevance fusion.

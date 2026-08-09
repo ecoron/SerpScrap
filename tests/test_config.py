@@ -10,12 +10,18 @@ from serpscrap.config import Config
 def test_default_search_engines_activate_public_candidates_without_disabled_defaults():
     config = Config().get()
 
-    assert config["search_engines"] == [
+    expected = [
         "bing", "yandex", "yahoo", "duckduckgo", "startpage", "brave",
         "swisscows", "mojeek", "good", "xprivo", "marginalia", "etools",
     ]
+    if config["searxng_url"]:
+        expected.append("searxng")
+    assert config["search_engines"] == expected
     assert {"google", "ecosia", "qwant"}.isdisjoint(config["search_engines"])
     assert set(config["search_engines"]).issubset(config["supported_search_engines"])
+    assert "google" in config["searxng_engines"]
+    assert "brave" in config["searxng_engines"]
+    assert "arxiv" in config["searxng_engines"]
 
 
 def test_config_preserves_attribute_and_dictionary_access():
@@ -44,6 +50,24 @@ def test_screenshots_are_enabled_and_use_requested_directory():
 def test_validator_accepts_registered_alternative_engine():
     config = Config().get()
     config["search_engines"] = ["bing"]
+
+    ValidatorConfig().validate(config)
+
+
+def test_validator_accepts_enabled_local_searxng_engine():
+    config = Config().get()
+    config.update({
+        "searxng_enabled": True,
+        "searxng_url": "http://searxng:8080",
+        "search_engines": ["searxng"],
+    })
+
+    ValidatorConfig().validate(config)
+
+
+def test_validator_accepts_separate_searxng_engine_selection():
+    config = Config().get()
+    config["searxng_engines"] = ["duckduckgo", "brave"]
 
     ValidatorConfig().validate(config)
 

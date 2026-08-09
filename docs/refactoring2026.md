@@ -661,7 +661,7 @@ results, and filter, compare, and aggregate historical searches and hits.
 
 ### Architecture and Responsibilities
 
-The target topology consists of four containers connected through a shared
+The target topology consists of six containers connected through a shared
 internal Compose network:
 
 | Container | Responsibility | Exposure |
@@ -670,6 +670,8 @@ internal Compose network:
 | `serpscrap-db` | PostgreSQL database for searches, jobs, hits, failure states, and analysis indexes | Internal database network only |
 | `serpscrap-ui` | User interface for searches, run status, result lists, details, and historical analysis | Operator-configurable host port |
 | `serpscrap-mcp` | MCP transport and tools/resources for searches, status, results, and historical analysis | Internal by default; optionally published separately |
+| `searxng` | Self-hosted metasearch transport and upstream engine aggregation | Operator-configurable host port for its UI |
+| `searxng-valkey` | SearXNG limiter/cache backend | Internal SearXNG network only |
 
 The application container is the only place that executes the existing
 scraping pipeline and provider adapters. The database is connected through a
@@ -677,11 +679,10 @@ configurable PostgreSQL URL. Existing SQLite history remains available for
 local/offline CLI and library use; container deployments use versioned
 PostgreSQL migrations.
 
-The first release does not introduce a fifth queue or cache database
-container. Running jobs are managed by the application service and persisted
-in PostgreSQL with status, progress, correlation ID, and timestamps. A later
-move to an external queue must remain possible without changing the UI or MCP
-contracts.
+Running jobs are managed by the application service and persisted in
+PostgreSQL with status, progress, correlation ID, and timestamps. Valkey is
+scoped to the SearXNG service; it is not an application job queue and does not
+change the UI or MCP contracts.
 
 ### Shared Application and API Contract
 
@@ -802,7 +803,7 @@ artifacts can be cleaned independently.
   analysis, and accessible interaction against a mocked API service.
 - MCP tests cover tool schemas, delegation to shared application logic,
   pagination, and sensitive-data redaction.
-- Compose smoke tests start all four containers, wait for health checks, run a
+- Compose smoke tests start all six containers, wait for health checks, run a
   deterministic stub search, read results through the UI/API and MCP, and
   verify restart persistence through the PostgreSQL mount.
 - Mount, secret, non-root, port, and network checks prevent data from being
@@ -811,8 +812,9 @@ artifacts can be cleaned independently.
 
 ### Acceptance Criteria
 
-- `docker compose -f docker/compose.yml up` starts the app, database, UI, and
-  MCP containers reproducibly and reports the correct readiness state.
+- `docker compose -f docker/compose.yml up` starts the app, database, UI, MCP,
+  SearXNG, and Valkey containers reproducibly and reports the correct readiness
+  state.
 - A search can be started through the UI and MCP; both paths produce the same
   job/result contract and history.
 - Run status, partial results, provider outcomes, and failures are clearly

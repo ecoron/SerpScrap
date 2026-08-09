@@ -22,7 +22,7 @@ JSON-compatible ``list[dict]``:
    scraper = SerpScrap()
    results = scraper.search("privacy friendly search")
    for row in results:
-       print(row["serp_rank"], row["serp_title"], row["serp_url"])
+       print(row["fusion_rank"], row["serp_rank"], row["serp_title"], row["serp_url"])
 
 Multiple queries, pages, and engines
 ------------------------------------
@@ -47,6 +47,30 @@ Multiple queries, pages, and engines
        pages=2,
        workers=3,
    )
+
+Local SearXNG
+-------------
+
+The standard Compose stack enables the local SearXNG transport. Select
+SearXNG and choose the no-key upstream sources independently from the direct
+browser providers:
+
+.. code-block:: python
+
+   config = Config()
+   config.apply({
+       "search_engines": ["bing", "searxng"],
+       "searxng_enabled": True,
+       "searxng_url": "http://searxng:8080",
+       "searxng_engines": ["wiby", "pubmed", "askubuntu", "reuters"],
+   })
+
+   results = SerpScrap().search("privacy and open source", config=config)
+
+Normalized rows preserve the originating SearXNG source as
+``SearXNG:<engine>`` where available. To run SearXNG alongside the selected
+providers without adding it to ``search_engines``, set
+``searxng_fallback`` to ``True``.
 
 Vertical searches
 ------------------

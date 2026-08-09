@@ -6,6 +6,39 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Added an optional SearXNG/Valkey Compose profile and configurable HTTP
+  SearXNG transport. SearXNG can be selected as an additional engine or run
+  in configured fallback mode without changing the default engine set.
+- SearXNG and Valkey now start with the standard Compose stack; the local
+  development secret and internal service URL have safe defaults.
+- Disabled optional SearXNG engines that fail during startup in the default
+  container profile and added the local limiter configuration.
+- Added internal client identity headers and a loopback limiter pass-list entry
+  so SerpScrap requests are not rejected by the private SearXNG limiter.
+- Disabled Startpage in the bundled SearXNG profile after its upstream CAPTCHA
+  response and preserved partial SearXNG results when one upstream engine fails.
+- Added separate `searxng_engines` configuration and preserved the originating
+  SearXNG engine in normalized result source metadata.
+- Added a separate SearXNG engine selector to the configuration UI with
+  defaults covering all currently mapped SerpScrap/SearXNG engines.
+- Merged direct SerpScrap and SearXNG engine selection into one grouped
+  configuration overview while keeping SearXNG globally toggleable.
+- Updated README, Docker, configuration, MCP, examples, search-engine, and
+  architecture documentation for the standard SearXNG/Valkey deployment and
+  unified engine-selection UI.
+- Added no-key SearXNG sources for web, scientific, developer/Q&A, and news
+  groups, with grouped configuration UI presentation.
+- Added the SearXNG display-name mapping for `semantic scholar` so its module
+  name does not get sent as an invalid underscored engine name.
+- Updated result grouping and source labels to display the originating
+  SearXNG engine instead of collapsing all results under the `searxng` transport.
+- Added an explicit per-query fusion rank to persisted search results and
+  separated it from the provider-specific rank in the History inspection view.
+- Documented the distinction between fusion rank, provider rank, and best
+  provider rank in the result schema and usage examples.
+- Updated result fusion to use the originating SearXNG engine's weight and
+  provider family for relevance calculations.
+
 - Captured and propagated screenshots for the multi-engine browser pipeline,
   including engine-specific artifact paths in MCP results.
 

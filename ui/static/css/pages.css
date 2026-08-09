@@ -30,6 +30,8 @@
 .config-engine-grid .engine-option span { display:grid; gap:.15rem; }
 .config-engine-grid .engine-option small { font-weight:400; }
 .config-engine-grid .engine-option.is-disabled { opacity:.6; }
+.config-engine-grid .config-engine-section-title { grid-column:1/-1; margin:.35rem 0 -.1rem; padding-top:.75rem; border-top:1px solid var(--line); }
+.config-engine-grid .config-engine-section-title:first-child { margin-top:0; padding-top:0; border-top:0; }
 .configuration-actions { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-top:1rem; padding:.85rem 1rem; border:1px solid var(--line); border-radius:var(--radius-sm); background:rgba(255,255,255,.96); box-shadow:var(--shadow); }
 .configuration-actions > div:first-child { display:grid; gap:.15rem; }
 .configuration-actions small { color:var(--muted); }

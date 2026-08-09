@@ -1,0 +1,54 @@
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "SerpScrap SearXNG"
+
+search:
+  formats:
+    - html
+    - json
+
+engines:
+  - name: ahmia
+    inactive: true
+  - name: torch
+    inactive: true
+  - name: wikidata
+    inactive: true
+  - name: startpage
+    inactive: true
+  - name: wiby
+    disabled: false
+  - name: mwmbl
+    disabled: false
+  - name: searchmysite
+    disabled: false
+  - name: wikipedia
+    disabled: false
+  - name: arxiv
+    disabled: false
+  - name: pubmed
+    disabled: false
+  - name: openalex
+    disabled: false
+  - name: crossref
+    disabled: false
+  - name: semantic scholar
+    disabled: false
+  - name: stackoverflow
+    disabled: false
+  - name: askubuntu
+    disabled: false
+  - name: superuser
+    disabled: false
+  - name: reuters
+    disabled: false
+
+server:
+  secret_key: "replace-with-SEARXNG_SECRET"
+  limiter: true
+  image_proxy: false
+
+valkey:
+  url: valkey://searxng-valkey:6379/0

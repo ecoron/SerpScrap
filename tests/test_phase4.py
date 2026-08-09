@@ -1,5 +1,7 @@
 from threading import current_thread
 
+import pytest
+
 from serpscrap.models import SearchRequest
 from serpscrap.plugins.searchengines.fusion import ResultFusion, canonical_url
 from serpscrap.plugins.searchengines.multi import MultiEngineRunner
@@ -37,6 +39,17 @@ def test_fusion_rewards_frequency_and_position_deterministically():
     assert ranked[0]["matched_engines"] == ["bing", "duckduckgo"]
 
 
+def test_fusion_uses_searxng_upstream_source_for_relevance():
+    rows = [
+        {"query": "q", "serp_url": "https://example.test", "serp_rank": 1, "search_engine": "searxng", "serp_source": "SearXNG:brave"},
+        {"query": "q", "serp_url": "https://example.test", "serp_rank": 5, "search_engine": "searxng", "serp_source": "SearXNG:duckduckgo"},
+    ]
+    ranked = ResultFusion().fuse(rows, {"brave": 0.8, "duckduckgo": 0.2}, {"brave": "brave", "duckduckgo": "bing"})
+
+    assert ranked[0]["relevance_score"] == pytest.approx(0.8 / 61 + 0.2 / 65)
+    assert ranked[0]["matched_engines"] == ["SearXNG:brave", "SearXNG:duckduckgo"]
+
+
 def test_multi_engine_runner_preserves_provenance_and_partial_failures():
     threads = set()
 
@@ -65,5 +78,6 @@ def test_multi_engine_runner_preserves_provenance_and_partial_failures():
     assert report.results
     assert {row["search_engine"] for row in report.results} <= {"bing", "duckduckgo"}
     assert all(row["country_code"] == "DE" for row in report.results)
+    assert [row["fusion_rank"] for row in report.results] == list(range(1, len(report.results) + 1))
     assert report.failures[0].search_engine == "yahoo"
     assert len(threads) >= 2

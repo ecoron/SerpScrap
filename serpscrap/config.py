@@ -8,6 +8,23 @@ from pathlib import Path
 from tempfile import gettempdir
 from typing import Any
 
+DEFAULT_SEARXNG_ENGINES = [
+    "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia", "qwant",
+    "startpage", "brave", "swisscows", "mojeek", "marginalia", "etools",
+    "wiby", "mwmbl", "searchmysite", "wikipedia",
+    "arxiv", "pubmed", "openalex", "crossref", "semantic_scholar",
+    "stackoverflow", "askubuntu", "superuser", "reuters",
+]
+
+SEARXNG_ENGINE_GROUPS = {
+    **{engine: "Web search" for engine in DEFAULT_SEARXNG_ENGINES[:17]},
+    **{engine: "Scientific search" for engine in ("arxiv", "pubmed", "openalex", "crossref", "semantic_scholar")},
+    **{engine: "Developer and Q&A" for engine in ("stackoverflow", "askubuntu", "superuser")},
+    "reuters": "News",
+}
+
+SEARXNG_QUERY_NAMES = {"semantic_scholar": "semantic scholar"}
+
 
 class Config:
     """Mutable configuration facade retained for the public API."""
@@ -19,12 +36,17 @@ class Config:
             "search_engines": [
                 "bing", "yandex", "yahoo", "duckduckgo", "startpage", "brave", "swisscows",
                 "mojeek", "good", "xprivo", "marginalia", "etools",
-            ],
+            ] + (["searxng"] if os.environ.get("SERPSCRAP_SEARXNG_URL", "") else []),
+            "searxng_url": os.environ.get("SERPSCRAP_SEARXNG_URL", ""),
+            "searxng_enabled": bool(os.environ.get("SERPSCRAP_SEARXNG_URL", "")),
+            "searxng_fallback": False,
+            "searxng_engines": list(DEFAULT_SEARXNG_ENGINES),
+            "searxng_timeout": 20.0,
             "supported_search_engines": [
                 "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia", "qwant",
                 "startpage", "brave", "swisscows", "mojeek", "metager", "good", "xprivo",
                 "marginalia", "etools",
-            ],
+            ] + (["searxng"] if os.environ.get("SERPSCRAP_SEARXNG_URL", "") else []),
             "country_code": "DE",
             "engine_workers": 1,
             "engine_workers_by_engine": {},

@@ -11,6 +11,19 @@ Core settings
 
 * ``search_engines``: ordered list of registered engines, for example
   ``['google', 'bing', 'duckduckgo']``.
+  In the Docker deployment, ``searxng`` is included by default when the local
+  SearXNG service is configured. The web UI presents direct SerpScrap engines
+  and SearXNG's internal engine selection in one grouped overview.
+* ``searxng_enabled``: enable or disable the configured self-hosted SearXNG
+  service. It defaults to enabled when ``SERPSCRAP_SEARXNG_URL`` is present.
+* ``searxng_url``: base URL of the SearXNG JSON service. Compose defaults to
+  ``http://searxng:8080``; the host-side SearXNG UI is available at
+  ``http://localhost:8888``.
+* ``searxng_fallback``: add SearXNG alongside the selected providers when it
+  is enabled, even when ``searxng`` is not in ``search_engines``.
+* ``searxng_engines``: ordered list of no-key engines requested inside
+  SearXNG. The default groups cover web, scientific, developer/Q&A, and news
+  sources, including ``wiby``, ``pubmed``, and ``askubuntu``.
 * ``search_type``: ``normal``, ``image``, ``news``, ``shopping``, or ``videos``.
 * ``num_pages_for_keyword``: positive page count per query.
 * ``num_results_per_page``: positive value up to 100.
@@ -112,6 +125,23 @@ one failed provider does not discard successful results from the others.
 
    scraper = SerpScrap()
    results = scraper.search(['privacy-friendly search'], config=config)
+
+SearXNG selection
+------------------
+
+The bundled Docker stack starts SearXNG and Valkey with the normal Compose
+stack. SearXNG is a transport to the local instance; the selected
+``searxng_engines`` determine which upstream sources SearXNG queries. Results
+retain their originating source as ``SearXNG:<engine>`` where available, so
+result fusion can weight the underlying provider instead of treating every
+result as one generic SearXNG source.
+
+The configuration page at ``http://localhost:8080/configuration`` combines
+direct SerpScrap providers and SearXNG sources in one overview. Disable the
+global ``Enable SearXNG`` setting to remove SearXNG from new searches. The
+bundled profile disables upstream engines that are known to fail during local
+startup; one upstream CAPTCHA or rate limit produces partial results rather
+than discarding successful SearXNG sources.
 
 Diagnostic mode is opt-in because rendered pages can contain third-party
 content. The artifact manifest contains correlation IDs, states, result counts,

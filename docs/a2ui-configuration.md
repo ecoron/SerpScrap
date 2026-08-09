@@ -72,10 +72,16 @@ Common and high-frequency settings:
 - `results_age`
 - `language`
 - `use_own_ip`
+- `searxng_enabled`
+- `searxng_url`
+- `searxng_fallback`
+- `searxng_engines`
 
 The provider selector remains registry-backed. Unsupported or disabled engines
-are visible with a reason but cannot be selected. Search-type options must be
-derived from the selected engine intersection; incompatible selections must be
+are visible with a reason but cannot be selected. Direct SerpScrap providers
+and SearXNG's grouped no-key sources are rendered in one overview; the global
+SearXNG toggle remains a separate setting. Search-type options must be derived
+from the selected engine intersection; incompatible selections must be
 explained before save.
 
 ### Ranking and fusion

@@ -7,7 +7,7 @@ browser interaction contract through the API, CLI configuration, and MCP
 
 ## Active defaults
 
-The default configuration enables the following browser providers:
+The default configuration enables the following direct browser providers:
 
 | ID | Display name | Notes |
 | --- | --- | --- |
@@ -26,8 +26,28 @@ The default configuration enables the following browser providers:
 
 Google, Ecosia, and Qwant remain registered and can be selected explicitly
 when their current provider contract is appropriate. MetaGer is registered but
-disabled until a public no-auth route is available. Experimental SearXNG use is
-instance-scoped and requires an explicitly trusted base URL.
+disabled until a public no-auth route is available. The standard Docker
+deployment also enables the local SearXNG transport. It is not a browser
+provider in the direct list: SearXNG queries its own selected upstream engines
+and returns their results to SerpScrap.
+
+### SearXNG sources without API keys
+
+The bundled SearXNG selection covers these mapped no-key sources by default:
+
+| Group | Sources |
+| --- | --- |
+| Web search | Google, Bing, Yandex, Yahoo, DuckDuckGo, Ecosia, Qwant, Startpage, Brave, Swisscows, Mojeek, Marginalia, eTools, Wiby, MWMbl, Search My Site, Wikipedia |
+| Scientific search | arXiv, PubMed, OpenAlex, Crossref, Semantic Scholar |
+| Developer and Q&A | Stack Overflow, Ask Ubuntu, Super User |
+| News | Reuters |
+
+The global ``searxng_enabled`` setting controls whether the local transport is
+used. ``searxng_engines`` controls the upstream list sent to SearXNG. The
+configuration UI combines both selections while preserving the two settings
+in the API. SearXNG results retain a source such as ``SearXNG:pubmed`` and are
+fused using the originating provider where metadata is available. Individual
+upstream CAPTCHA, rate-limit, or startup failures produce partial results.
 
 List current metadata instead of relying on this table when building an
 integration:

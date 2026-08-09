@@ -14,6 +14,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -236,6 +237,7 @@ class Proxy(Base):
     id = Column(Integer, primary_key=True)
     ip = Column(String)
     hostname = Column(String)
+    source = Column(String)
     port = Column(Integer)
     proto = Column(Enum('socks5', 'socks4', 'http'))
     username = Column(String)
@@ -244,6 +246,10 @@ class Proxy(Base):
     online = Column(Boolean)
     status = Column(String)
     checked_at = Column(DateTime)
+    latency_ms = Column(Float)
+    failure_count = Column(Integer, default=0)
+    cooldown_until = Column(Float)
+    last_error = Column(String)
     created_at = Column(DateTime, default=utc_now_naive)
 
     city = Column(String)
@@ -285,6 +291,8 @@ class SearchEngineProxyStatus(Base):
     search_engine_id = Column(Integer, ForeignKey('search_engine.id'))
     available = Column(Boolean)
     last_check = Column(DateTime)
+    latency_ms = Column(Float)
+    last_error = Column(String)
 
 
 def get_engine(config, path=None):
@@ -318,6 +326,34 @@ def get_engine(config, path=None):
     if "screenshot" not in existing_serp:
         with engine.begin() as connection:
             connection.exec_driver_sql('ALTER TABLE serp ADD COLUMN "screenshot" VARCHAR')
+
+    existing_proxy = {column["name"] for column in inspect(engine).get_columns("proxy")}
+    proxy_columns = {
+        "source": "VARCHAR",
+        "latency_ms": "FLOAT",
+        "failure_count": "INTEGER",
+        "cooldown_until": "FLOAT",
+        "last_error": "VARCHAR",
+    }
+    missing_proxy = set(proxy_columns) - existing_proxy
+    if missing_proxy:
+        with engine.begin() as connection:
+            for column in sorted(missing_proxy):
+                connection.exec_driver_sql(
+                    f'ALTER TABLE proxy ADD COLUMN "{column}" {proxy_columns[column]}'
+                )
+
+    existing_proxy_status = {
+        column["name"] for column in inspect(engine).get_columns("search_engine_proxy_status")
+    }
+    status_columns = {"latency_ms": "FLOAT", "last_error": "VARCHAR"}
+    missing_status = set(status_columns) - existing_proxy_status
+    if missing_status:
+        with engine.begin() as connection:
+            for column in sorted(missing_status):
+                connection.exec_driver_sql(
+                    f'ALTER TABLE search_engine_proxy_status ADD COLUMN "{column}" {status_columns[column]}'
+                )
 
     return engine
 

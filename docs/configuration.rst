@@ -195,11 +195,15 @@ output is selected with ``output=`` or ``save_json()`` rather than a Config
 key. The removed ``output_filename`` and ``print_results`` settings raise a
 migration error.
 
-Proxy file
-----------
+Proxy sources
+-------------
 
-Set ``use_own_ip`` to ``False`` and provide ``proxy_file``. Each non-comment
-line uses one of these formats:
+Set ``use_own_ip`` to ``False`` and enable ``proxy_enabled``. Configure one or
+more ``proxy_sources`` entries using ``file``, ``directory``, or HTTPS ``url``
+sources. File and URL payloads may be newline, JSON, or CSV formatted. The
+legacy ``proxy_file`` setting remains supported during migration. The
+background worker refreshes sources and health state at startup and every 15
+minutes by default; use ``proxy_auto_refresh_interval_seconds`` to change it.
 
 .. code-block:: text
 

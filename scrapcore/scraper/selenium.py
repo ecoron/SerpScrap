@@ -7,7 +7,9 @@ driver, captures pages, and always terminates the browser before returning.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from datetime import datetime, timezone
+from typing import Any
 
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
@@ -71,6 +73,9 @@ class SelScrape:
         adapter: GoogleSearchAdapter | None = None,
         pacer: RequestPacer | None = None,
         circuit_breaker: RunCircuitBreaker | None = None,
+        proxy_selector: Callable[[str, Any], Any] | None = None,
+        proxy_failure_reporter: Callable[[Any, Exception], None] | None = None,
+        proxy_success_reporter: Callable[[Any], None] | None = None,
     ) -> None:
         self.config = config
         self.job = job
@@ -81,6 +86,9 @@ class SelScrape:
         self.circuit_breaker = circuit_breaker or RunCircuitBreaker(
             self.policy.block_threshold
         )
+        self.proxy_selector = proxy_selector
+        self.proxy_failure_reporter = proxy_failure_reporter
+        self.proxy_success_reporter = proxy_success_reporter
         self.result: ScrapeJobResult | None = None
 
     def _wait_for_serp(self, driver) -> None:
@@ -153,9 +161,10 @@ class SelScrape:
         pages: list[CapturedPage] = []
         failures: list[ScrapeFailure] = []
         driver = None
+        current_proxy = self.job.proxy
         processed_pages: set[int] = set()
         try:
-            driver = self.driver_factory.create(proxy=self.job.proxy)
+            driver = self.driver_factory.create(proxy=current_proxy)
             for page_number in self.job.pages:
                 url = self.adapter.build_url(
                     self.job.query, page_number, self.job.search_type
@@ -199,13 +208,15 @@ class SelScrape:
                                 html=html,
                                 requested_at=datetime.now(timezone.utc),
                                 requested_by=(
-                                    f"{self.job.proxy.host}:{self.job.proxy.port}"
-                                    if self.job.proxy
+                                    f"{current_proxy.host}:{current_proxy.port}"
+                                    if current_proxy
                                     else "localhost"
                                 ),
                                 screenshot=screenshot,
                             )
                         )
+                        if current_proxy and self.proxy_success_reporter:
+                            self.proxy_success_reporter(current_proxy)
                         processed_pages.add(page_number)
                         break
                     except MaliciousRequestDetected as exc:
@@ -245,11 +256,31 @@ class SelScrape:
                     except (SerpLoadTimeout, WebDriverException) as exc:
                         category = "timeout" if isinstance(exc, SerpLoadTimeout) else "webdriver"
                         if attempt <= self.policy.retry_limit:
+                            if current_proxy and self.proxy_failure_reporter:
+                                self.proxy_failure_reporter(current_proxy, exc)
+                            if current_proxy and self.proxy_selector:
+                                try:
+                                    replacement = self.proxy_selector(
+                                        self.job.search_engine, current_proxy
+                                    )
+                                except ValueError:
+                                    replacement = current_proxy
+                                    logger.info(
+                                        "No replacement proxy available; retrying with the current proxy"
+                                    )
+                                if replacement != current_proxy:
+                                    try:
+                                        driver.quit()
+                                    except WebDriverException:
+                                        logger.debug("Failed to close proxy retry driver", exc_info=True)
+                                    current_proxy = replacement
+                                    driver = self.driver_factory.create(proxy=current_proxy)
                             logger.info(
-                                "Retrying SERP capture correlation_id=%s page=%s attempt=%s",
+                                "Retrying SERP capture correlation_id=%s page=%s attempt=%s proxy=%s",
                                 self.job.correlation_id,
                                 page_number,
                                 attempt,
+                                current_proxy.redacted if current_proxy else "localhost",
                             )
                             self.pacer.backoff(attempt)
                             continue

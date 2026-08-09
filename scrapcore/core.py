@@ -6,16 +6,16 @@ import logging
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from itertools import cycle
 
 from scrapcore.cachemanager import CacheManager
 from scrapcore.database import ScraperSearch, SearchEngineResultsPage, fixtures, get_session
 from scrapcore.jobs import CapturedPage, ScrapeFailure, ScrapeJob, ScrapeJobResult
 from scrapcore.logger import Logger
 from scrapcore.parsing import Parsing
+from scrapcore.proxy import ProxyPool
 from scrapcore.repository import SqliteHistoryRepository
 from scrapcore.scraper.scrape_worker_factory import ScrapeWorkerFactory
-from scrapcore.tools import Proxies, ScrapeJobGenerator
+from scrapcore.tools import ScrapeJobGenerator
 from scrapcore.validator_config import ValidatorConfig
 
 
@@ -49,13 +49,10 @@ class Core:
         return sorted(set(engines))
 
     @staticmethod
-    def _get_proxies(config: dict) -> list:
-        if config.get("use_own_ip", True):
-            return [None]
-        proxies = Proxies().parse_proxy_file(config["proxy_file"])
-        if not proxies:
-            raise ValueError("No proxies available")
-        return proxies
+    def _get_proxy_pool(config: dict) -> ProxyPool | None:
+        if not config.get("proxy_enabled", False) and config.get("use_own_ip", True):
+            return None
+        return ProxyPool.from_config(config)
 
     def _init_logger(self, config: dict) -> None:
         configured = Logger()
@@ -63,20 +60,21 @@ class Core:
         self.logger = configured.get_logger()
 
     @staticmethod
-    def _group_jobs(raw_jobs: list[dict], config: dict, proxies: list) -> list[ScrapeJob]:
+    def _group_jobs(
+        raw_jobs: list[dict], config: dict, proxy_pool: ProxyPool | None
+    ) -> list[ScrapeJob]:
         pages_by_query: dict[tuple[str, str], list[int]] = defaultdict(list)
         for raw_job in raw_jobs:
             pages_by_query[(raw_job["query"], raw_job["search_engine"])].append(
                 int(raw_job["page_number"])
             )
-        proxy_cycle = cycle(proxies)
         return [
             ScrapeJob(
                 query=query,
                 search_engine=engine,
                 search_type=config.get("search_type", "normal"),
                 pages=tuple(sorted(set(pages))),
-                proxy=next(proxy_cycle),
+                proxy=proxy_pool.select(engine) if proxy_pool else None,
             )
             for (query, engine), pages in pages_by_query.items()
         ]
@@ -145,7 +143,8 @@ class Core:
         if not keywords:
             raise ValueError("At least one keyword is required")
         engines = self._parse_search_engines(config)
-        proxies = self._get_proxies(config)
+        proxy_pool = self._get_proxy_pool(config)
+        proxies = proxy_pool.endpoints if proxy_pool else [None]
         pages = int(config.get("num_pages_for_keyword", 1))
         num_workers = int(config.get("num_workers", 1))
 
@@ -162,7 +161,11 @@ class Core:
 
         try:
             fixtures(config, session)
-            Proxies().add_proxies_to_db(proxies, session)
+            if proxy_pool:
+                proxy_pool.restore_from_db(session)
+                if proxy_pool.health_checker:
+                    proxy_pool.refresh_health()
+                proxy_pool.persist(session, engines)
             raw_jobs = list(
                 ScrapeJobGenerator().get(keywords, engines, "selenium", pages)
             )
@@ -171,8 +174,8 @@ class Core:
                     raw_jobs, session, scraper_search
                 )
 
-            jobs = self._group_jobs(raw_jobs, config, proxies)
-            factory = self.worker_factory or ScrapeWorkerFactory(config)
+            jobs = self._group_jobs(raw_jobs, config, proxy_pool)
+            factory = self.worker_factory or ScrapeWorkerFactory(config, proxy_pool=proxy_pool)
             results: list[ScrapeJobResult] = []
             if jobs:
                 self.logger.info(
@@ -198,6 +201,9 @@ class Core:
                     )
                 for failure in result.failures:
                     self._persist_failure(failure, session, scraper_search)
+
+            if proxy_pool:
+                proxy_pool.persist(session, engines)
 
             scraper_search.stopped_searching = utc_now_naive()
             session.add(scraper_search)

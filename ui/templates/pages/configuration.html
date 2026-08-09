@@ -14,5 +14,12 @@
       <div class="button-row"><button class="button button-primary" id="save-config" type="submit">Save changes</button><button class="button button-ghost" id="reset-changes" type="button">Reset changes</button><button class="button button-danger" id="reset-config" type="button">Reset to initial defaults</button></div>
     </div>
   </form>
+  <details class="panel proxy-operations" open>
+    <summary class="proxy-summary"><span><p class="eyebrow">Network operations</p><h2 id="proxy-operations-title">Proxy status</h2><small>Inspect and refresh the configured proxy pool.</small></span><span class="configuration-group-count">Network</span></summary>
+    <div class="proxy-operations-body">
+      <div class="panel-heading"><div></div><div class="button-row"><button class="button button-ghost" id="test-proxies" type="button">Test proxies</button><button class="button button-primary" id="refresh-proxies" type="button">Refresh and save</button></div></div>
+      <div id="proxy-status" aria-live="polite">Loading proxy status…</div>
+    </div>
+  </details>
 </section>
 {% endblock %}

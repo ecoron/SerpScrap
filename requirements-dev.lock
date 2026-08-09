@@ -1,4 +1,5 @@
 -r requirements.lock
+pip==26.1.2
 build==1.5.0
 coverage==7.15.2
 iniconfig==2.3.0

@@ -16,7 +16,7 @@ All three project services use the single image built by
 health check, environment, and mounts; PostgreSQL continues to use its
 official ``postgres:16-alpine`` image.
 
-The current project version is **2.0.0-alpha.1**. It is an evaluation release;
+The current project version is **2.0.0-alpha.2**. It is an evaluation release;
 pin the image tag or Git revision used in repeatable deployments.
 
 Quick start
@@ -50,26 +50,28 @@ To build and run only the CLI image:
 
 .. code-block:: bash
 
-   docker build --file docker/Dockerfile -t serpscrap:2.0.0-alpha.1 .
-   docker run --rm serpscrap:2.0.0-alpha.1 search \
+   docker build --file docker/Dockerfile -t serpscrap:2.0.0-alpha.2 .
+   docker run --rm serpscrap:2.0.0-alpha.2 search \
      --keyword "example keyword" --pages 1 --no-history
 
 Configuration
 =============
 
 Set deployment values in an environment file or the shell before starting
-Compose. The database password must be changed outside local development:
+Compose. PostgreSQL and SearXNG secrets are required; Compose refuses to start
+with placeholder credentials:
 
 .. code-block:: bash
 
    $env:POSTGRES_PASSWORD = "use-a-secret-value"  # PowerShell
+   $env:SEARXNG_SECRET = "use-another-secret-value"
+   $env:MCP_AUTH_TOKEN = "use-a-third-secret-value"
    docker compose -f docker/compose.yml up -d
 
 Important variables include ``POSTGRES_DB``, ``POSTGRES_USER``,
 ``POSTGRES_PASSWORD``, ``SERPSCRAP_MAX_ACTIVE_JOBS``, and
-``SERPSCRAP_MAX_QUEUED_JOBS``. SearXNG uses ``SEARXNG_SECRET`` and defaults to
-the local development value ``change-me-local-only``; replace it in any
-non-local deployment. ``SERPSCRAP_SEARXNG_URL`` defaults to
+``SERPSCRAP_MAX_QUEUED_JOBS``. SearXNG uses ``SEARXNG_SECRET``.
+``SERPSCRAP_SEARXNG_URL`` defaults to
 ``http://searxng:8080``. The MCP service uses ``SERPSCRAP_API_URL`` internally;
 see :doc:`mcp` for client usage.
 
@@ -111,7 +113,8 @@ browser artifacts.
 Deployment boundaries
 =====================
 
-The API and MCP gateway currently have no authentication layer. Keep ports
-private or place them behind an authenticated reverse proxy. The MCP
-configuration tools can change persisted engine selection, so expose port
-8001 only to trusted clients.
+The API and UI bind to loopback by default; the MCP gateway also requires a
+token. Keep all published ports private or place them behind an authenticated
+reverse proxy. Override ``SERPSCRAP_API_BIND``, ``SERPSCRAP_UI_BIND``,
+``SERPSCRAP_MCP_BIND``, or ``SEARXNG_BIND`` only when the network boundary is
+intentional.

@@ -12,6 +12,8 @@ from urllib.parse import parse_qs, urlparse
 from serpscrap.api_service import SearchJobService
 from serpscrap.models import SearchRequest
 
+MAX_REQUEST_BYTES = max(1024, int(os.getenv("API_MAX_REQUEST_BYTES", "1048576")))
+
 
 def _json_bytes(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, default=str).encode("utf-8")
@@ -25,7 +27,8 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", os.getenv("CORS_ORIGIN", "*"))
+        self.send_header("Access-Control-Allow-Origin", os.getenv("CORS_ORIGIN", "http://localhost:8080"))
+        self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
         self.end_headers()
@@ -35,7 +38,12 @@ class ApiHandler(BaseHTTPRequestHandler):
         self._send(HTTPStatus.NO_CONTENT, {})
 
     def _read_payload(self) -> dict[str, Any]:
-        length = int(self.headers.get("Content-Length", "0"))
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError as exc:
+            raise ValueError("Content-Length must be an integer") from exc
+        if length < 0 or length > MAX_REQUEST_BYTES:
+            raise ValueError(f"request body exceeds the {MAX_REQUEST_BYTES}-byte limit")
         payload = json.loads(self.rfile.read(length) or b"{}")
         if not isinstance(payload, dict):
             raise ValueError("request body must be an object")

@@ -4,8 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+No changes yet.
+
+## [2.0.0-alpha.2] - 2026-08-09
+
 ### Changed
 
+- Updated Flask to 3.1.3 and pinned Pip 26.1.2 for reproducible development,
+  CI, and Docker builds.
+- Hardened the History and Compare UI against long queries and URLs with
+  fixed responsive tables, controlled wrapping, compact compare lists, and
+  consistent status badges.
+- Shortened visible Compare URLs while preserving full destinations in links
+  and tooltips, and aligned New/Lost/Moved entries in equal-height columns.
+- Fixed Compare column and row heights with compact internal scrolling so
+  long result sets no longer stretch the page or misalign the three lists.
+- Reworked Coverage into vertically stacked, consistently styled table cards
+  so provider, query, and domain data no longer form an uneven grid.
+- Made History filters collapsible with an active-filter count and reduced
+  their minimum field widths for smaller screens.
+- Removed obsolete internal UI/refactoring planning documents and their
+  documentation-only contract tests; the maintained user and developer guides
+  remain in the public Sphinx navigation.
 - Added `docs/a2ui-proxy.md` with the implementation plan for validated proxy
   sources, health checks, search-engine-specific selection, bounded retries,
   security limits, and migration from the legacy `proxy_file` flow.

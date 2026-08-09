@@ -2,9 +2,9 @@
 SerpScrap
 =========
 
-.. image:: https://img.shields.io/badge/version-2.0.0--alpha.1-orange.svg
+.. image:: https://img.shields.io/badge/version-2.0.0--alpha.2-orange.svg
    :target: https://github.com/ecoron/SerpScrap/releases
-   :alt: Version 2.0.0-alpha.1
+   :alt: Version 2.0.0-alpha.2
 
 .. image:: https://readthedocs.org/projects/serpscrap/badge/?version=latest
    :target: https://serpscrap.readthedocs.io/en/latest/
@@ -20,7 +20,7 @@ and an MCP-compatible server. Results are JSON-compatible and preserve the
 fusion rank, provider rank, source engine, URL, title, snippets, result type,
 and typed failures.
 
-Version 2.0.0-alpha.1
+Version 2.0.0-alpha.2
 =====================
 
 This is an alpha release for evaluation and development. Provider pages are
@@ -33,7 +33,7 @@ Install the package
 
 .. code-block:: bash
 
-   python -m pip install SerpScrap==2.0.0a1
+   python -m pip install SerpScrap==2.0.0a2
 
 For a source checkout:
 
@@ -83,6 +83,8 @@ gateway:
 .. code-block:: bash
 
    mkdir -p data/postgres data/cache data/diagnostics data/exports logs
+   cp .env.example .env
+   # Replace the PostgreSQL, SearXNG, and MCP placeholder secrets in .env.
    docker compose -f docker/compose.yml up --build
 
 Open ``http://localhost:8080`` for the UI, use the API at
@@ -90,8 +92,9 @@ Open ``http://localhost:8080`` for the UI, use the API at
 ``http://localhost:8001``. The standard stack also starts SearXNG at
 ``http://localhost:8888`` and connects SerpScrap to it internally. SearXNG is
 enabled by default and can be disabled from the configuration page. See the
-:doc:`docs/docker` guide for health checks, mounts, operations, and security
-boundaries.
+:doc:`docs/docker` guide for required secrets, health checks, mounts,
+operations, and security boundaries. Published ports are loopback-only by
+default.
 
 MCP server
 ==========

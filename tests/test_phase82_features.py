@@ -76,8 +76,6 @@ def test_frontend_polish_contract_covers_cancellation_responsive_states_and_moti
     base = (root / "static" / "css" / "base.css").read_text(encoding="utf-8")
     layout = (root / "static" / "css" / "layout.css").read_text(encoding="utf-8")
     history = (root / "static" / "css" / "history.css").read_text(encoding="utf-8")
-    plan = (root.parent / "docs" / "a2ui-frontend-polish.md").read_text(encoding="utf-8")
-
     assert "AbortController" in client
     assert "setTimeout" in client
     assert "Exact values are available in the table below." in charts
@@ -85,7 +83,6 @@ def test_frontend_polish_contract_covers_cancellation_responsive_states_and_moti
     assert "focus-visible" in base
     assert "minmax" in layout
     assert "@media (max-width:700px)" in history
-    assert "## Acceptance Criteria" in plan
 
 
 def test_configuration_ui_contract_uses_schema_groups_and_safe_save_reset_flow():

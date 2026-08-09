@@ -8,7 +8,7 @@ SerpScrap
 
 SerpScrap retrieves structured search results through a Python package, a
 command-line interface, a Docker application, and an MCP-compatible gateway.
-The current release line is **2.0.0-alpha.1**.
+The current release line is **2.0.0-alpha.2**.
 
 This documentation has two audiences:
 

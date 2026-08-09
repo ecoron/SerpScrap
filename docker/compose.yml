@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-serpscrap}
       POSTGRES_USER: ${POSTGRES_USER:-serpscrap}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting Compose}
     volumes:
       - ../data/postgres:/var/lib/postgresql/data
     healthcheck:
@@ -16,7 +16,7 @@ services:
     networks: [serpscrap]
 
   serpscrap-app:
-    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.2}
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -25,7 +25,7 @@ services:
     entrypoint: ["python"]
     command: ["-m", "serpscrap.api_server"]
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-serpscrap}:${POSTGRES_PASSWORD:-change-me}@serpscrap-db:5432/${POSTGRES_DB:-serpscrap}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-serpscrap}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting Compose}@serpscrap-db:5432/${POSTGRES_DB:-serpscrap}
       SERPSCRAP_DATA_DIR: /var/lib/serpscrap
       SERPSCRAP_CACHE_DIR: /var/lib/serpscrap/cache
       SERPSCRAP_DIAGNOSTICS_DIR: /var/lib/serpscrap/diagnostics
@@ -42,7 +42,7 @@ services:
     depends_on:
       serpscrap-db:
         condition: service_healthy
-    ports: ["8000:8000"]
+    ports: ["${SERPSCRAP_API_BIND:-127.0.0.1:8000}:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readyz')"]
       interval: 10s
@@ -51,7 +51,7 @@ services:
     networks: [serpscrap]
 
   serpscrap-ui:
-    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.2}
     restart: unless-stopped
     environment:
       SERPSCRAP_API_URL: http://serpscrap-app:8000/api/v1
@@ -64,18 +64,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    ports: ["8080:8080"]
+    ports: ["${SERPSCRAP_UI_BIND:-127.0.0.1:8080}:8080"]
     networks: [serpscrap]
 
   serpscrap-mcp:
-    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.1}
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.2}
     restart: unless-stopped
     environment:
       SERPSCRAP_API_URL: http://serpscrap-app:8000/api/v1
       MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:?Set MCP_AUTH_TOKEN for the MCP gateway}
       MCP_MAX_OUTPUT_BYTES: ${MCP_MAX_OUTPUT_BYTES:-100000}
     depends_on: [serpscrap-app]
-    ports: ["8001:8001"]
+    ports: ["${SERPSCRAP_MCP_BIND:-127.0.0.1:8001}:8001"]
     entrypoint: ["python", "-m", "serpscrap.mcp_server"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/healthz')"]
@@ -94,13 +94,13 @@ services:
     restart: unless-stopped
     environment:
       SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://localhost:8888/}
-      SEARXNG_SECRET: ${SEARXNG_SECRET:-change-me-local-only}
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?Set SEARXNG_SECRET before starting Compose}
       SEARXNG_VALKEY_URL: valkey://searxng-valkey:6379/0
     volumes:
       - ./searxng:/etc/searxng
       - ../data/searxng:/var/cache/searxng
     depends_on: [searxng-valkey]
-    ports: ["8888:8080"]
+    ports: ["${SEARXNG_BIND:-127.0.0.1:8888}:8080"]
     networks: [serpscrap]
 
 networks:

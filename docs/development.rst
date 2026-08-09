@@ -133,3 +133,22 @@ The same-origin UI proxy must preserve the incoming query string when
 forwarding API requests. In particular, ``run_id`` is required for historical
 results; dropping it causes the API to return the most recent results instead
 of the selected run.
+
+Release preparation
+===================
+
+For the ``2.0.0-alpha.2`` release, keep the version in ``pyproject.toml``,
+README, Sphinx configuration, Docker image defaults, and the UI fallback in
+sync. Run the deterministic checks and build from the Pipenv environment:
+
+.. code-block:: bash
+
+   pipenv run python -m ruff check serpscrap scrapcore tests
+   pipenv run python -m pytest -m "not browser"
+   pipenv run python -m build --no-isolation
+   pipenv run python -m sphinx -W --keep-going -b html docs docs/_build/html
+
+Never commit ``.env``, database/cache/log directories, browser profiles, or
+diagnostic artifacts. Compose requires explicit PostgreSQL, SearXNG, and MCP
+secrets and publishes services on loopback by default; change those boundaries
+only as part of an intentional deployment review.

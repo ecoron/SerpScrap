@@ -20,7 +20,7 @@ def create_app() -> Flask:
             f"pages/{template}.html",
             active_page=page,
             api_base="/api",
-            application_version=os.getenv("SERPSCRAP_UI_VERSION", "2.0.0-alpha.1"),
+            application_version=os.getenv("SERPSCRAP_UI_VERSION", "2.0.0-alpha.2"),
         )
 
     @app.get("/")

@@ -5,6 +5,7 @@ const $ = selector => document.querySelector(selector);
 const number = value => new Intl.NumberFormat().format(Number(value || 0));
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const labels = {from:'From', to:'To', query:'Query', provider:'Provider', status:'Status', result_kind:'Result kind', country:'Country', search_type:'Search type'};
+const statusTones = {completed:'success', failed:'danger', running:'warning', queued:'warning', healthy:'healthy', online:'healthy', offline:'offline', error:'danger', unused:'neutral', added:'success', removed:'danger', moved:'info'};
 let activeRequest;
 
 function fields() {
@@ -27,6 +28,8 @@ function chips() {
   const root = $('#history-chips');
   if (!root) return;
   root.replaceChildren();
+  const summary = $('[data-filter-summary]');
+  if (summary) summary.textContent = `Active: ${Object.keys(params()).length}`;
   Object.entries(params()).forEach(([key, value]) => {
     const chip = document.createElement('button');
     chip.className = 'filter-chip'; chip.type = 'button'; chip.title = `Remove ${labels[key] || key} filter`;
@@ -34,6 +37,24 @@ function chips() {
     chip.onclick = () => { const id = fields()[key]; if ($(`#history-${id}`)) $(`#history-${id}`).value = ''; refreshHistoryDashboard(); };
     root.append(chip);
   });
+}
+function statusBadge(value, tone = value) {
+  const text = String(value || 'unknown');
+  const className = statusTones[text.toLowerCase()] || statusTones[tone] || 'neutral';
+  return `<span class="status-badge ${className}"><span class="status-dot"></span>${esc(text)}</span>`;
+}
+function compactUrl(value, maxLength = 64) {
+  const full = String(value || '');
+  try {
+    const parsed = new URL(full);
+    const prefix = parsed.hostname.replace(/^www\./, '');
+    const path = `${parsed.pathname}${parsed.search ? '?…' : ''}`;
+    if (`${prefix}${path}`.length <= maxLength) return `${prefix}${path}`;
+    const available = Math.max(12, maxLength - prefix.length - 4);
+    return `${prefix}/${path.replace(/^\//, '').slice(0, available)}…`;
+  } catch {
+    return full.length > maxLength ? `${full.slice(0, maxLength - 1)}…` : full;
+  }
 }
 function state(root, title, detail, action) {
   if (!root) return;
@@ -43,8 +64,9 @@ function state(root, title, detail, action) {
 }
 function rows(target, items, columns, empty = 'No data in this scope.') {
   if (!target) return;
-  target.innerHTML = items.length ? items.map(item => `<tr>${columns.map(column => `<td>${esc(column(item))}</td>`).join('')}</tr>`).join('') : `<tr><td class="empty-cell" colspan="${columns.length}">${esc(empty)}</td></tr>`;
+  target.innerHTML = items.length ? items.map(item => `<tr>${columns.map(column => { const value = column(item); return `<td>${value && value.__html ? value.value : esc(value)}</td>`; }).join('')}</tr>`).join('') : `<tr><td class="empty-cell" colspan="${columns.length}">${esc(empty)}</td></tr>`;
 }
+const htmlCell = value => ({__html:true, value});
 function scopeText(scope) {
   if (!scope) return '';
   const filters = Object.entries(scope.filters || {}).map(([key, value]) => `${labels[key] || key}: ${value}`);
@@ -109,7 +131,7 @@ async function renderCoverage(filters, signal) {
   try {
     const [providers, queries, domains] = await Promise.all([api.providers(filters, {signal}), api.queries(filters, {signal}), api.domains(filters, {signal})]);
     updateScope(providers.scope); const total = (providers.items || []).reduce((sum, item) => sum + Number(item.result_count || 0), 0);
-    rows(providerRoot, providers.items || [], [item => item.name, item => item.state || 'unused', item => number(item.run_count), item => number(item.result_count), item => number(item.failure_count), item => `${total ? (Number(item.result_count || 0) * 100 / total).toFixed(1) : '0.0'}%`]);
+    rows(providerRoot, providers.items || [], [item => item.name, item => htmlCell(statusBadge(item.state || 'unused')), item => number(item.run_count), item => number(item.result_count), item => number(item.failure_count), item => `${total ? (Number(item.result_count || 0) * 100 / total).toFixed(1) : '0.0'}%`]);
     rows($('#query-table'), queries.items || [], [item => item.name, item => number(item.run_count), item => number(item.result_count), item => number(item.failure_count), item => number(item.provider_count)]);
     rows(domainRoot, domains.items || [], [item => item.name, item => number(item.run_count), item => number(item.result_count), item => number(item.provider_count)]);
   } catch (error) { if (error.name !== 'AbortError') { state(providerRoot, 'Coverage unavailable', error.message, {label:'Retry', run:() => refreshHistoryDashboard()}); state(domainRoot, 'Domains unavailable', error.message); } }
@@ -128,9 +150,9 @@ async function renderCompare(filters, signal) {
     try {
       const data = await api.compare(left.value, right.value, {signal}); updateScope(data.scope); const compatible = data.compatibility?.compatible;
       $('#compare-summary').innerHTML = `<div class="compare-compatibility ${compatible ? 'is-compatible' : 'is-incompatible'}"><strong>${compatible ? 'Compatible capture context' : 'Ranking deltas restricted'}</strong><span>${compatible ? 'Rank movements can be interpreted.' : esc((data.compatibility?.differences || []).join(', ') || 'Capture settings differ.')}</span></div>` + Object.entries(data.totals || {}).map(([key,value]) => `<article class="metric-card"><span>${esc(key)}</span><strong>${number(value)}</strong></article>`).join('');
-      $('#compare-added').innerHTML = (data.added || []).map(item => `<li><a href="${esc(item.source_url || item.identity)}" target="_blank" rel="noreferrer">${esc(item.source_url || item.identity)}</a><small>New</small></li>`).join('') || '<li>No new URLs.</li>';
-      $('#compare-removed').innerHTML = (data.removed || []).map(item => `<li><a href="${esc(item.source_url || item.identity)}" target="_blank" rel="noreferrer">${esc(item.source_url || item.identity)}</a><small>Lost</small></li>`).join('') || '<li>No lost URLs.</li>';
-      $('#compare-moved').innerHTML = (data.moved || []).map(item => `<li>${esc(item.identity)} <small>${esc(item.before.rank ?? '—')} → ${esc(item.after.rank ?? '—')}</small></li>`).join('') || '<li>No moved URLs.</li>';
+      $('#compare-added').innerHTML = (data.added || []).map(item => { const url = item.source_url || item.identity; return `<li><a class="compare-url" title="${esc(url)}" href="${esc(url)}" target="_blank" rel="noreferrer">${esc(compactUrl(url))}</a><small>${statusBadge('New', 'added')}</small></li>`; }).join('') || '<li>No new URLs.</li>';
+      $('#compare-removed').innerHTML = (data.removed || []).map(item => { const url = item.source_url || item.identity; return `<li><a class="compare-url" title="${esc(url)}" href="${esc(url)}" target="_blank" rel="noreferrer">${esc(compactUrl(url))}</a><small>${statusBadge('Lost', 'removed')}</small></li>`; }).join('') || '<li>No lost URLs.</li>';
+      $('#compare-moved').innerHTML = (data.moved || []).map(item => `<li><span class="compare-url" title="${esc(item.identity)}">${esc(compactUrl(item.identity))}</span><small>${statusBadge('Moved', 'moved')} <span class="compare-ranks">${esc(item.before.rank ?? '—')} → ${esc(item.after.rank ?? '—')}</span></small></li>`).join('') || '<li>No moved URLs.</li>';
     } catch (error) { if (error.name !== 'AbortError') state($('#compare-summary'), 'Comparison unavailable', error.message, {label:'Retry', run:compare}); }
   };
   $('#compare-submit').onclick = compare; left.onchange = compare; right.onchange = compare; await compare();

@@ -23,6 +23,11 @@ The default configuration enables the following direct browser providers:
 | `xprivo` | xPrivo | Public European web search |
 | `marginalia` | Marginalia | Public independent web search |
 | `etools` | eTools.ch | Public metasearch web search |
+| `altpower` | Alt-Power | Google Programmable Search wrapper; experimental |
+| `blackle` | Blackle | Google Programmable Search wrapper; experimental |
+| `kiddle` | Kiddle | Child-focused Google Programmable Search wrapper; experimental |
+| `kidrex` | KidRex | Child-focused Google Programmable Search wrapper; experimental |
+| `poper` | Poper Search Widget | Public widget/search surface; experimental |
 
 Google, Ecosia, and Qwant remain registered and can be selected explicitly
 when their current provider contract is appropriate. MetaGer is registered but
@@ -55,6 +60,12 @@ integration:
 .. code-block:: bash
 
    curl http://localhost:8000/api/v1/engines
+
+The five Google-CSE-based wrappers are registered under the provider family
+``google_cse``. Their results are not guaranteed to match Google.com, and
+Kiddle and KidRex apply their own child-safety filtering. Poper is kept
+experimental because its public widget surface may require a specific widget
+configuration.
 
 ## Selecting engines
 

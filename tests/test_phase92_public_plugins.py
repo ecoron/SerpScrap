@@ -35,6 +35,19 @@ def test_public_candidate_plugins_parse_fixture_without_auth(engine, fixture):
     assert parsed[0].url == f"https://example.test/{engine}"
 
 
+def test_etools_parses_each_organic_table_row_and_skips_ad_rows():
+    plugin = default_registry().get("etools")
+    html = """<table class='result'><tbody>
+      <tr><td class='record'><a class='title' href='https://one.test'>One</a><div class='text'>First</div></td></tr>
+      <tr><td class='record'><div class='ad'>Anzeige</div></td></tr>
+      <tr><td class='record'><a class='title' href='https://two.test'>Two</a><div class='text'>Second</div></td></tr>
+    </tbody></table>"""
+
+    parsed = plugin.parse(html, query="fixture", page=1, search_type="normal")
+
+    assert [item.url for item in parsed] == ["https://one.test", "https://two.test"]
+
+
 def test_public_candidate_urls_encode_queries_and_use_no_credentials():
     registry = default_registry()
     expected = {

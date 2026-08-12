@@ -17,7 +17,8 @@ HTML = """
 
 def test_registry_contains_google_and_ten_alternatives():
     assert default_registry().ids() == (
-        "google", "bing", "yandex", "yahoo", "duckduckgo", "ecosia",
+        "google", "altpower", "blackle", "kiddle", "kidrex", "poper",
+        "bing", "yandex", "yahoo", "duckduckgo", "ecosia",
         "qwant", "startpage", "brave", "swisscows", "mojeek",
         "metager", "good", "xprivo", "marginalia", "etools",
     )

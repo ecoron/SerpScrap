@@ -113,7 +113,7 @@ def test_http_client_sends_chrome_identity_and_explicit_headers():
     assert "Chrome/" in captured["headers"]["User-Agent"]
     assert captured["headers"]["Accept-Language"] == "de-DE,de;q=0.9"
     assert captured["timeout"].connect_timeout == 10
-    assert captured["timeout"].read_timeout == 20
+    assert captured["timeout"].read_timeout == 30
     assert captured["retries"].redirect == 5
     assert response.status == 200
 

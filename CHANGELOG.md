@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Updated phase 4, 5, 7, and URL-scraping tests for the current 21-engine registry and 30-second URL read timeout.
+
 - Fixed Ruff import ordering in the Google CSE plugin test module so the GitHub CLI checks pass.
 
 - Added experimental Google Programmable Search wrapper plugins for Alt-Power,

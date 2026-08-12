@@ -108,19 +108,23 @@ class SearchEngineResultsPage(Base):
         for key, value in parser.search_results.items():
             if isinstance(value, list):
                 for link in value:
-                    parsed = urlparse(link['link'])
-                    if link['snippet'] is not None:
-                        # Remove inline CSS if present
-                        tmp_snipped = link['snippet'].split('}')
-                        if len(tmp_snipped) > 1:
-                            link['snippet'] = tmp_snipped[-1]
-                    # Fill with None to prevent key errors
+                    # Fill with None to prevent key errors. This has to run
+                    # before the field reads below: a parser that omits e.g.
+                    # 'snippet' (the base Parser builds result dicts only from
+                    # its configured selectors) would otherwise KeyError on the
+                    # snippet handling that follows.
                     for k in (
                         'snippet', 'title', 'visible_link', 'rating', 'sitelinks',
                         'source', 'published_at', 'price', 'merchant', 'duration',
                         'image_url', 'thumbnail_url',
                     ):
                         link.setdefault(k, None)
+                    parsed = urlparse(link['link'])
+                    if link['snippet'] is not None:
+                        # Remove inline CSS if present
+                        tmp_snipped = link['snippet'].split('}')
+                        if len(tmp_snipped) > 1:
+                            link['snippet'] = tmp_snipped[-1]
                     Link(
                         link=link['link'],
                         snippet=link['snippet'],

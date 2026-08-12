@@ -165,6 +165,16 @@ def test_ecosia_consent_uses_visible_label_and_verifies_overlay_clear():
     interaction = default_registry().get("ecosia").browser_interaction
     assert interaction is not None
     assert "#didomi-notice-disagree-button" in interaction.consent_button_selectors
+
+
+def test_ecosia_cloudflare_challenge_is_classified_as_blocked():
+    plugin = default_registry().get("ecosia")
+    interaction = plugin.browser_interaction
+
+    html = "<html><body><h1>Confirm you're not a robot</h1><script src='/cdn-cgi/challenge-platform/x'></script></body></html>"
+
+    assert plugin.classify("https://www.ecosia.org/search", html) == "blocked"
+    assert interaction is not None
     assert "nicht essenzielle cookies ablehnen" in interaction.consent_reject_labels
 
 

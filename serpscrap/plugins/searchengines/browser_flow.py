@@ -270,6 +270,11 @@ class HomepageSearchFlow:
                 visible_text=self._visible_text(driver),
             ):
                 return True
+            # Google Programmable Search renders its result shell before the
+            # asynchronous organic cards arrive. Do not hand that shell to
+            # the parser as a malformed empty SERP.
+            if plugin.provider_family == "google_cse":
+                return bool(self._elements(driver, plugin.browser_interaction.organic_card_selectors))
             return bool(self._elements(driver, plugin.browser_interaction.serp_ready_selectors))
 
         try:
@@ -394,7 +399,7 @@ class HomepageSearchFlow:
                     field.send_keys(Keys.ENTER)
             else:
                 field.send_keys(Keys.ENTER)
-            if plugin.engine_id == "etools" and getattr(driver, "current_url", "") == submitted_url:
+            if plugin.engine_id == "etools" and str(getattr(driver, "current_url", "")).rstrip("/") == str(submitted_url).rstrip("/"):
                 # eTools documents both POST and GET. Some browser sessions
                 # leave the POST form on the homepage; retry the documented
                 # GET URL before classifying the run as navigation_state.

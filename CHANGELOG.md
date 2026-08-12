@@ -4,7 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-No changes yet.
+- Updated phase 4, 5, 7, and URL-scraping tests for the current 21-engine registry and 30-second URL read timeout.
+
+- Fixed Ruff import ordering in the Google CSE plugin test module so the GitHub CLI checks pass.
+
+- Added experimental Google Programmable Search wrapper plugins for Alt-Power,
+  Blackle, Kiddle, KidRex, and Poper Search Widget, including shared metadata
+  and offline parser coverage.
+- Fixed application startup by providing required readiness reasons for all
+  experimental Google-CSE wrapper plugins.
+- Made experimental search engines selectable in the configuration UI while
+  keeping explicitly disabled engines unavailable.
+- Allowed experimental providers through backend selection validation so they
+  can be used for controlled live verification.
+- Recorded the first live verification results, corrected Alt-Power/Kiddle
+  selectors, and marked currently unreachable Blackle, KidRex, and Poper as
+  disabled until their public surfaces recover.
+- Hardened the eTools POST-to-GET fallback when a browser normalizes the
+  homepage URL with or without a trailing slash.
+- Made the browser flow wait for asynchronous Google-CSE result cards or an
+  explicit empty state instead of parsing the initial result shell.
+- Classified empty Google-CSE result shells from Alt-Power and Kiddle as
+  explicit empty outcomes rather than malformed SERPs.
+- Confirmed Ecosia consent rejection and added explicit classification for its
+  Cloudflare/Turnstile unusual-traffic challenge; no challenge bypass is used.
+- Marked confirmed provider blockers clearly in the configuration UI and kept
+  them excluded from the default engine selection.
+- Improved live-result parsing for Alt-Power, Kiddle, and eTools and classified
+  Marginalia's anti-bot wait page as a provider block.
 
 ## [2.0.0-alpha.2] - 2026-08-09
 
@@ -498,3 +525,6 @@ No changes yet.
 - Added the Phase 9.2 implementation plan for a typed, capability-driven,
   developer-friendly search-engine plugin structure, including registry
   validation, fixture contracts, migration slices, and acceptance criteria.
+- Diagnostic-Auswertung fÃ¼r `preisfehler` dokumentiert: Alt-Power und eTools liefern parsebare Treffer, Kiddle wird bei ausschlieÃŸlich gesponserten Treffern korrekt als leer gewertet und Marginalia als Provider-Block erkannt; Google/Qwant bleiben blockiert.
+- Regressionstests fÃ¼r deaktivierte Google-CSE-Wrapper und Ecosia-Consent-Metadaten korrigiert.
+- eTools-Parser auf table.result-Zeilen erweitert; Werbezeilen werden übersprungen und organische Treffer vollständig übernommen.

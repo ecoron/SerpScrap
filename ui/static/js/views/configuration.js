@@ -23,9 +23,15 @@ function defaultText(field) {
 }
 function isChanged(field) { return JSON.stringify(field.value) !== JSON.stringify(field.default); }
 function engineOption(engine, selected, readOnly = false, source = '') {
-  const unavailable = engine.readiness !== undefined && engine.readiness !== 'enabled';
+  // Experimental providers are selectable; only explicitly disabled
+  // providers must be blocked in the configuration UI.
+  const unavailable = engine.readiness === 'disabled';
   const note = engine.readiness !== undefined
-    ? (engine.readiness === 'enabled' ? engine.provider_family || 'Ready' : engine.disable_reason || 'Unavailable')
+    ? (engine.readiness === 'enabled'
+      ? engine.provider_family || 'Ready'
+      : engine.readiness === 'experimental'
+        ? `Experimental · ${engine.disable_reason || 'Live verification pending'}`
+        : `Provider blockiert · ${engine.disable_reason || 'temporär nicht verfügbar'}`)
     : 'Available through SearXNG · no API key';
   return `<label class="engine-option ${unavailable ? 'is-disabled' : ''}"><input type="checkbox" value="${esc(engine.engine_id)}" data-engine-source="${esc(source)}" ${selected?.includes(engine.engine_id) ? 'checked' : ''} ${readOnly || unavailable ? 'disabled' : ''}><span><strong>${esc(engine.display_name || engine.engine_id)}</strong><small>${esc(note)}</small></span></label>`;
 }

@@ -94,7 +94,7 @@ def test_configuration_ui_contract_uses_schema_groups_and_safe_save_reset_flow()
 
     for marker in ("configuration-groups", "config-error-summary", "reset-config", "reset-changes", "config-dirty-label"):
         assert marker in template
-    for marker in ("loaded.groups", "loaded.fields", "Unsaved changes", "/configuration/reset", "beforeunload", "combined-engine-list", "data-engine-source=\"direct\""):
+    for marker in ("loaded.groups", "loaded.fields", "Unsaved changes", "/configuration/reset", "beforeunload", "combined-engine-list", "data-engine-source=\"direct\"", "engine.readiness === 'disabled'", "engine.readiness === 'experimental'", "Provider blockiert"):
         assert marker in javascript
     for marker in ("configuration-group", "configuration-actions", "config-engine-grid", "configuration-source"):
         assert marker in styles

@@ -134,6 +134,14 @@ def _alternatives() -> list[SearchEnginePlugin]:
         return BrowserInteraction(homepage, inputs, submits, ready, cards, observed_at="2026-08-02", dismiss_selectors=dismiss)
 
     plugins = [
+        # Public Google Programmable Search wrappers.  They intentionally use
+        # conservative experimental readiness until live selector checks have
+        # been completed for each independently maintained frontend.
+        _TemplatePlugin("altpower", "https://altpower.app", "https://altpower.app/?q={query}&page={page}", None, "google_cse", interaction("https://altpower.app/", ("input.gsc-input", "input[name='search']", "input[type='search']"), ("button.gsc-search-button", "form.gsc-search-box button[type='submit']"), (".gsc-results", ".gsc-webResult", "main"), (".gsc-webResult", ".gsc-result")), (".gsc-webResult", ".gsc-result"), display_name="Alt-Power", readiness="experimental", disable_reason="live parser verification pending", pagination_strategy="page"),
+        _TemplatePlugin("blackle", "https://www.blackle.com", "https://www.blackle.com/search?q={query}&page={page}", None, "google_cse", interaction("https://www.blackle.com/", ("input[name='q']", "input[type='search']"), ("form button[type='submit']",), ("main", ".gsc-results"), (".gsc-webResult", ".gsc-result")), (".gsc-webResult", ".gsc-result"), display_name="Blackle", readiness="disabled", disable_reason="live test returned a Chromium privacy error; no public search form was reachable", pagination_strategy="page"),
+        _TemplatePlugin("kiddle", "https://www.kiddle.co", "https://www.kiddle.co/s.php?q={query}&page={page}", None, "google_cse", interaction("https://www.kiddle.co/", ("#q", "input[name='q']", "input[type='search']"), ("#s_btn", "form#cse-search-box button[type='submit']"), (".gsc-resultsbox-visible", ".gsc-results", "main"), (".gsc-webResult", ".gsc-result")), (".gsc-webResult", ".gsc-result"), display_name="Kiddle", readiness="experimental", disable_reason="live parser verification pending", pagination_strategy="page"),
+        _TemplatePlugin("kidrex", "https://www.kidrex.org", "https://www.kidrex.org/search.php?q={query}&page={page}", None, "google_cse", interaction("https://www.kidrex.org/", ("input[name='q']", "input[type='search']"), ("form button[type='submit']",), ("main", ".gsc-results"), (".gsc-webResult", ".gsc-result")), (".gsc-webResult", ".gsc-result"), display_name="KidRex", readiness="disabled", disable_reason="live test returned ERR_CONNECTION_REFUSED", pagination_strategy="page"),
+        _TemplatePlugin("poper", "https://www.poper.ai", "https://www.poper.ai/widgets/search/?q={query}&page={page}", None, "google_cse", interaction("https://www.poper.ai/widgets/search/", ("input[name='q']", "input[type='search']"), ("form button[type='submit']",), ("main", ".gsc-results"), (".gsc-webResult", ".gsc-result")), (".gsc-webResult", ".gsc-result"), display_name="Poper Search Widget", readiness="disabled", disable_reason="live test could not clear the provider consent dialog", pagination_strategy="page"),
         _TemplatePlugin("bing", "https://www.bing.com", "https://www.bing.com/search?q={query}&first={offset}", 5.00, "bing", interaction("https://www.bing.com/", ("textarea#sb_form_q", "input[name='q']"), ("form#sb_form button[type='submit']",), ("#b_results",), ("li.b_algo",)), ("li.b_algo", "li.result")),
         _TemplatePlugin("yandex", "https://yandex.com", "https://yandex.com/search/?text={query}&p={page_minus_one}", 2.50, "yandex", interaction("https://yandex.com/", ("input[name='text']", "input[type='search']"), ("form[action*='/search'] button[type='submit']",), ("[data-serp-item]", ".serp-item"), (".serp-item",)), (".serp-item",)),
         _TemplatePlugin("yahoo", "https://search.yahoo.com", "https://search.yahoo.com/search?p={query}&b={offset_plus_one}", 1.47, "bing", interaction("https://search.yahoo.com/", ("input[name='p']", "input[type='search']"), ("form[action*='/search'] button[type='submit']",), ("#web",), ("div.algo",)), ("div.algo",)),
@@ -148,7 +156,7 @@ def _alternatives() -> list[SearchEnginePlugin]:
         _TemplatePlugin("good", "https://good-search.org", "https://good-search.org/en/?q={query}", None, "brave", interaction("https://good-search.org/en/", ("input[placeholder*='Search the web']", "input[name='q']", "input[type='search']"), ("form button[type='submit']",), ("main",), ("article", "li.result")), ("article", "li.result"), display_name="GOOD Search", pagination_strategy="none"),
         _TemplatePlugin("xprivo", "https://www.xprivo.com", "https://www.xprivo.com/search/?q={query}&page={page}", None, "xprivo", interaction("https://www.xprivo.com/search/", ("input[placeholder*='Privat suchen']", "input[placeholder*='Search privately']", "input[name='q']", "input[type='search']", "textarea[placeholder*='Search']"), ("form button[type='submit']",), ("main", "[class*='result']", "article"), ("[class*='result']", "article")), ("[class*='result']", "article"), display_name="xPrivo", pagination_strategy="page"),
         _TemplatePlugin("marginalia", "https://marginalia-search.com", "https://marginalia-search.com/search?q={query}&page={page}", None, "marginalia", interaction("https://marginalia-search.com/", ("input[name='query']", "input[name='q']", "input[type='search']"), ("form button[type='submit']",), ("main",), ("article", "li.result")), ("article", "li.result"), display_name="Marginalia", pagination_strategy="page"),
-        _TemplatePlugin("etools", "https://www.etools.ch", "https://www.etools.ch/searchSubmit.do?query={query}&country={country}", None, "etools", interaction("https://www.etools.ch/", ("input[name='query']",), ("form[action*='searchSubmit.do'] button[type='submit']", "form[action*='searchSubmit.do'] input[type='submit']"), ("#results", ".results", ".searchResult", ".result", "table.results", ".content h2"), ("#results .result", ".results .result", ".searchResult", ".result", "table.results tr")), ("#results .result", ".results .result", ".searchResult", ".result", "table.results tr"), display_name="eTools.ch", pagination_strategy="provider"),
+        _TemplatePlugin("etools", "https://www.etools.ch", "https://www.etools.ch/searchSubmit.do?query={query}&country={country}", None, "etools", interaction("https://www.etools.ch/", ("input[name='query']",), ("form[action*='searchSubmit.do'] button[type='submit']", "form[action*='searchSubmit.do'] input[type='submit']"), ("#results", ".results", ".searchResult", ".result", "table.result", ".content h2"), ("table.result tr", "#results .result", ".results .result", ".searchResult")), ("table.result tr", "#results .result", ".results .result", ".searchResult"), display_name="eTools.ch", pagination_strategy="provider"),
     ]
     for plugin in plugins:
         if plugin.engine_id == "brave":
@@ -187,6 +195,13 @@ def _alternatives() -> list[SearchEnginePlugin]:
                     "nur notwendige",
                     "refuse",
                 ),
+            )
+            plugin.blocked_visible_markers = (
+                *plugin.blocked_visible_markers,
+                "confirm you’re not a robot",
+                "confirm you're not a robot",
+                "cloudflare turnstile",
+                "challenge-platform",
             )
         elif plugin.engine_id == "mojeek":
             plugin.empty_visible_markers = ("no results", "nothing found", "did not match any")
@@ -230,6 +245,18 @@ def _alternatives() -> list[SearchEnginePlugin]:
             plugin.card_selectors = ("main h2",)
             plugin.title_selectors = ("h2",)
             plugin.snippet_selectors = ("p",)
+            plugin.blocked_visible_markers = (*plugin.blocked_visible_markers, "aggressive bot activity", "wait a moment")
+        elif plugin.engine_id == "kiddle":
+            plugin.empty_visible_markers = ("your search did not match any results", "no results")
+            plugin.title_selectors = (".gs-title", "h3", "h2", "[role='heading']")
+            plugin.snippet_selectors = (".gs-snippet", ".gsc-table-cell-snippet-close", "p")
+        elif plugin.engine_id == "altpower":
+            plugin.empty_visible_markers = ("your search did not match any results", "no results")
+            plugin.title_selectors = (".gs-title", "h3", "h2", "[role='heading']")
+            plugin.snippet_selectors = (".gs-snippet", ".gsc-table-cell-snippet-close", "p")
+        elif plugin.engine_id == "etools":
+            plugin.title_selectors = ("a.title", "h2 a", "h3 a", "a.result")
+            plugin.snippet_selectors = (".text", ".snippet", ".description", "p")
     return plugins
 
 
@@ -355,7 +382,9 @@ class SearchEngineRegistry:
         if len(set(selected)) != len(selected):
             raise ValueError("duplicate search engine IDs are not allowed")
         plugins = tuple(self.get(engine_id) for engine_id in selected)
-        disabled = [plugin.engine_id for plugin in plugins if not plugin.enabled]
+        # Experimental providers are intentionally selectable for controlled
+        # live verification. Only explicitly disabled providers are rejected.
+        disabled = [plugin.engine_id for plugin in plugins if plugin.readiness == "disabled"]
         if disabled:
             reasons = ", ".join(
                 f"{plugin.engine_id}: {plugin.disable_reason or 'disabled'}"

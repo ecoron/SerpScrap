@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Fixed Ruff import ordering in the Google CSE plugin test module so the GitHub CLI checks pass.
+
 - Added experimental Google Programmable Search wrapper plugins for Alt-Power,
   Blackle, Kiddle, KidRex, and Poper Search Widget, including shared metadata
   and offline parser coverage.

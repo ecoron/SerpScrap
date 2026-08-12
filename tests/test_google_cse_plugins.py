@@ -4,7 +4,6 @@ import pytest
 
 from serpscrap.plugins.searchengines.registry import default_registry
 
-
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "searchengines" / "google_cse" / "valid_serp.html"
 

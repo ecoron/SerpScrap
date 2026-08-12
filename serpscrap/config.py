@@ -65,14 +65,14 @@ class Config:
             "window_width": 1366,
             "window_height": 900,
             "page_load_timeout": 30,
-            "wait_timeout": 15,
+            "wait_timeout": 25,
             # Empty means: derive a desktop Chrome UA matching the installed
             # browser. Keeping a fixed major here drifts from local Chrome.
             "user_agent": "",
             "chrome_profile_dir": os.environ.get("SERPSCRAP_CHROME_PROFILE_DIR", ""),
-            "interaction_settle_delay": 0.35,
-            "request_delay_min": 0.75,
-            "request_delay_max": 2.0,
+            "interaction_settle_delay": 3.0,
+            "request_delay_min": 4.0,
+            "request_delay_max": 6.0,
             "request_retry_limit": 1,
             "retryable_engine_categories": ["timeout", "navigation_state", "network"],
             "request_backoff_base": 2.0,
@@ -94,7 +94,7 @@ class Config:
             "progress_format": "text",
             "consent_action": "necessary",
             "diagnostic_html": False,
-            "diagnostic_dir": str(Path("logs") / "phase7"),
+            "diagnostic_dir": str(Path("/var/lib/serpscrap/diagnostics")),
             "diagnostic_max_bytes_per_file": 2 * 1024 * 1024,
             "diagnostic_max_total_bytes": 20 * 1024 * 1024,
             "diagnostic_max_artifacts_per_job": 10,
@@ -107,18 +107,27 @@ class Config:
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             },
             "url_connect_timeout": 10.0,
-            "url_read_timeout": 20.0,
+            "url_read_timeout": 30.0,
             "url_max_redirects": 5,
             "url_max_response_bytes": 5 * 1024 * 1024,
             "proxy_file": "",
             "proxy_enabled": False,
-            "proxy_sources": [],
+            "proxy_sources": [
+              {
+                "location": "https://cdn.jsdelivr.net/gh/proxyscrape/free-proxy-list@main/proxies/all/data.json",
+                "type": "url"
+              },
+              {
+                "location": "https://databay.com/api/v1/proxy-list?format=json&limit=500",
+                "type": "url"
+              }
+            ],
             "proxy_source_timeout": 10.0,
             "proxy_source_max_bytes": 2 * 1024 * 1024,
             "proxy_cache_dir": str(temp_root / ".serpscrap" / "proxy-sources"),
             "proxy_cache_ttl": 900.0,
             "proxy_allowed_protocols": ["http", "socks5"],
-            "proxy_allowed_countries": [],
+            "proxy_allowed_countries": [], # [AT, BE, BG, HR, CY, CZ, DK, EE, FI, FR, DE, GR, HU, IE, IT, LV, LT, LU, MT, NL, PL, PT, RO, SK, SI, ES, SE],
             "proxy_max_age_seconds": 0,
             "proxy_max_endpoints": 500,
             "proxy_check_url": "https://icanhazip.com/",

@@ -102,6 +102,12 @@ class Config:
             "num_results_per_page": 10,
             "results_age": "Any",
             "search_type": "normal",
+            "topic_default": "web",
+            "topic_sources": {"news": [], "shopping": ["geizhals", "idealo", "billiger", "fruugo", "kaufland", "allegro", "etsy"]},
+            "topic_country": "DE",
+            "topic_language": "de",
+            "topic_since": "24h",
+            "topic_currency": "EUR",
             "google_search_url": "https://www.google.com/search?",
             "headers": {
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",

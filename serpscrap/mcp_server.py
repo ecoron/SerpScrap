@@ -17,6 +17,10 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 
+from serpscrap.config import Config
+from serpscrap.topic_service import TopicService
+from serpscrap.topics import TopicRequest
+
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -104,12 +108,22 @@ TOOLS = [
             "required": ["query"],
             "additionalProperties": False,
         },
-        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True},
+        "annotations": {
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        },
     },
     {
         "name": "get_search_status",
         "description": "Read bounded progress, terminal state, failures, and result count for a search job.",
-        "inputSchema": {"type": "object", "properties": {"id": _string_schema("Search job ID.", max_length=128)}, "required": ["id"], "additionalProperties": False},
+        "inputSchema": {
+            "type": "object",
+            "properties": {"id": _string_schema("Search job ID.", max_length=128)},
+            "required": ["id"],
+            "additionalProperties": False,
+        },
         "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
     },
     {
@@ -119,8 +133,18 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "run_id": _string_schema("Optional search job ID.", max_length=128),
-                "offset": {"type": "integer", "description": "Zero-based result offset.", "minimum": 0, "maximum": 100000},
-                "limit": {"type": "integer", "description": "Number of results to return.", "minimum": 1, "maximum": 1000},
+                "offset": {
+                    "type": "integer",
+                    "description": "Zero-based result offset.",
+                    "minimum": 0,
+                    "maximum": 100000,
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Number of results to return.",
+                    "minimum": 1,
+                    "maximum": 1000,
+                },
             },
             "additionalProperties": False,
         },
@@ -129,19 +153,43 @@ TOOLS = [
     {
         "name": "list_search_history",
         "description": "Read persisted search-run summaries, optionally filtered and bounded by limit.",
-        "inputSchema": {"type": "object", "properties": {"query": _string_schema("Optional query filter.", max_length=1000), "limit": {"type": "integer", "minimum": 1, "maximum": 1000}}, "additionalProperties": False},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": _string_schema("Optional query filter.", max_length=1000),
+                "limit": {"type": "integer", "minimum": 1, "maximum": 1000},
+            },
+            "additionalProperties": False,
+        },
         "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
     },
     {
         "name": "analyze_history",
         "description": "Read aggregate analytics for persisted search history.",
-        "inputSchema": {"type": "object", "properties": {"query": _string_schema("Optional query filter.", max_length=1000)}, "additionalProperties": False},
+        "inputSchema": {
+            "type": "object",
+            "properties": {"query": _string_schema("Optional query filter.", max_length=1000)},
+            "additionalProperties": False,
+        },
         "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
     },
     {
         "name": "analyze_url_statistics",
         "description": "Read URL or domain statistics across all persisted searches, independent of search query.",
-        "inputSchema": {"type": "object", "properties": {"scope": {"type": "string", "enum": ["domains", "urls"]}, "domain": _string_schema("Optional domain filter.", max_length=253), "include_findings": {"type": "boolean", "description": "Include individual finding details."}, "limit": {"type": "integer", "minimum": 1, "maximum": 1000}, "offset": {"type": "integer", "minimum": 0, "maximum": 100000}}, "additionalProperties": False},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "scope": {"type": "string", "enum": ["domains", "urls"]},
+                "domain": _string_schema("Optional domain filter.", max_length=253),
+                "include_findings": {
+                    "type": "boolean",
+                    "description": "Include individual finding details.",
+                },
+                "limit": {"type": "integer", "minimum": 1, "maximum": 1000},
+                "offset": {"type": "integer", "minimum": 0, "maximum": 100000},
+            },
+            "additionalProperties": False,
+        },
         "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
     },
     {
@@ -161,25 +209,82 @@ TOOLS = [
         "description": "Persist a validated search-engine configuration. This changes shared state and requires explicit approval.",
         "inputSchema": {
             "type": "object",
-            "properties": {"search_engines": {"type": "array", "description": "Non-empty registered engine IDs.", "items": _string_schema("Registered search-engine ID.", max_length=80), "minItems": 1, "maxItems": 32, "uniqueItems": True}},
+            "properties": {
+                "search_engines": {
+                    "type": "array",
+                    "description": "Non-empty registered engine IDs.",
+                    "items": _string_schema("Registered search-engine ID.", max_length=80),
+                    "minItems": 1,
+                    "maxItems": 32,
+                    "uniqueItems": True,
+                }
+            },
             "required": ["search_engines"],
             "additionalProperties": False,
         },
-        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+        "annotations": {
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
     },
     {
         "name": "reset_configuration",
         "description": "Reset shared search configuration to defaults. This changes state and requires explicit approval.",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+        "annotations": {
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    },
+    {
+        "name": "list_topics",
+        "description": "List registered thematic sources and their capabilities.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "topic_search",
+        "description": "Run a bounded thematic search through the shared TopicService.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "topic": {"type": "string", "enum": ["news", "shopping"]},
+                "query": _string_schema("Topic query.", max_length=1000),
+                "sources": {
+                    "type": "array",
+                    "items": _string_schema("Source ID or feed URL.", max_length=500),
+                    "maxItems": 16,
+                    "uniqueItems": True,
+                },
+                "country": {"type": "string", "pattern": "^[A-Za-z]{2}$"},
+                "language": {"type": "string", "pattern": "^[A-Za-z][A-Za-z-]{1,15}$"},
+                "since": {"type": "string", "maxLength": 40},
+                "until": {"type": "string", "maxLength": 40},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "annotations": {
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        },
     },
 ]
 
 _TOOL_NAMES = {tool["name"] for tool in TOOLS}
 _MUTATING_TOOLS = {"update_configuration", "reset_configuration"}
+_TOPIC_SERVICE = TopicService(config=Config().get())
 
 
-def _api_request(path: str, payload: dict[str, Any] | None = None, method: str | None = None) -> Any:
+def _api_request(
+    path: str, payload: dict[str, Any] | None = None, method: str | None = None
+) -> Any:
     base = os.getenv("SERPSCRAP_API_URL", "http://serpscrap-app:8000/api/v1").rstrip("/")
     body = None
     headers = {"Accept": "application/json"}
@@ -198,10 +303,18 @@ def _validate_arguments(name: str, arguments: dict[str, Any]) -> None:
     if not isinstance(arguments, dict):
         raise ValueError("tool arguments must be an object")
     allowed_options: dict[str, set[str]] = {
-        "start_search": {"query", "options"}, "get_search_status": {"id"},
-        "list_results": {"run_id", "offset", "limit"}, "list_search_history": {"query", "limit"},
-        "analyze_history": {"query"}, "analyze_url_statistics": {"scope", "domain", "include_findings", "limit", "offset"}, "list_engines": set(), "get_configuration": set(),
-        "update_configuration": {"search_engines"}, "reset_configuration": set(),
+        "start_search": {"query", "options"},
+        "get_search_status": {"id"},
+        "list_results": {"run_id", "offset", "limit"},
+        "list_search_history": {"query", "limit"},
+        "analyze_history": {"query"},
+        "analyze_url_statistics": {"scope", "domain", "include_findings", "limit", "offset"},
+        "list_engines": set(),
+        "get_configuration": set(),
+        "update_configuration": {"search_engines"},
+        "reset_configuration": set(),
+        "list_topics": set(),
+        "topic_search": {"topic", "query", "sources", "country", "language", "since", "until"},
     }
     allowed = allowed_options[name]
     unknown = set(arguments) - allowed
@@ -211,22 +324,38 @@ def _validate_arguments(name: str, arguments: dict[str, Any]) -> None:
         "start_search": {"query"},
         "get_search_status": {"id"},
         "update_configuration": {"search_engines"},
+        "topic_search": {"query"},
     }
     required = required_options.get(name, set())
     missing = required - set(arguments)
     if missing:
         raise ValueError(f"missing required arguments for {name}: {sorted(missing)}")
     for field in ("query", "id", "run_id", "domain"):
-        if field in arguments and (not isinstance(arguments[field], str) or not arguments[field].strip() or len(arguments[field]) > (1000 if field == "query" else 128)):
+        if field in arguments and (
+            not isinstance(arguments[field], str)
+            or not arguments[field].strip()
+            or len(arguments[field]) > (1000 if field == "query" else 128)
+        ):
             raise ValueError(f"{field} must be a non-empty bounded string")
     if "scope" in arguments and arguments["scope"] not in {"domains", "urls"}:
         raise ValueError("scope must be domains or urls")
     for field in ("offset", "limit"):
-        if field in arguments and (not isinstance(arguments[field], int) or isinstance(arguments[field], bool) or arguments[field] < (0 if field == "offset" else 1) or arguments[field] > (100000 if field == "offset" else 1000)):
+        if field in arguments and (
+            not isinstance(arguments[field], int)
+            or isinstance(arguments[field], bool)
+            or arguments[field] < (0 if field == "offset" else 1)
+            or arguments[field] > (100000 if field == "offset" else 1000)
+        ):
             raise ValueError(f"{field} is outside its allowed range")
     if "search_engines" in arguments:
         engines = arguments["search_engines"]
-        if not isinstance(engines, list) or not engines or len(engines) > 32 or len(set(engines)) != len(engines) or any(not isinstance(engine, str) or not engine.strip() for engine in engines):
+        if (
+            not isinstance(engines, list)
+            or not engines
+            or len(engines) > 32
+            or len(set(engines)) != len(engines)
+            or any(not isinstance(engine, str) or not engine.strip() for engine in engines)
+        ):
             raise ValueError("search_engines must be a non-empty list of unique IDs")
     if "options" in arguments and not isinstance(arguments["options"], dict):
         raise ValueError("options must be an object")
@@ -236,6 +365,22 @@ def call_tool(name: str, arguments: dict[str, Any]) -> Any:
     _validate_arguments(name, arguments)
     if name == "start_search":
         return _api_request("/searches", arguments)
+    if name == "list_topics":
+        return {"topics": _TOPIC_SERVICE.registry.metadata()}
+    if name == "topic_search":
+        query = arguments.get("query")
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query is required")
+        request = TopicRequest.create(
+            query,
+            topic=arguments.get("topic", "news"),
+            sources=arguments.get("sources") or (),
+            country=arguments.get("country"),
+            language=arguments.get("language"),
+            since=arguments.get("since"),
+            until=arguments.get("until"),
+        )
+        return _TOPIC_SERVICE.execute(request).to_dict()
     if name == "get_search_status":
         return _api_request(f"/searches/{arguments['id']}")
     if name == "list_results":
@@ -243,14 +388,22 @@ def call_tool(name: str, arguments: dict[str, Any]) -> Any:
         return _api_request("/results?" + urlencode(params) if params else "/results")
     if name == "list_search_history":
         params = {key: arguments[key] for key in ("query", "limit") if key in arguments}
-        return _api_request("/history/searches?" + urlencode(params) if params else "/history/searches")
+        return _api_request(
+            "/history/searches?" + urlencode(params) if params else "/history/searches"
+        )
     if name == "analyze_history":
         query = ("?" + urlencode({"query": arguments["query"]})) if arguments.get("query") else ""
         return _api_request(f"/history/analytics{query}")
     if name == "analyze_url_statistics":
         scope = arguments.get("scope", "domains")
-        params = {key: arguments[key] for key in ("domain", "include_findings", "limit", "offset") if key in arguments}
-        return _api_request(f"/history/{scope}?{urlencode(params)}" if params else f"/history/{scope}")
+        params = {
+            key: arguments[key]
+            for key in ("domain", "include_findings", "limit", "offset")
+            if key in arguments
+        }
+        return _api_request(
+            f"/history/{scope}?{urlencode(params)}" if params else f"/history/{scope}"
+        )
     if name == "list_engines":
         return _api_request("/engines")
     if name == "get_configuration":
@@ -282,7 +435,10 @@ def _structured_result(value: Any) -> dict[str, Any]:
     envelope = {"schema_version": SCHEMA_VERSION, "data": data}
     encoded = json.dumps(envelope, ensure_ascii=False)
     if len(encoded.encode("utf-8")) > MAX_OUTPUT_BYTES:
-        envelope["data"] = {"truncated": True, "message": "MCP output exceeded the configured size limit."}
+        envelope["data"] = {
+            "truncated": True,
+            "message": "MCP output exceeded the configured size limit.",
+        }
     return envelope
 
 
@@ -317,7 +473,14 @@ class McpHandler(BaseHTTPRequestHandler):
         request_id: Any = None
         try:
             if not self._authorized():
-                return self._send({"jsonrpc": "2.0", "id": request_id, "error": {"code": -32001, "message": "authentication required"}}, 401)
+                return self._send(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "error": {"code": -32001, "message": "authentication required"},
+                    },
+                    401,
+                )
             length = int(self.headers.get("Content-Length", "0"))
             if length > MAX_OUTPUT_BYTES:
                 raise ValueError("request body exceeds configured size limit")
@@ -328,7 +491,11 @@ class McpHandler(BaseHTTPRequestHandler):
             method = request.get("method")
             result: Any
             if method == "initialize":
-                result = {"protocolVersion": "2025-03-26", "capabilities": {"tools": {}}, "serverInfo": {"name": "serpscrap-mcp", "version": SCHEMA_VERSION}}
+                result = {
+                    "protocolVersion": "2025-03-26",
+                    "capabilities": {"tools": {}},
+                    "serverInfo": {"name": "serpscrap-mcp", "version": SCHEMA_VERSION},
+                }
             elif method == "tools/list":
                 result = {"tools": TOOLS}
             elif method == "tools/call":
@@ -340,9 +507,21 @@ class McpHandler(BaseHTTPRequestHandler):
                 raise ValueError(f"unsupported method: {method}")
             return self._send({"jsonrpc": "2.0", "id": request_id, "result": result})
         except ValueError as exc:
-            return self._send({"jsonrpc": "2.0", "id": request_id, "error": {"code": -32602, "message": str(exc)}})
+            return self._send(
+                {"jsonrpc": "2.0", "id": request_id, "error": {"code": -32602, "message": str(exc)}}
+            )
         except Exception as exc:
-            return self._send({"jsonrpc": "2.0", "id": request_id, "error": {"code": -32000, "message": "MCP backend request failed", "data": {"type": type(exc).__name__}}})
+            return self._send(
+                {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {
+                        "code": -32000,
+                        "message": "MCP backend request failed",
+                        "data": {"type": type(exc).__name__},
+                    },
+                }
+            )
 
     def log_message(self, format: str, *args: Any) -> None:
         return
@@ -350,8 +529,14 @@ class McpHandler(BaseHTTPRequestHandler):
 
 def _validate_bind_security(host: str) -> None:
     loopback = host in {"127.0.0.1", "localhost", "::1"}
-    if not loopback and not os.getenv("MCP_AUTH_TOKEN") and os.getenv("MCP_ALLOW_INSECURE_REMOTE") != "1":
-        raise RuntimeError("MCP_AUTH_TOKEN is required for non-loopback MCP_HOST; set MCP_ALLOW_INSECURE_REMOTE=1 only for explicit local-network development")
+    if (
+        not loopback
+        and not os.getenv("MCP_AUTH_TOKEN")
+        and os.getenv("MCP_ALLOW_INSECURE_REMOTE") != "1"
+    ):
+        raise RuntimeError(
+            "MCP_AUTH_TOKEN is required for non-loopback MCP_HOST; set MCP_ALLOW_INSECURE_REMOTE=1 only for explicit local-network development"
+        )
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ extensions = [
 source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
 master_doc = "index"
 language = "en"
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "alpaha-2.0.0-tools.md"]
 pygments_style = "sphinx"
 todo_include_todos = True
 

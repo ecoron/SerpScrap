@@ -92,6 +92,23 @@ sanitized fixture, parser tests, failure-state tests, and updated metadata.
 Provider-specific selectors stay in the provider registry; shared flow code
 must remain provider-neutral.
 
+Topic tools
+===========
+
+The thematic extension layer lives in ``serpscrap/topics.py``. Implementers
+define ``TopicPlugin`` contracts and register them through
+``TopicPluginRegistry``. ``TopicService`` owns source selection, transport
+loading, normalization, deduplication, source status, and error reporting.
+The HTTP adapter creates a history run and uses ``SearchHistoryStore`` to
+persist the resulting ``TopicReport``; CLI, Python, and MCP calls return
+reports without implicit persistence.
+
+The in-tree News and Shopping MVP adapters are in
+``serpscrap/topic_plugins.py``. New adapters require sanitized fixtures,
+contract validation, parser regression tests, locale-aware normalization, and
+explicit source terms/rate-limit review. Keep raw query- or session-bearing
+responses out of source control and CI artifacts.
+
 Documentation changes
 =====================
 

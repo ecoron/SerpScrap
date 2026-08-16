@@ -7,12 +7,20 @@ import serpscrap.mcp_server as mcp
 
 def test_tools_have_strict_schemas_and_side_effect_annotations():
     tools = {tool["name"]: tool for tool in mcp.TOOLS}
-    assert len(tools) == 10
+    assert len(tools) == 12
     assert all(tool["inputSchema"]["additionalProperties"] is False for tool in tools.values())
-    assert tools["start_search"]["inputSchema"]["properties"]["options"]["additionalProperties"] is False
+    assert (
+        tools["start_search"]["inputSchema"]["properties"]["options"]["additionalProperties"]
+        is False
+    )
     assert tools["get_configuration"]["annotations"]["readOnlyHint"] is True
     assert tools["update_configuration"]["annotations"]["readOnlyHint"] is False
-    assert "accept" in tools["start_search"]["inputSchema"]["properties"]["options"]["properties"]["consent_action"]["enum"]
+    assert (
+        "accept"
+        in tools["start_search"]["inputSchema"]["properties"]["options"]["properties"][
+            "consent_action"
+        ]["enum"]
+    )
 
 
 def test_argument_validation_rejects_unknown_and_unbounded_values():
@@ -40,14 +48,23 @@ def test_list_results_forwards_bounded_pagination(monkeypatch):
         return {"results": []}
 
     monkeypatch.setattr(mcp, "_api_request", fake_request)
-    assert mcp.call_tool("list_results", {"run_id": "run-1", "offset": 10, "limit": 25}) == {"results": []}
+    assert mcp.call_tool("list_results", {"run_id": "run-1", "offset": 10, "limit": 25}) == {
+        "results": []
+    }
     assert calls == [("/results?run_id=run-1&offset=10&limit=25", None, None)]
 
 
 def test_url_statistics_tool_is_query_independent(monkeypatch):
     seen = []
-    monkeypatch.setattr(mcp, "_api_request", lambda path, payload=None, method=None: seen.append(path) or {"items": []})
-    mcp.call_tool("analyze_url_statistics", {"scope": "domains", "domain": "sparwelt.de", "include_findings": True, "limit": 10})
+    monkeypatch.setattr(
+        mcp,
+        "_api_request",
+        lambda path, payload=None, method=None: seen.append(path) or {"items": []},
+    )
+    mcp.call_tool(
+        "analyze_url_statistics",
+        {"scope": "domains", "domain": "sparwelt.de", "include_findings": True, "limit": 10},
+    )
     assert seen == ["/history/domains?domain=sparwelt.de&include_findings=True&limit=10"]
 
 
@@ -63,7 +80,7 @@ def test_dotenv_loads_values_without_overriding_environment(monkeypatch, tmp_pat
     dotenv.write_text(
         "MCP_HOST=127.0.0.1\n"
         "export MCP_PORT=9001\n"
-        "QUOTED=\"value with spaces\"\n"
+        'QUOTED="value with spaces"\n'
         "INVALID-NAME=ignored\n",
         encoding="utf-8",
     )

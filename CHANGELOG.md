@@ -8,6 +8,45 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Unified the search UI mode selection in a multi-select beside the start
+  button. Web, News, and Shopping can now be selected together, with their
+  results and source failures rendered in one workspace response.
+- Extended the UI proxy timeout specifically for browser-backed Topic searches
+  so multi-source Shopping requests are not cancelled by the 30-second default.
+- Persisted HTTP API Topic searches as normal history runs, including topic
+  result kinds, source attribution, result counts, and source-level failures.
+- Hardened TopicService construction so each HTTP request owns its configured
+  browser transport while direct, CLI, and MCP calls reuse one transport per
+  execution consistently.
+- Added Shopping card excerpts and meta-description extraction, plus explicit
+  persisted failure rendering in History run details. Existing records use
+  price, merchant, and availability as a safe display fallback.
+
+- Implemented the Alpha 2.0.0 Topic Tools foundation: shared topic request,
+  result, report, capability, plugin, registry, normalization, and
+  deduplication contracts, plus deterministic News feed and Shopping MVP
+  adapters. Added the shared TopicService and CLI, HTTP API, and MCP entry
+  points with contract and parser regression tests.
+- Added English user and developer documentation for Topic Tools, including
+  CLI, HTTP API, MCP, extension, safety, and navigation guidance.
+- Integrated Topic Tools into the UI: configurable topic defaults and source
+  URLs, focused News/Shopping search controls, shared report rendering, and
+  source-level error display.
+- Added the first three open Shopping result-page sources: Geizhals, idealo,
+  and billiger.de, with source-specific URL builders, parser contracts,
+  source selection, metadata, partial-failure reporting, and regression tests.
+- Added open marketplace source plugins for Fruugo, Kaufland Marketplace,
+  Allegro, and Etsy, including localized public search URLs, country-aware
+  capability filtering, UI source selection, and regression coverage.
+- Routed TopicPlugins that load public result pages through the shared
+  Selenium/Chrome transport and the same browser, pacing, retry, blocking,
+  consent, and timeout configuration used by search engines. Feed-based news
+  sources remain on their feed transport. CLI, HTTP API, and MCP topic entry
+  points now initialize or refresh that shared configuration consistently.
+
+- Documented the planned `TopicPlugin` architecture for standardized News,
+  Shopping, and future thematic tools in `docs/alpaha-2.0.0-tools.md`.
+
 - Updated phase 4, 5, 7, and URL-scraping tests for the current 21-engine registry and 30-second URL read timeout.
 
 - Fixed Ruff import ordering in the Google CSE plugin test module so the GitHub CLI checks pass.

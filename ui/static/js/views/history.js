@@ -80,11 +80,13 @@ function updateScope(scope) {
 async function openRun(run, row) {
   document.querySelectorAll('.history-detail-row').forEach(item => item.remove());
   const detail = document.createElement('tr'); detail.className = 'history-detail-row';
-  detail.innerHTML = `<td colspan="6"><div class="inline-run-detail"><div class="workspace-header"><div><p class="eyebrow">Selected run</p><h3>${esc(run.query)}</h3><p class="muted">${number(run.result_count)} results · ${number(run.failure_count)} failures</p></div><button class="button button-ghost" type="button">Close</button></div><div class="history-inline-results" aria-live="polite"></div></div></td>`;
+  detail.innerHTML = `<td colspan="6"><div class="inline-run-detail"><div class="workspace-header"><div><p class="eyebrow">Selected run</p><h3>${esc(run.query)}</h3><p class="muted">${number(run.result_count)} results · ${number(run.failure_count)} failures</p></div><button class="button button-ghost" type="button">Close</button></div><div class="history-inline-failures" aria-live="polite"></div><div class="history-inline-results" aria-live="polite"></div></div></td>`;
   row.after(detail); detail.querySelector('button').onclick = () => detail.remove();
-  const target = detail.querySelector('.history-inline-results'); state(target, 'Loading results', 'Reading the persisted normalized results.');
+  const target = detail.querySelector('.history-inline-results'); const failureTarget = detail.querySelector('.history-inline-failures'); state(target, 'Loading results', 'Reading the persisted normalized results.');
   try {
-    const payload = await api.results(run.id);
+    const [payload, failurePayload] = await Promise.all([api.results(run.id), api.failures(run.id)]);
+    const failures = failurePayload.failures || [];
+    if (failures.length) failureTarget.innerHTML = `<div class="failure-list">${failures.map(failure => `<p>${esc(failure.search_engine || 'unknown')} · ${esc(failure.category || 'failure')}: ${esc(failure.message || 'No details')}</p>`).join('')}</div>`;
     const results = payload.results || [];
     const fallbackRanks = new Map();
     results.forEach(result => {
@@ -96,7 +98,8 @@ async function openRun(run, row) {
     target.innerHTML = results.length ? results.map((result, index) => {
       const url = result.canonical_url || result.serp_url || result.url || result.link || '';
       const title = result.serp_title || result.title || url || 'Untitled result';
-      const snippet = result.serp_snippet || result.snippet || result.description || result.summary || result.text || result.content || result.visible_link || 'No snippet available.';
+      const fallback = [result.price, result.merchant, result.availability].filter(Boolean).join(' · ');
+      const snippet = result.serp_snippet || result.snippet || result.description || result.summary || result.text || result.content || result.visible_link || fallback || 'No snippet available.';
       const domain = result.serp_domain || (() => { try { return new URL(url).hostname; } catch { return 'Unknown domain'; } })();
       return `<article class="result-card"><span class="result-source">${esc(result.search_engine || 'unknown')} · ${esc(domain)}</span><h3>${esc(title)}</h3><a class="result-url" href="${esc(url)}" target="_blank" rel="noreferrer">${esc(url || 'Unavailable')}</a><p class="result-snippet">${esc(snippet)}</p><div class="result-footer"><span class="result-badge">Type ${esc(result.result_kind || 'organic')}</span><span class="result-badge">Rank ${esc(result.serp_rank ?? '—')}</span></div></article>`;
     }).join('') : '<p class="empty-cell">No results persisted for this run.</p>';

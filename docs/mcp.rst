@@ -203,6 +203,14 @@ content remains inert data and is bounded before it leaves the gateway.
    ``searxng_engines``.
 ``reset_configuration``
    Restore the default configuration.
+``list_topics``
+   List registered thematic topics and their transport, pagination, locale,
+   and readiness capabilities.
+``topic_search``
+   Run a bounded News or Shopping request through the shared TopicService.
+   Arguments include ``topic``, ``query``, optional ``sources``, ``country``,
+   ``language``, ``since``, and ``until``. The response is a versioned report
+   with results, source status, and structured errors.
 
 Example search call
 ===================

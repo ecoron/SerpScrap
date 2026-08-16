@@ -11,10 +11,10 @@ import click
 
 from scrapcore.scraper.browser import ChromeDriverFactory
 from serpscrap import Config, SerpScrap
+from serpscrap.topic_service import TopicService
+from serpscrap.topics import TopicRequest
 
-LOG_LEVELS = click.Choice(
-    ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
-)
+LOG_LEVELS = click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False)
 
 
 def _echo_json(payload: Any) -> None:
@@ -75,9 +75,7 @@ def configure_logging(level: str, log_format: str) -> None:
     if log_format == "json":
         handler.setFormatter(JsonLogFormatter())
     else:
-        handler.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
-        )
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     root.addHandler(handler)
 
 
@@ -133,7 +131,9 @@ def main(log_level: str, log_format: str) -> None:
     type=click.Path(path_type=str, dir_okay=False),
     help="Atomically save the result array to a local .json file.",
 )
-@click.option("--overwrite", is_flag=True, default=False, help="Replace an existing JSON output file.")
+@click.option(
+    "--overwrite", is_flag=True, default=False, help="Replace an existing JSON output file."
+)
 @click.option("--no-cache", is_flag=True, default=None, help="Disable the local HTML cache.")
 @click.option("--no-history", is_flag=True, default=None, help="Disable persistent SQLite history.")
 @click.option(
@@ -150,8 +150,18 @@ def main(log_level: str, log_format: str) -> None:
     show_default=True,
     help="Progress event format; JSON Lines is written to stderr.",
 )
-@click.option("--diagnostic-html", is_flag=True, default=False, help="Save redacted rendered HTML under the diagnostic directory.")
-@click.option("--diagnostic-dir", type=click.Path(path_type=str, file_okay=False), default=None, help="Diagnostic artifact directory.")
+@click.option(
+    "--diagnostic-html",
+    is_flag=True,
+    default=False,
+    help="Save redacted rendered HTML under the diagnostic directory.",
+)
+@click.option(
+    "--diagnostic-dir",
+    type=click.Path(path_type=str, file_okay=False),
+    default=None,
+    help="Diagnostic artifact directory.",
+)
 def search(
     keywords: tuple[str, ...],
     pages: int | None,
@@ -229,6 +239,33 @@ def search(
         )
     logger.info("Search completed with %d parsed result(s)", len(results))
     _echo_json(results)
+
+
+@main.command("topic-search")
+@click.argument("topic", type=click.Choice(["news", "shopping"]))
+@click.argument("query")
+@click.option("--source", "sources", multiple=True)
+@click.option("--country", default=None)
+@click.option("--language", default=None)
+@click.option("--since", default=None, help="ISO timestamp or relative value such as 24h.")
+def topic_search(
+    topic: str,
+    query: str,
+    sources: tuple[str, ...],
+    country: str | None,
+    language: str | None,
+    since: str | None,
+) -> None:
+    """Run a News or Shopping query through the shared TopicService."""
+    try:
+        report = TopicService(config=Config().get()).execute(
+            TopicRequest.create(
+                query, topic=topic, sources=sources, country=country, language=language, since=since
+            )
+        )
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    _echo_json(report.to_dict())
 
 
 @main.command("browser-check")

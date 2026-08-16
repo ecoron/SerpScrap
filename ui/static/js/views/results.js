@@ -63,4 +63,4 @@ export function renderResultDetail(target, group) {
   target.append(header, source, snippet, metadata, url, action);
 }
 
-export function renderFailures(target, failures = []) { target.replaceChildren(); failures.forEach(failure => { const item = document.createElement('p'); item.textContent = `${failure.search_engine || 'unknown'} · ${failure.category}: ${failure.message || 'No details'}`; target.append(item); }); }
+export function renderFailures(target, failures = []) { target.replaceChildren(); failures.forEach(failure => { const item = document.createElement('p'); item.textContent = `${failure.search_engine || failure.source || 'unknown'} · ${failure.category}: ${failure.message || 'No details'}`; target.append(item); }); }

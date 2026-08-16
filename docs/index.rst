@@ -30,6 +30,7 @@ Choose the interface that matches your workflow:
 * :doc:`results` — understand result rows, fusion, failures, and JSON output.
 * :doc:`configuration` — configure engines, markets, concurrency, caching, and
   diagnostics.
+* :doc:`topic-tools` — use News and Shopping sources through one shared contract.
 
 .. toctree::
    :caption: User guide
@@ -44,6 +45,7 @@ Choose the interface that matches your workflow:
    docker
    mcp
    searchengines
+   topic-tools
 
 .. toctree::
    :caption: Developer guide

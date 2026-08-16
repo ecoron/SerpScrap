@@ -30,6 +30,11 @@ def test_flask_ui_renders_shell_and_healthcheck():
     history_page = client.get("/history").data
     assert b"current-detail" in search_page
     assert b"search-settings-overlay" in search_page
+    assert b"topic-options" in search_page
+    assert b"search-scope" in search_page
+    assert b"search-modes" in search_page
+    assert b"multiple" in search_page
+    assert b"topic-source-options" in search_page
     assert b"search-settings-toggle" in page.data
     assert b"historical-result-detail" not in history_page
     assert b"result-list" in search_page
@@ -67,6 +72,7 @@ def test_configuration_page_exposes_proxy_operations():
     configuration_source = open("ui/static/js/views/configuration.js", encoding="utf-8").read()
     assert "proxy_file or proxy_sources" in configuration_source
     assert "notify(message, 'error')" in configuration_source
+    assert '"id": "topics"' in open("serpscrap/configuration_service.py", encoding="utf-8").read()
 
 
 def test_ui_result_contract_keeps_all_result_kinds_and_awaits_refresh_callbacks():
@@ -79,6 +85,9 @@ def test_ui_result_contract_keeps_all_result_kinds_and_awaits_refresh_callbacks(
     assert "await onUpdate(status)" in polling_source
     assert "await refreshCurrent(); await refreshOverview();" in app_source
     assert "result-sort" in app_source
+    assert "selectedSearchModes" in app_source
+    assert "search-modes" in app_source
+    assert "topicReports" in app_source
     assert "result-snippet" in results_source
     assert "await startSearch({preventDefault() {}})" in app_source
     assert "createHistoricalDetailRow" in app_source
@@ -171,3 +180,36 @@ def test_ui_proxy_preserves_query_string(monkeypatch):
     response = app.test_client().get("/api/v1/results?run_id=run-ui&limit=10")
     assert response.status_code == 200
     assert captured["url"].endswith("/api/v1/results?run_id=run-ui&limit=10")
+
+
+def test_ui_proxy_allows_browser_topic_searches_to_finish(monkeypatch):
+    captured = {}
+
+    class FakeResponse:
+        status = 200
+
+        class Headers:
+            def get(self, name, default=None):
+                return default
+
+        headers = Headers()
+
+        def read(self):
+            return b'{"results": []}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    def fake_urlopen(request, timeout):
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("ui.app.urllib.request.urlopen", fake_urlopen)
+    app = create_app()
+    app.config.update(TESTING=True)
+    response = app.test_client().post("/api/v1/topics/search", json={"query": "headphones"})
+    assert response.status_code == 200
+    assert captured["timeout"] == 130

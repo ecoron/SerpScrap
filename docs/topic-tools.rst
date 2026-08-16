@@ -145,6 +145,29 @@ MCP
 ``since``, and ``until`` and returns a bounded structured report. Both tools
 use the same TopicService as the HTTP and Python interfaces.
 
+The MCP gateway also exposes specialized tools for the first implementation
+stage:
+
+* ``get_topic_capabilities`` and ``list_topic_sources`` expose registry
+  metadata before a request is made.
+* ``search_news`` runs a News-only request, while ``group_news_events`` adds
+  deterministic near-duplicate headline grouping.
+* ``search_products`` runs a Shopping-only request, while
+  ``compare_product_prices`` groups offers and adds a normalized
+  ``price_value`` when possible.
+
+These tools return the same versioned report shape as ``topic_search``. The
+specialized post-processing is bounded and preserves the original normalized
+results inside each event or product offer.
+
+The current MCP analysis layer also provides ``validate_topic_query``,
+``compare_topic_results``, and ``export_topic_results`` for validation,
+comparison, and JSON/CSV export. News provides ``compare_news_sources``,
+``get_news_trends``, and ``track_news_topic``. Shopping provides
+``filter_products``, ``find_product_alternatives``, and
+``track_product_price``. Tracking tools deliberately return snapshots rather
+than silently creating background jobs.
+
 Adding a source
 ===============
 

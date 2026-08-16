@@ -8,6 +8,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Hardened MCP Topic analysis: specialized schemas now match runtime
+  validation, Topic result comparison canonicalizes URLs, CSV export uses
+  standards-compliant quoting, and documentation reflects the complete
+  implemented tool set.
+
+- Added shared Topic validation, result comparison, and JSON/CSV export MCP
+  tools, plus News source comparison, trend summaries, tracking snapshots and
+  Shopping filtering, alternative detection, and price snapshots.
+
+- Added six MCP Topic Tools: ``get_topic_capabilities``,
+  ``list_topic_sources``, ``search_news``, ``group_news_events``,
+  ``search_products``, and ``compare_product_prices``. They reuse the shared
+  ``TopicService`` and expose bounded, deterministic News grouping and
+  Shopping offer comparison while preserving source status and errors.
+
 - Added `All` as the default Search mode. It runs Web, News, and Shopping;
   `All` Search type runs all supported Web SERP types and merges their results
   in the workspace. The configuration schema also exposes `All` as the topic

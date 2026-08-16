@@ -7,11 +7,14 @@ state-changing operations and may be protected with ``MCP_AUTH_TOKEN``.
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
 import re
 import secrets
 import urllib.request
+from difflib import SequenceMatcher
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -19,7 +22,7 @@ from urllib.parse import urlencode
 
 from serpscrap.config import Config
 from serpscrap.topic_service import TopicService
-from serpscrap.topics import TopicRequest
+from serpscrap.topics import TopicRequest, canonical_url
 
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -275,7 +278,131 @@ TOOLS = [
             "openWorldHint": True,
         },
     },
+    {
+        "name": "get_topic_capabilities",
+        "description": "Read capabilities and supported filters for one registered topic.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"topic": {"type": "string", "enum": ["news", "shopping"]}},
+            "required": ["topic"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "list_topic_sources",
+        "description": "List registered sources for an optional topic, including capabilities and readiness.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"topic": {"type": "string", "enum": ["news", "shopping"]}},
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "search_news",
+        "description": "Run a news-focused search with source, locale, and time-window filters.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": _string_schema("News query.", max_length=1000),
+                "sources": {"type": "array", "items": _string_schema("News source ID or feed URL.", max_length=500), "maxItems": 16, "uniqueItems": True},
+                "country": {"type": "string", "pattern": "^[A-Za-z]{2}$"},
+                "language": {"type": "string", "pattern": "^[A-Za-z][A-Za-z-]{1,15}$"},
+                "since": {"type": "string", "maxLength": 40},
+                "until": {"type": "string", "maxLength": 40},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True},
+    },
+    {
+        "name": "group_news_events",
+        "description": "Search news and group near-identical headlines into source-aware events.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": _string_schema("News query.", max_length=1000),
+                "sources": {"type": "array", "items": _string_schema("News source ID or feed URL.", max_length=500), "maxItems": 16, "uniqueItems": True},
+                "country": {"type": "string", "pattern": "^[A-Za-z]{2}$"},
+                "language": {"type": "string", "pattern": "^[A-Za-z][A-Za-z-]{1,15}$"},
+                "since": {"type": "string", "maxLength": 40},
+                "until": {"type": "string", "maxLength": 40},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True},
+    },
+    {
+        "name": "search_products",
+        "description": "Run a shopping-focused product search with source and marketplace filters.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": _string_schema("Product query.", max_length=1000),
+                "sources": {"type": "array", "items": _string_schema("Shopping source ID.", max_length=80), "maxItems": 16, "uniqueItems": True},
+                "country": {"type": "string", "pattern": "^[A-Za-z]{2}$"},
+                "language": {"type": "string", "pattern": "^[A-Za-z][A-Za-z-]{1,15}$"},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True},
+    },
+    {
+        "name": "compare_product_prices",
+        "description": "Search products and group comparable offers with normalized price information.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": _string_schema("Product query.", max_length=1000),
+                "sources": {"type": "array", "items": _string_schema("Shopping source ID.", max_length=80), "maxItems": 16, "uniqueItems": True},
+                "country": {"type": "string", "pattern": "^[A-Za-z]{2}$"},
+                "language": {"type": "string", "pattern": "^[A-Za-z][A-Za-z-]{1,15}$"},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True},
+    },
 ]
+
+_TOPIC_FILTER_PROPERTIES = {
+    "sources": {"type": "array", "items": _string_schema("Topic source ID or URL.", max_length=500), "maxItems": 16, "uniqueItems": True},
+    "country": {"type": "string", "pattern": "^[A-Za-z]{2}$"},
+    "language": {"type": "string", "pattern": "^[A-Za-z][A-Za-z-]{1,15}$"},
+    "since": {"type": "string", "maxLength": 40},
+    "until": {"type": "string", "maxLength": 40},
+}
+
+
+def _topic_analysis_tool(name: str, description: str, *, topic: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    filters = _TOPIC_FILTER_PROPERTIES.copy()
+    if topic == "shopping":
+        filters.pop("since")
+        filters.pop("until")
+    properties = {"query": _string_schema("Topic query.", max_length=1000), **filters, **(extra or {})}
+    return {
+        "name": name,
+        "description": description,
+        "inputSchema": {"type": "object", "properties": properties, "required": ["query"], "additionalProperties": False},
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True},
+    }
+
+
+TOOLS.extend([
+    {"name": "validate_topic_query", "description": "Validate a topic query and filters without fetching sources.", "inputSchema": {"type": "object", "properties": {"topic": {"type": "string", "enum": ["news", "shopping"]}, "query": _string_schema("Topic query.", max_length=1000), **_TOPIC_FILTER_PROPERTIES}, "required": ["topic", "query"], "additionalProperties": False}, "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False}},
+    {"name": "compare_topic_results", "description": "Compare two bounded topic result lists by canonical URL.", "inputSchema": {"type": "object", "properties": {"left": {"type": "array", "maxItems": 1000, "items": {"type": "object"}}, "right": {"type": "array", "maxItems": 1000, "items": {"type": "object"}}}, "required": ["left", "right"], "additionalProperties": False}, "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False}},
+    {"name": "export_topic_results", "description": "Export a bounded topic result list as JSON or CSV text.", "inputSchema": {"type": "object", "properties": {"results": {"type": "array", "maxItems": 1000, "items": {"type": "object"}}, "format": {"type": "string", "enum": ["json", "csv"]}}, "required": ["results"], "additionalProperties": False}, "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False}},
+    _topic_analysis_tool("compare_news_sources", "Search news and compare result counts and headlines by source.", topic="news"),
+    _topic_analysis_tool("track_news_topic", "Run a bounded news tracking snapshot for a topic and return source-aware results.", topic="news"),
+    _topic_analysis_tool("get_news_trends", "Search news and summarize publication volume by source and day.", topic="news"),
+    _topic_analysis_tool("filter_products", "Search products and filter offers by price and availability.", topic="shopping", extra={"max_price": {"type": "number", "minimum": 0}, "availability": {"type": "string", "maxLength": 40}}),
+    _topic_analysis_tool("track_product_price", "Run a bounded product price snapshot across selected sources.", topic="shopping"),
+    _topic_analysis_tool("find_product_alternatives", "Search products and return alternative offers grouped by normalized product identity.", topic="shopping"),
+])
 
 _TOOL_NAMES = {tool["name"] for tool in TOOLS}
 _MUTATING_TOOLS = {"update_configuration", "reset_configuration"}
@@ -315,6 +442,21 @@ def _validate_arguments(name: str, arguments: dict[str, Any]) -> None:
         "reset_configuration": set(),
         "list_topics": set(),
         "topic_search": {"topic", "query", "sources", "country", "language", "since", "until"},
+        "get_topic_capabilities": {"topic"},
+        "list_topic_sources": {"topic"},
+        "search_news": {"query", "sources", "country", "language", "since", "until"},
+        "group_news_events": {"query", "sources", "country", "language", "since", "until"},
+        "search_products": {"query", "sources", "country", "language"},
+        "compare_product_prices": {"query", "sources", "country", "language"},
+        "validate_topic_query": {"topic", "query", "sources", "country", "language", "since", "until"},
+        "compare_topic_results": {"left", "right"},
+        "export_topic_results": {"results", "format"},
+        "compare_news_sources": {"query", "sources", "country", "language", "since", "until"},
+        "track_news_topic": {"query", "sources", "country", "language", "since", "until"},
+        "get_news_trends": {"query", "sources", "country", "language", "since", "until"},
+        "filter_products": {"query", "sources", "country", "language", "max_price", "availability"},
+        "track_product_price": {"query", "sources", "country", "language"},
+        "find_product_alternatives": {"query", "sources", "country", "language"},
     }
     allowed = allowed_options[name]
     unknown = set(arguments) - allowed
@@ -325,6 +467,20 @@ def _validate_arguments(name: str, arguments: dict[str, Any]) -> None:
         "get_search_status": {"id"},
         "update_configuration": {"search_engines"},
         "topic_search": {"query"},
+        "get_topic_capabilities": {"topic"},
+        "search_news": {"query"},
+        "group_news_events": {"query"},
+        "search_products": {"query"},
+        "compare_product_prices": {"query"},
+        "validate_topic_query": {"topic", "query"},
+        "compare_topic_results": {"left", "right"},
+        "export_topic_results": {"results"},
+        "compare_news_sources": {"query"},
+        "track_news_topic": {"query"},
+        "get_news_trends": {"query"},
+        "filter_products": {"query"},
+        "track_product_price": {"query"},
+        "find_product_alternatives": {"query"},
     }
     required = required_options.get(name, set())
     missing = required - set(arguments)
@@ -359,6 +515,134 @@ def _validate_arguments(name: str, arguments: dict[str, Any]) -> None:
             raise ValueError("search_engines must be a non-empty list of unique IDs")
     if "options" in arguments and not isinstance(arguments["options"], dict):
         raise ValueError("options must be an object")
+    for field in ("left", "right", "results"):
+        if field in arguments and (
+            not isinstance(arguments[field], list)
+            or len(arguments[field]) > 1000
+            or any(not isinstance(item, dict) for item in arguments[field])
+        ):
+            raise ValueError(f"{field} must be a bounded list")
+    if "format" in arguments and arguments["format"] not in {"json", "csv"}:
+        raise ValueError("format must be json or csv")
+    if "max_price" in arguments and (not isinstance(arguments["max_price"], (int, float)) or isinstance(arguments["max_price"], bool) or arguments["max_price"] < 0):
+        raise ValueError("max_price must be a non-negative number")
+    if "availability" in arguments and (not isinstance(arguments["availability"], str) or not arguments["availability"].strip() or len(arguments["availability"]) > 40):
+        raise ValueError("availability must be a bounded string")
+    if "topic" in arguments and arguments["topic"] not in {"news", "shopping"}:
+        raise ValueError("unsupported topic")
+    if "sources" in arguments:
+        sources = arguments["sources"]
+        if (not isinstance(sources, list) or len(sources) > 16 or len(set(sources)) != len(sources)
+                or any(not isinstance(source, str) or not source.strip() or len(source) > 500 for source in sources)):
+            raise ValueError("sources must be a bounded list of unique strings")
+    for field in ("country", "language", "since", "until"):
+        if field in arguments and (not isinstance(arguments[field], str) or not arguments[field].strip() or len(arguments[field]) > 40):
+            raise ValueError(f"{field} must be a bounded string")
+
+
+def _execute_topic_request(topic: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    request = TopicRequest.create(
+        arguments["query"],
+        topic=topic,
+        sources=arguments.get("sources") or (),
+        country=arguments.get("country"),
+        language=arguments.get("language"),
+        since=arguments.get("since"),
+        until=arguments.get("until"),
+    )
+    return _TOPIC_SERVICE.execute(request).to_dict()
+
+
+def _headline_key(value: str | None) -> str:
+    return re.sub(r"[^a-z0-9 ]", "", (value or "").lower()).strip()
+
+
+def _group_news_events(report: dict[str, Any]) -> dict[str, Any]:
+    groups: list[dict[str, Any]] = []
+    for result in report.get("results", [])[:1000]:
+        title = result.get("title") or result.get("snippet") or ""
+        key = _headline_key(title)
+        group = next(
+            (item for item in groups if SequenceMatcher(None, key, item["_key"]).ratio() >= 0.72),
+            None,
+        )
+        if group is None:
+            group = {"event_id": f"event-{len(groups) + 1}", "headline": title, "sources": [], "articles": [], "_key": key}
+            groups.append(group)
+        group["articles"].append(result)
+        source = result.get("source")
+        if source and source not in group["sources"]:
+            group["sources"].append(source)
+    for group in groups:
+        group.pop("_key", None)
+        group["article_count"] = len(group["articles"])
+    return {**report, "events": groups, "results": []}
+
+
+def _price_value(result: dict[str, Any]) -> float | None:
+    value = result.get("price_value") or result.get("price")
+    if isinstance(value, (int, float)):
+        return float(value)
+    if not isinstance(value, str):
+        return None
+    match = re.search(r"\d[\d.\s]*[,\.]\d{2}|\d+", value)
+    if not match:
+        return None
+    raw = match.group(0).replace(" ", "")
+    if "," in raw:
+        raw = raw.replace(".", "").replace(",", ".")
+    try:
+        return float(raw)
+    except ValueError:
+        return None
+
+
+def _product_key(result: dict[str, Any]) -> str:
+    for field in ("gtin", "product_id", "model_number"):
+        if result.get(field):
+            return f"{field}:{str(result[field]).strip().lower()}"
+    title = _headline_key(result.get("title"))
+    return f"title:{title}" if title else f"url:{result.get('canonical_url') or result.get('url', '')}"
+
+
+def _compare_product_prices(report: dict[str, Any]) -> dict[str, Any]:
+    products: dict[str, dict[str, Any]] = {}
+    for result in report.get("results", [])[:1000]:
+        key = _product_key(result)
+        product = products.setdefault(key, {"product_id": key, "title": result.get("title"), "offers": []})
+        offer = {**result, "price_value": _price_value(result)}
+        product["offers"].append(offer)
+    items = list(products.values())
+    for item in items:
+        priced = [offer["price_value"] for offer in item["offers"] if offer["price_value"] is not None]
+        item["lowest_price"] = min(priced) if priced else None
+        item["offer_count"] = len(item["offers"])
+        item["offers"].sort(key=lambda offer: (offer["price_value"] is None, offer["price_value"] or 0, offer.get("source") or ""))
+    items.sort(key=lambda item: (item["lowest_price"] is None, item["lowest_price"] or 0, item["title"] or ""))
+    return {**report, "products": items, "results": []}
+
+
+def _compare_topic_results(left: list[dict[str, Any]], right: list[dict[str, Any]]) -> dict[str, Any]:
+    def keyed(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        return {
+            canonical_url(str(row.get("canonical_url") or row.get("url") or row.get("raw_url"))): row
+            for row in rows
+            if row.get("canonical_url") or row.get("url") or row.get("raw_url")
+        }
+    before, after = keyed(left), keyed(right)
+    shared = sorted(set(before) & set(after))
+    return {"schema_version": 1, "stable": [{"identity": key, "left": before[key], "right": after[key]} for key in shared], "added": [after[key] for key in sorted(set(after) - set(before))], "removed": [before[key] for key in sorted(set(before) - set(after))], "totals": {"stable": len(shared), "added": len(set(after) - set(before)), "removed": len(set(before) - set(after))}}
+
+
+def _export_topic_results(rows: list[dict[str, Any]], fmt: str = "json") -> dict[str, Any]:
+    if fmt == "json":
+        return {"format": "json", "content": json.dumps(rows, ensure_ascii=False)}
+    keys = sorted({key for row in rows for key in row})
+    stream = io.StringIO()
+    writer = csv.DictWriter(stream, fieldnames=keys, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
+    return {"format": "csv", "content": stream.getvalue()}
 
 
 def call_tool(name: str, arguments: dict[str, Any]) -> Any:
@@ -367,6 +651,28 @@ def call_tool(name: str, arguments: dict[str, Any]) -> Any:
         return _api_request("/searches", arguments)
     if name == "list_topics":
         return {"topics": _TOPIC_SERVICE.registry.metadata()}
+    if name == "validate_topic_query":
+        TopicRequest.create(arguments["query"], topic=arguments["topic"], sources=arguments.get("sources") or (), country=arguments.get("country"), language=arguments.get("language"), since=arguments.get("since"), until=arguments.get("until"))
+        return {"valid": True, "topic": arguments["topic"], "query": arguments["query"], "filters": {key: arguments[key] for key in arguments if key not in {"topic", "query"}}}
+    if name == "compare_topic_results":
+        return _compare_topic_results(arguments["left"], arguments["right"])
+    if name == "export_topic_results":
+        return _export_topic_results(arguments["results"], arguments.get("format", "json"))
+    if name == "get_topic_capabilities":
+        matches = [item for item in _TOPIC_SERVICE.registry.metadata() if item["topic_id"] == arguments["topic"]]
+        if not matches:
+            raise ValueError(f"unknown topic: {arguments['topic']}")
+        return {
+            "topic_id": arguments["topic"],
+            "display_name": matches[0]["display_name"],
+            "source_count": len(matches),
+            "readiness": sorted({item["readiness"] for item in matches}),
+            "sources": matches,
+        }
+    if name == "list_topic_sources":
+        topic = arguments.get("topic")
+        sources = [item for item in _TOPIC_SERVICE.registry.metadata() if not topic or item["topic_id"] == topic]
+        return {"topic": topic, "sources": sources}
     if name == "topic_search":
         query = arguments.get("query")
         if not isinstance(query, str) or not query.strip():
@@ -381,6 +687,46 @@ def call_tool(name: str, arguments: dict[str, Any]) -> Any:
             until=arguments.get("until"),
         )
         return _TOPIC_SERVICE.execute(request).to_dict()
+    if name in {"search_news", "group_news_events", "search_products", "compare_product_prices"}:
+        topic = "news" if "news" in name else "shopping"
+        report = _execute_topic_request(topic, arguments)
+        if name == "group_news_events":
+            return _group_news_events(report)
+        if name == "compare_product_prices":
+            return _compare_product_prices(report)
+        return report
+    if name in {"compare_news_sources", "track_news_topic", "get_news_trends"}:
+        report = _execute_topic_request("news", arguments)
+        if name == "track_news_topic":
+            return {**report, "tracking": {"mode": "snapshot", "query": arguments["query"]}}
+        if name == "compare_news_sources":
+            by_source: dict[str, dict[str, Any]] = {}
+            for row in report.get("results", []):
+                source = str(row.get("source") or "unknown")
+                item = by_source.setdefault(source, {"source": source, "result_count": 0, "headlines": []})
+                item["result_count"] += 1
+                if len(item["headlines"]) < 20:
+                    item["headlines"].append(row.get("title"))
+            return {**report, "sources": sorted(by_source.values(), key=lambda item: (-item["result_count"], item["source"]))}
+        by_day: dict[str, int] = {}
+        for row in report.get("results", []):
+            day = str(row.get("published_at") or "unknown")[:10]
+            by_day[day] = by_day.get(day, 0) + 1
+        return {**report, "trends": [{"date": day, "result_count": by_day[day]} for day in sorted(by_day)]}
+    if name in {"filter_products", "track_product_price", "find_product_alternatives"}:
+        report = _compare_product_prices(_execute_topic_request("shopping", arguments))
+        if name == "track_product_price":
+            return {**report, "tracking": {"mode": "snapshot", "query": arguments["query"]}}
+        if name == "filter_products":
+            max_price = arguments.get("max_price")
+            availability = arguments.get("availability")
+            for product in report["products"]:
+                product["offers"] = [offer for offer in product["offers"] if (max_price is None or offer.get("price_value") is None or offer["price_value"] <= max_price) and (not availability or offer.get("availability") == availability)]
+                product["offer_count"] = len(product["offers"])
+            report["products"] = [product for product in report["products"] if product["offer_count"]]
+        else:
+            report["products"] = [product for product in report["products"] if product["offer_count"] > 1]
+        return report
     if name == "get_search_status":
         return _api_request(f"/searches/{arguments['id']}")
     if name == "list_results":

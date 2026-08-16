@@ -480,7 +480,8 @@ class SearchHistoryStore:
 
     def aggregates(self, kind: str, filters: dict[str, Any] | None = None, limit: int = 1000, offset: int = 0) -> dict[str, Any]:
         runs, results = self._filtered(filters)
-        rows = defaultdict(lambda: {"runs": set(), "results": 0, "failures": 0, "providers": set(), "ranks": []})
+        rows = defaultdict(lambda: {"runs": set(), "results": 0, "failures": 0, "providers": set(), "ranks": [], "findings": []})
+        run_by_id = {run["id"]: run for run in runs}
         if kind == "providers":
             for run in runs:
                 for provider in run.get("options", {}).get("search_engines", []):
@@ -498,19 +499,30 @@ class SearchHistoryStore:
             if kind == "providers":
                 key = str(result.get("search_engine") or "unknown")
             elif kind == "domains":
-                key = urlparse(str(result.get("url") or result.get("link") or "")).netloc.lower() or "unknown"
+                parsed_url = urlparse(str(result.get("canonical_url") or result.get("url") or result.get("link") or ""))
+                key = parsed_url.hostname.lower() if parsed_url.hostname else "unknown"
+            elif kind == "urls":
+                key = str(result.get("canonical_url") or result.get("url") or result.get("link") or "").strip() or "unknown"
             else:
                 key = next(run["query"] for run in runs if run["id"] == result["run_id"])
+            domain_filter = str((filters or {}).get("domain") or "").lower().strip()
+            if domain_filter and domain_filter not in key.lower() and kind in {"domains", "urls"}:
+                continue
             rows[key]["runs"].add(result["run_id"])
             rows[key]["results"] += 1
             rows[key]["providers"].add(result.get("search_engine", "unknown"))
             if result.get("serp_rank") is not None:
                 rows[key]["ranks"].append(result["serp_rank"])
+            if kind in {"domains", "urls"} and (filters or {}).get("include_findings"):
+                rows[key]["findings"].append({"found_at": run_by_id[result["run_id"]].get("created_at"), "search_engine": result.get("search_engine"), "query": run_by_id[result["run_id"]].get("query"), "rank": result.get("serp_rank"), "url": result.get("canonical_url") or result.get("url") or result.get("link")})
         items = []
         for key, value in rows.items():
             state = "successful" if value["results"] else ("failed" if value["failures"] else "empty")
             run_count = len(value["runs"])
-            items.append({"name": key, "run_count": run_count, "result_count": value["results"], "failure_count": value["failures"], "failure_rate": round(value["failures"] / max(1, run_count), 4), "provider_count": len(value["providers"]), "best_rank": min(value["ranks"]) if value["ranks"] else None, "selected": kind == "providers", "state": state, "reason": "results available" if value["results"] else ("provider failure" if value["failures"] else "no results")})
+            item = {"name": key, "run_count": run_count, "result_count": value["results"], "failure_count": value["failures"], "failure_rate": round(value["failures"] / max(1, run_count), 4), "provider_count": len(value["providers"]), "best_rank": min(value["ranks"]) if value["ranks"] else None, "selected": kind == "providers", "state": state, "reason": "results available" if value["results"] else ("provider failure" if value["failures"] else "no results")}
+            if kind in {"domains", "urls"} and (filters or {}).get("include_findings"):
+                item["findings"] = value["findings"]
+            items.append(item)
         items.sort(key=lambda item: (-item["result_count"], item["name"]))
         bounded_limit = min(max(int(limit), 1), 1000)
         bounded_offset = min(max(int(offset), 0), 10000)

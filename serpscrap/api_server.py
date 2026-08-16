@@ -97,7 +97,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         if path == "/api/v1/history/timeseries":
             filters = {key: values[0] for key, values in query.items() if key not in {"interval", "metric"}}
             return self._send(HTTPStatus.OK, self.service.store.timeseries(filters, (query.get("metric") or ["results"])[0]))
-        if path in {"/api/v1/history/providers", "/api/v1/history/queries", "/api/v1/history/domains"}:
+        if path in {"/api/v1/history/providers", "/api/v1/history/queries", "/api/v1/history/domains", "/api/v1/history/urls"}:
             filters = {key: values[0] for key, values in query.items() if key not in {"limit", "offset"}}
             limit = min(max(int((query.get("limit") or [1000])[0]), 1), 1000)
             offset = min(max(int((query.get("offset") or [0])[0]), 0), 10000)

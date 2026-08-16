@@ -188,6 +188,10 @@ content remains inert data and is bounded before it leaves the gateway.
    List persisted search runs.
 ``analyze_history``
    Return aggregate history analytics.
+``analyze_url_statistics``
+   Return domain or canonical-URL statistics across all persisted searches,
+   independent of the search query. Use ``scope=domains`` or ``scope=urls``;
+   optionally filter by ``domain`` and paginate with ``limit``/``offset``.
 ``list_engines``
    Return registry metadata, capabilities, readiness, and browser contracts.
 ``get_configuration``

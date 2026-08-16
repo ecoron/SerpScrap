@@ -7,7 +7,7 @@ import serpscrap.mcp_server as mcp
 
 def test_tools_have_strict_schemas_and_side_effect_annotations():
     tools = {tool["name"]: tool for tool in mcp.TOOLS}
-    assert len(tools) == 9
+    assert len(tools) == 10
     assert all(tool["inputSchema"]["additionalProperties"] is False for tool in tools.values())
     assert tools["start_search"]["inputSchema"]["properties"]["options"]["additionalProperties"] is False
     assert tools["get_configuration"]["annotations"]["readOnlyHint"] is True
@@ -42,6 +42,13 @@ def test_list_results_forwards_bounded_pagination(monkeypatch):
     monkeypatch.setattr(mcp, "_api_request", fake_request)
     assert mcp.call_tool("list_results", {"run_id": "run-1", "offset": 10, "limit": 25}) == {"results": []}
     assert calls == [("/results?run_id=run-1&offset=10&limit=25", None, None)]
+
+
+def test_url_statistics_tool_is_query_independent(monkeypatch):
+    seen = []
+    monkeypatch.setattr(mcp, "_api_request", lambda path, payload=None, method=None: seen.append(path) or {"items": []})
+    mcp.call_tool("analyze_url_statistics", {"scope": "domains", "domain": "sparwelt.de", "include_findings": True, "limit": 10})
+    assert seen == ["/history/domains?domain=sparwelt.de&include_findings=True&limit=10"]
 
 
 def test_non_loopback_bind_requires_authentication(monkeypatch):

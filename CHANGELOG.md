@@ -1,3 +1,7 @@
+- Added include_findings to URL/domain statistics with timestamp, search engine, query, rank, and URL details.
+
+- Added query-independent MCP URL/domain statistics across all persisted searches.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -527,4 +531,4 @@ All notable changes to this project will be documented in this file.
   validation, fixture contracts, migration slices, and acceptance criteria.
 - Diagnostic-Auswertung fÃ¼r `preisfehler` dokumentiert: Alt-Power und eTools liefern parsebare Treffer, Kiddle wird bei ausschlieÃŸlich gesponserten Treffern korrekt als leer gewertet und Marginalia als Provider-Block erkannt; Google/Qwant bleiben blockiert.
 - Regressionstests fÃ¼r deaktivierte Google-CSE-Wrapper und Ecosia-Consent-Metadaten korrigiert.
-- eTools-Parser auf table.result-Zeilen erweitert; Werbezeilen werden übersprungen und organische Treffer vollständig übernommen.
+- eTools-Parser auf table.result-Zeilen erweitert; Werbezeilen werden ï¿½bersprungen und organische Treffer vollstï¿½ndig ï¿½bernommen.

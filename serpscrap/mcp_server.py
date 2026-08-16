@@ -139,6 +139,12 @@ TOOLS = [
         "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
     },
     {
+        "name": "analyze_url_statistics",
+        "description": "Read URL or domain statistics across all persisted searches, independent of search query.",
+        "inputSchema": {"type": "object", "properties": {"scope": {"type": "string", "enum": ["domains", "urls"]}, "domain": _string_schema("Optional domain filter.", max_length=253), "include_findings": {"type": "boolean", "description": "Include individual finding details."}, "limit": {"type": "integer", "minimum": 1, "maximum": 1000}, "offset": {"type": "integer", "minimum": 0, "maximum": 100000}}, "additionalProperties": False},
+        "annotations": {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
         "name": "list_engines",
         "description": "Read registry metadata, capabilities, readiness, and browser contracts for search engines.",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
@@ -194,7 +200,7 @@ def _validate_arguments(name: str, arguments: dict[str, Any]) -> None:
     allowed_options: dict[str, set[str]] = {
         "start_search": {"query", "options"}, "get_search_status": {"id"},
         "list_results": {"run_id", "offset", "limit"}, "list_search_history": {"query", "limit"},
-        "analyze_history": {"query"}, "list_engines": set(), "get_configuration": set(),
+        "analyze_history": {"query"}, "analyze_url_statistics": {"scope", "domain", "include_findings", "limit", "offset"}, "list_engines": set(), "get_configuration": set(),
         "update_configuration": {"search_engines"}, "reset_configuration": set(),
     }
     allowed = allowed_options[name]
@@ -210,9 +216,11 @@ def _validate_arguments(name: str, arguments: dict[str, Any]) -> None:
     missing = required - set(arguments)
     if missing:
         raise ValueError(f"missing required arguments for {name}: {sorted(missing)}")
-    for field in ("query", "id", "run_id"):
+    for field in ("query", "id", "run_id", "domain"):
         if field in arguments and (not isinstance(arguments[field], str) or not arguments[field].strip() or len(arguments[field]) > (1000 if field == "query" else 128)):
             raise ValueError(f"{field} must be a non-empty bounded string")
+    if "scope" in arguments and arguments["scope"] not in {"domains", "urls"}:
+        raise ValueError("scope must be domains or urls")
     for field in ("offset", "limit"):
         if field in arguments and (not isinstance(arguments[field], int) or isinstance(arguments[field], bool) or arguments[field] < (0 if field == "offset" else 1) or arguments[field] > (100000 if field == "offset" else 1000)):
             raise ValueError(f"{field} is outside its allowed range")
@@ -239,6 +247,10 @@ def call_tool(name: str, arguments: dict[str, Any]) -> Any:
     if name == "analyze_history":
         query = ("?" + urlencode({"query": arguments["query"]})) if arguments.get("query") else ""
         return _api_request(f"/history/analytics{query}")
+    if name == "analyze_url_statistics":
+        scope = arguments.get("scope", "domains")
+        params = {key: arguments[key] for key in ("domain", "include_findings", "limit", "offset") if key in arguments}
+        return _api_request(f"/history/{scope}?{urlencode(params)}" if params else f"/history/{scope}")
     if name == "list_engines":
         return _api_request("/engines")
     if name == "get_configuration":

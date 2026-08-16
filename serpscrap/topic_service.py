@@ -19,12 +19,18 @@ from scrapcore.scraper.browser import (
 )
 from serpscrap.topic_plugins import (
     AllegroShoppingPlugin,
+    AnsaNewsPlugin,
     BilligerShoppingPlugin,
+    DeutscheWelleNewsPlugin,
     EtsyShoppingPlugin,
+    EuronewsNewsPlugin,
+    France24NewsPlugin,
     FruugoShoppingPlugin,
     GeizhalsShoppingPlugin,
+    GuardianNewsPlugin,
     IdealoShoppingPlugin,
     KauflandShoppingPlugin,
+    LeMondeNewsPlugin,
     NewsSourcePlugin,
 )
 from serpscrap.topic_registry import TopicPluginRegistry
@@ -33,7 +39,9 @@ from serpscrap.topics import TopicReport, TopicRequest, deduplicate
 
 def default_topic_registry() -> TopicPluginRegistry:
     return TopicPluginRegistry(
-        (NewsSourcePlugin(), GeizhalsShoppingPlugin(), IdealoShoppingPlugin(), BilligerShoppingPlugin(),
+        (NewsSourcePlugin(), AnsaNewsPlugin(), DeutscheWelleNewsPlugin(), EuronewsNewsPlugin(),
+         France24NewsPlugin(), LeMondeNewsPlugin(), GuardianNewsPlugin(),
+         GeizhalsShoppingPlugin(), IdealoShoppingPlugin(), BilligerShoppingPlugin(),
          FruugoShoppingPlugin(), KauflandShoppingPlugin(), AllegroShoppingPlugin(), EtsyShoppingPlugin())
     )
 

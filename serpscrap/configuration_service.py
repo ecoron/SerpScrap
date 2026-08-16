@@ -222,7 +222,7 @@ class SearchConfigurationService:
             if path == "search_type":
                 field["options"] = [{"value": item, "label": item.title()} for item in ("normal", "image", "news", "shopping", "videos")]
             elif path == "topic_default":
-                field["options"] = [{"value": item, "label": label} for item, label in (("web", "Web search"), ("news", "News"), ("shopping", "Shopping"))]
+                field["options"] = [{"value": item, "label": label} for item, label in (("all", "All"), ("web", "Web search"), ("news", "News"), ("shopping", "Shopping"))]
             elif path == "topic_currency":
                 field["options"] = [{"value": item, "label": item} for item in ("EUR", "USD", "GBP")]
             elif path == "log_level":

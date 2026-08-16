@@ -6,12 +6,18 @@ from serpscrap.history_store import SearchHistoryStore
 from serpscrap.mcp_server import TOOLS
 from serpscrap.topic_plugins import (
     AllegroShoppingPlugin,
+    AnsaNewsPlugin,
     BilligerShoppingPlugin,
+    DeutscheWelleNewsPlugin,
     EtsyShoppingPlugin,
+    EuronewsNewsPlugin,
+    France24NewsPlugin,
     FruugoShoppingPlugin,
     GeizhalsShoppingPlugin,
+    GuardianNewsPlugin,
     IdealoShoppingPlugin,
     KauflandShoppingPlugin,
+    LeMondeNewsPlugin,
     NewsSourcePlugin,
     ShoppingSourcePlugin,
 )
@@ -54,6 +60,20 @@ def test_news_feed_parsing_preserves_metadata_and_filters_duplicates():
     assert canonical_url(rows[0].url) == "https://news.example/a"
 
 
+def test_news_source_id_does_not_get_used_as_feed_url():
+    plugin = NewsSourcePlugin()
+    request = TopicRequest.create("eu policy", topic="news", sources=("news", "ansa"))
+    assert plugin.build_url(request, page=1) == "https://news.google.com/rss/search?q=eu+policy"
+
+
+def test_news_source_accepts_explicit_custom_feed_url():
+    plugin = NewsSourcePlugin()
+    request = TopicRequest.create(
+        "eu policy", topic="news", sources=("news", "https://example.test/feed.xml")
+    )
+    assert plugin.build_url(request, page=1) == "https://example.test/feed.xml"
+
+
 def test_shopping_parser_extracts_locale_independent_price_fields():
     payload = '<div><a href="https://shop.example/p">Kopfhörer</a> 129,99 EUR auf Lager</div>'
     rows = ShoppingSourcePlugin().parse(
@@ -78,6 +98,22 @@ def test_open_shopping_sources_build_query_urls():
     assert "fs=noise+cancelling+headphones" in GeizhalsShoppingPlugin().build_url(request, page=1)
     assert "q=noise+cancelling+headphones" in IdealoShoppingPlugin().build_url(request, page=1)
     assert "searchTerm=noise+cancelling+headphones" in BilligerShoppingPlugin().build_url(request, page=1)
+
+
+def test_european_news_sources_expose_stable_feed_urls():
+    request = TopicRequest.create("eu policy", topic="news", language="en")
+    sources = (AnsaNewsPlugin(), EuronewsNewsPlugin(), France24NewsPlugin(), LeMondeNewsPlugin(), GuardianNewsPlugin())
+    assert {source.source_id for source in sources} == {"ansa", "euronews", "france24", "lemonde", "guardian"}
+    assert all(source.build_url(request, page=1).startswith("https://") for source in sources)
+    assert DeutscheWelleNewsPlugin().build_url(TopicRequest.create("KI", topic="news", language="de"), page=1).startswith("https://")
+
+
+def test_default_news_registry_contains_named_sources():
+    from serpscrap.topic_service import default_topic_registry
+
+    assert {item["source_id"] for item in default_topic_registry().metadata()} >= {
+        "news", "ansa", "dw", "euronews", "france24", "lemonde", "guardian"
+    }
 
 
 def test_open_shopping_source_selection_is_independent():

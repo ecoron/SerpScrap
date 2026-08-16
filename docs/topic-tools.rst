@@ -54,6 +54,23 @@ Python example:
    report = TopicService().execute(request)
    print(report.to_dict())
 
+The default News source selection includes the generic Google News RSS
+adapter and the following European publishers/agencies:
+
+* ``ansa`` — ANSA English RSS
+* ``dw`` — Deutsche Welle German RSS
+* ``euronews`` — Euronews world-news MRSS
+* ``france24`` — France 24 English RSS
+* ``lemonde`` — Le Monde Europe RSS (English)
+* ``guardian`` — The Guardian Europe RSS
+
+These feeds expose headlines, short descriptions, publication times and
+original article URLs. Feed terms differ by provider: ANSA and Le Monde state
+that RSS use is intended for personal/non-commercial aggregation, while the
+Guardian likewise documents personal, non-commercial RSS use. Deployments
+should review each provider's current terms before using the sources beyond
+local search and display.
+
 Shopping
 ========
 

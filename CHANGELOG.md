@@ -8,6 +8,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Added `All` as the default Search mode. It runs Web, News, and Shopping;
+  `All` Search type runs all supported Web SERP types and merges their results
+  in the workspace. The configuration schema also exposes `All` as the topic
+  default.
+- Updated History `Inspect` to persist the selected `run` in the URL and scroll
+  to the inline run details. Closing the details clears the run parameter;
+  initial History loads without a run no longer trigger a scroll. History
+  snippets now render as normalized plain text without embedded HTML markup.
+- Moved the search form into the shared page layout so it is available at the
+  top of every UI page. The standard area now contains query, Search mode, and
+  submit controls; extended options are revealed by a text-link toggle below.
+- Replaced the multi-select Search mode control with a single dropdown and
+  removed the Search workspace settings overlay.
+- Fixed News source selection treating the configured source ID ``news`` as a
+  feed URL, which caused ``unknown url type: 'news'`` failures in the UI.
+- Added selectable European News RSS sources: ANSA, Deutsche Welle, Euronews,
+  France 24, Le Monde, and The Guardian. They use the shared feed parser and
+  source-status contract, are included in the default News source selection,
+  and have deterministic registry/parser coverage.
 - Unified the search UI mode selection in a multi-select beside the start
   button. Web, News, and Shopping can now be selected together, with their
   results and source failures rendered in one workspace response.

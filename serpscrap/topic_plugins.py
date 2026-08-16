@@ -53,9 +53,13 @@ class NewsSourcePlugin(TopicPlugin):
     capabilities = TopicCapabilities(transport="feed", pagination="none")
 
     def build_url(self, request: TopicRequest, *, page: int) -> str:
+        custom_feed = next(
+            (source for source in request.sources if source.startswith(("http://", "https://"))),
+            None,
+        )
         return (
-            request.sources[0]
-            if request.sources
+            custom_feed
+            if custom_feed
             else "https://news.google.com/rss/search?q=" + request.query.replace(" ", "+")
         )
 
@@ -104,6 +108,59 @@ class NewsSourcePlugin(TopicPlugin):
                 )
             )
         return rows
+
+
+class ConfiguredNewsSourcePlugin(NewsSourcePlugin):
+    """A named public RSS source for the News topic."""
+
+    source_id = ""
+    display_name = ""
+    feed_url = ""
+
+    def build_url(self, request: TopicRequest, *, page: int) -> str:
+        return self.feed_url
+
+
+class AnsaNewsPlugin(ConfiguredNewsSourcePlugin):
+    source_id = "ansa"
+    display_name = "ANSA"
+    feed_url = "https://www.ansa.it/english/news/english_nr_rss.xml"
+    capabilities = TopicCapabilities(transport="feed", pagination="none")
+
+
+class DeutscheWelleNewsPlugin(ConfiguredNewsSourcePlugin):
+    source_id = "dw"
+    display_name = "Deutsche Welle"
+    feed_url = "https://rss.dw.com/rdf/rss-de-all"
+    capabilities = TopicCapabilities(transport="feed", pagination="none")
+
+
+class EuronewsNewsPlugin(ConfiguredNewsSourcePlugin):
+    source_id = "euronews"
+    display_name = "Euronews"
+    feed_url = "https://www.euronews.com/rss?format=mrss&level=theme&name=news"
+    capabilities = TopicCapabilities(transport="feed", pagination="none")
+
+
+class France24NewsPlugin(ConfiguredNewsSourcePlugin):
+    source_id = "france24"
+    display_name = "France 24"
+    feed_url = "https://www.france24.com/en/rss"
+    capabilities = TopicCapabilities(transport="feed", pagination="none")
+
+
+class LeMondeNewsPlugin(ConfiguredNewsSourcePlugin):
+    source_id = "lemonde"
+    display_name = "Le Monde"
+    feed_url = "https://www.lemonde.fr/en/europe/rss_full.xml"
+    capabilities = TopicCapabilities(transport="feed", pagination="none")
+
+
+class GuardianNewsPlugin(ConfiguredNewsSourcePlugin):
+    source_id = "guardian"
+    display_name = "The Guardian"
+    feed_url = "https://www.theguardian.com/world/europe-news/rss"
+    capabilities = TopicCapabilities(transport="feed", pagination="none")
 
 
 class ShoppingSourcePlugin(TopicPlugin):

@@ -22,3 +22,5 @@ def test_release_dependency_versions_are_consistent():
     assert "mypy==2.3.1" in dev_lock
     assert 'ruff = "==0.16.5"' in pipfile
     assert "ruff==0.16.5" in dev_lock
+    assert 'setuptools = "==80.9.0"' in pipfile
+    assert "setuptools==80.9.0" in dev_lock

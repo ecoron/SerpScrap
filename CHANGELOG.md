@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 - Extended UI proxy-operation timeouts to cover the configured proxy health
   check window, preventing false 503 responses and API broken-pipe traces.
 
+- Added the pinned setuptools build backend to the development lockfile so
+  GitHub Actions can run the non-isolated package build.
+
 - Updated the pinned development toolchain to pip 26.2.1, build 1.6.0,
   mypy 2.3.1, and ruff 0.16.5; refreshed the Pipenv and runtime lockfiles.
 

@@ -16,7 +16,7 @@ services:
     networks: [serpscrap]
 
   serpscrap-app:
-    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.2}
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.3}
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -51,7 +51,7 @@ services:
     networks: [serpscrap]
 
   serpscrap-ui:
-    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.2}
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.3}
     restart: unless-stopped
     environment:
       SERPSCRAP_API_URL: http://serpscrap-app:8000/api/v1
@@ -68,7 +68,7 @@ services:
     networks: [serpscrap]
 
   serpscrap-mcp:
-    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.2}
+    image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.3}
     restart: unless-stopped
     environment:
       SERPSCRAP_API_URL: http://serpscrap-app:8000/api/v1

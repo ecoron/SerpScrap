@@ -32,7 +32,7 @@ docker compose -f docker/compose.yml up --build
 To use a prebuilt or pinned image, set `SERPSCRAP_IMAGE` and skip the build:
 
 ```powershell
-$env:SERPSCRAP_IMAGE = "serpscrap:2.0.0-alpha.2"
+$env:SERPSCRAP_IMAGE = "serpscrap:2.0.0-alpha.3"
 docker compose -f docker/compose.yml up -d
 ```
 

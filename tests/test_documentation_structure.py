@@ -20,7 +20,7 @@ def test_current_release_interfaces_are_documented() -> None:
     cli = (root / "docs" / "cli.rst").read_text(encoding="utf-8")
     topics = (root / "docs" / "topic-tools.rst").read_text(encoding="utf-8")
 
-    assert "2.0.0-alpha.2" in readme
+    assert "2.0.0-alpha.3" in readme
     for tool in ("start_search", "get_search_status", "list_results", "list_engines"):
         assert tool in mcp
     for configuration_marker in (

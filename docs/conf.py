@@ -6,7 +6,7 @@ project = "SerpScrap"
 copyright = f"2017-{date.today().year}, ecoron"
 author = "ecoron"
 version = "2.0"
-release = "2.0.0-alpha.2"
+release = "2.0.0-alpha.3"
 
 needs_sphinx = "7.4"
 extensions = [

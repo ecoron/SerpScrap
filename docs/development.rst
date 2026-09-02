@@ -154,7 +154,7 @@ of the selected run.
 Release preparation
 ===================
 
-For the ``2.0.0-alpha.2`` release, keep the version in ``pyproject.toml``,
+For the ``2.0.0-alpha.3`` release, keep the version in ``pyproject.toml``,
 README, Sphinx configuration, Docker image defaults, and the UI fallback in
 sync. Run the deterministic checks and build from the Pipenv environment:
 

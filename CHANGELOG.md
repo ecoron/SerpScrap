@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.0.0-alpha.3] - 2026-09-02
+
 - Hardened MCP Topic analysis: specialized schemas now match runtime
   validation, Topic result comparison canonicalizes URLs, CSV export uses
   standards-compliant quoting, and documentation reflects the complete

@@ -16,7 +16,7 @@ def test_docker_uses_one_project_dockerfile_and_shared_image():
 
     compose = (docker_dir / "compose.yml").read_text(encoding="utf-8")
     assert "context: .." in compose
-    assert compose.count("image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.2}") == 3
+    assert compose.count("image: ${SERPSCRAP_IMAGE:-serpscrap:2.0.0-alpha.3}") == 3
     assert compose.count("dockerfile: docker/Dockerfile") == 1
     assert 'entrypoint: ["python", "-m", "ui.app"]' in compose
     assert "http://localhost:8080/healthz" in compose

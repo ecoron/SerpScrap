@@ -23,6 +23,15 @@ def test_release_metadata_is_consistent():
     assert f"## [{expected}] - 2026-09-02" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
 
 
+def test_latest_changes_are_recorded_in_alpha_three_release():
+    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    release_start = changelog.index("## [2.0.0-alpha.3] - 2026-09-02")
+    next_release = changelog.index("## [2.0.0-alpha.2]", release_start)
+    release_body = changelog[release_start:next_release]
+    assert "Extended UI proxy-operation timeouts" in release_body
+    assert "Updated the pinned development toolchain" in release_body
+
+
 def test_api_request_limit_is_positive_and_bounded():
     assert MAX_REQUEST_BYTES >= 1024
     assert "API_MAX_REQUEST_BYTES" in (ROOT / "serpscrap" / "api_server.py").read_text()

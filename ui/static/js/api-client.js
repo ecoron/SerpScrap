@@ -40,6 +40,6 @@ export const api = {
   topics: () => request('/topics'),
   topicSearch: payload => request('/topics/search', {method: 'POST', body: JSON.stringify(payload), timeout: 120000}),
   proxies: () => request('/proxies'),
-  refreshProxies: () => request('/proxies/refresh', {method: 'POST', body: '{}', timeout: 120000}),
-  testProxies: () => request('/proxies/test', {method: 'POST', body: '{}', timeout: 120000}),
+  refreshProxies: () => request('/proxies/refresh', {method: 'POST', body: '{}', timeout: 130000}),
+  testProxies: () => request('/proxies/test', {method: 'POST', body: '{}', timeout: 130000}),
 };

@@ -10,6 +10,12 @@ All notable changes to this project will be documented in this file.
 
 ## [2.0.0-alpha.3] - 2026-09-02
 
+- Extended UI proxy-operation timeouts to cover the configured proxy health
+  check window, preventing false 503 responses and API broken-pipe traces.
+
+- Updated the pinned development toolchain to pip 26.2.1, build 1.6.0,
+  mypy 2.3.1, and ruff 0.16.5; refreshed the Pipenv and runtime lockfiles.
+
 - Hardened MCP Topic analysis: specialized schemas now match runtime
   validation, Topic result comparison canonicalizes URLs, CSV export uses
   standards-compliant quoting, and documentation reflects the complete

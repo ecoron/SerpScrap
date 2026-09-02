@@ -68,7 +68,11 @@ def create_app() -> Flask:
             headers["Content-Type"] = request.content_type or "application/json"
         upstream = urllib.request.Request(target, data=body, headers=headers, method=request.method)
         try:
-            proxy_timeout = 130 if api_path == "topics/search" else 30
+            proxy_timeout = 130 if api_path in {
+                "topics/search",
+                "proxies/refresh",
+                "proxies/test",
+            } else 30
             with urllib.request.urlopen(upstream, timeout=proxy_timeout) as result:
                 payload = result.read()
                 response_headers = {"Content-Type": result.headers.get("Content-Type", "application/json")}

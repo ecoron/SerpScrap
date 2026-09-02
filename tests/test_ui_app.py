@@ -1,6 +1,8 @@
 from http.server import ThreadingHTTPServer
 from threading import Thread
 
+import pytest
+
 from serpscrap.api_server import ApiHandler
 from serpscrap.api_service import SearchJobService
 from serpscrap.history_store import SearchHistoryStore
@@ -218,5 +220,39 @@ def test_ui_proxy_allows_browser_topic_searches_to_finish(monkeypatch):
     app = create_app()
     app.config.update(TESTING=True)
     response = app.test_client().post("/api/v1/topics/search", json={"query": "headphones"})
+    assert response.status_code == 200
+    assert captured["timeout"] == 130
+
+
+@pytest.mark.parametrize("path", ["/api/v1/proxies/test", "/api/v1/proxies/refresh"])
+def test_ui_proxy_allows_proxy_health_checks_to_finish(monkeypatch, path):
+    captured = {}
+
+    class FakeResponse:
+        status = 200
+
+        class Headers:
+            def get(self, name, default=None):
+                return default
+
+        headers = Headers()
+
+        def read(self):
+            return b'{"enabled": true, "proxies": [], "summary": {}}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    def fake_urlopen(request, timeout):
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("ui.app.urllib.request.urlopen", fake_urlopen)
+    app = create_app()
+    app.config.update(TESTING=True)
+    response = app.test_client().post(path, json={})
     assert response.status_code == 200
     assert captured["timeout"] == 130

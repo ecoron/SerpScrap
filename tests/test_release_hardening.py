@@ -6,10 +6,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_release_metadata_is_consistent():
-    expected = "2.0.0-alpha.2"
+    expected = "2.0.0-alpha.3"
+    release_files = (
+        ROOT / "pyproject.toml",
+        ROOT / "README.rst",
+        ROOT / "docs" / "conf.py",
+        ROOT / "docs" / "index.rst",
+        ROOT / "docs" / "docker.rst",
+        ROOT / "docker" / "README.md",
+        ROOT / "docker" / "compose.yml",
+        ROOT / "ui" / "app.py",
+    )
+
     assert f'version = "{expected}"' in (ROOT / "pyproject.toml").read_text()
-    assert expected in (ROOT / "README.rst").read_text()
-    assert expected in (ROOT / "docs" / "conf.py").read_text()
+    assert all(expected in path.read_text(encoding="utf-8") for path in release_files)
+    assert f"## [{expected}] - 2026-09-02" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
 
 
 def test_api_request_limit_is_positive_and_bounded():

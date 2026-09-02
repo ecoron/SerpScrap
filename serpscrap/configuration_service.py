@@ -18,6 +18,7 @@ SENSITIVE_KEYS = {"headers"}
 
 GROUPS = (
     {"id": "search", "title": "Search behavior", "description": "Defaults used for new searches and provider selection.", "expanded": True},
+    {"id": "topics", "title": "Topic search", "description": "Defaults for focused News and Shopping searches.", "expanded": True},
     {"id": "ranking", "title": "Ranking and fusion", "description": "How provider results are combined and ranked.", "expanded": False},
     {"id": "browser", "title": "Browser and scraping", "description": "Browser execution, pacing, retries, and request behavior.", "expanded": False},
     {"id": "network", "title": "Network and proxy", "description": "Connection limits, redirects, proxy checks, and request policy.", "expanded": False},
@@ -35,6 +36,12 @@ FIELD_DEFINITIONS = (
     ("searxng_engines", "search", "SearXNG engines", "searxng-engine-list", "Engines requested from the SearXNG instance.", True, False, None, None),
     ("country_code", "search", "Country code", "text", "ISO 3166-1 alpha-2 code, for example DE.", True, True, 2, 2),
     ("search_type", "search", "Search type", "select", "The result family requested from every selected provider.", True, False, None, None),
+    ("topic_default", "topics", "Default topic", "select", "Topic selected when opening focused topic search.", True, False, None, None),
+    ("topic_sources", "topics", "Topic sources", "json", "Optional source IDs or public URLs keyed by topic, for example geizhals, idealo, and billiger.", True, False, None, None),
+    ("topic_country", "topics", "Topic country", "text", "Default country/marketplace for localized shopping sources.", True, False, None, None),
+    ("topic_language", "topics", "Topic language", "text", "Default ISO language code for topic requests.", True, False, None, None),
+    ("topic_since", "topics", "News time window", "text", "Default ISO timestamp or relative window such as 24h or 7d.", True, False, None, None),
+    ("topic_currency", "topics", "Shopping currency", "select", "Preferred currency passed to shopping requests.", True, False, None, None),
     ("num_pages_for_keyword", "search", "Pages per query", "number", "More pages increase coverage and runtime.", True, True, 1, 20),
     ("num_results_per_page", "search", "Results per page", "number", "Maximum normalized results requested per page.", True, True, 1, 100),
     ("results_age", "search", "Result age", "text", "Provider result-age policy.", True, False, None, None),
@@ -214,6 +221,10 @@ class SearchConfigurationService:
                 field["max"] = maximum
             if path == "search_type":
                 field["options"] = [{"value": item, "label": item.title()} for item in ("normal", "image", "news", "shopping", "videos")]
+            elif path == "topic_default":
+                field["options"] = [{"value": item, "label": label} for item, label in (("all", "All"), ("web", "Web search"), ("news", "News"), ("shopping", "Shopping"))]
+            elif path == "topic_currency":
+                field["options"] = [{"value": item, "label": item} for item in ("EUR", "USD", "GBP")]
             elif path == "log_level":
                 field["options"] = [{"value": item, "label": item} for item in ("DEBUG", "INFO", "WARNING", "ERROR")]
             elif path == "consent_action":

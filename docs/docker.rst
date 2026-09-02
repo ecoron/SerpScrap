@@ -16,7 +16,7 @@ All three project services use the single image built by
 health check, environment, and mounts; PostgreSQL continues to use its
 official ``postgres:16-alpine`` image.
 
-The current project version is **2.0.0-alpha.2**. It is an evaluation release;
+The current project version is **2.0.0-alpha.3**. It is an evaluation release;
 pin the image tag or Git revision used in repeatable deployments.
 
 Quick start
@@ -50,8 +50,8 @@ To build and run only the CLI image:
 
 .. code-block:: bash
 
-   docker build --file docker/Dockerfile -t serpscrap:2.0.0-alpha.2 .
-   docker run --rm serpscrap:2.0.0-alpha.2 search \
+   docker build --file docker/Dockerfile -t serpscrap:2.0.0-alpha.3 .
+   docker run --rm serpscrap:2.0.0-alpha.3 search \
      --keyword "example keyword" --pages 1 --no-history
 
 Configuration

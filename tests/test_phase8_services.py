@@ -130,6 +130,9 @@ def test_configuration_schema_covers_full_defaults_redacts_headers_and_resets(tm
     assert initial["schema_version"] == 2
     assert initial["source"] == "defaults"
     assert initial["configuration"]["headers"] == {}
+    assert initial["configuration"]["topic_default"] == "all"
+    topic_field = next(field for field in initial["fields"] if field["key"] == "topic_default")
+    assert topic_field["options"][0] == {"value": "all", "label": "All"}
     assert initial["searxng_engines"]
     assert {item["group"] for item in initial["searxng_engines"]} >= {"Web search", "Scientific search", "Developer and Q&A", "News"}
     assert any(field["key"] == "search_engines" and field["type"] == "combined-engine-list" for field in initial["fields"])

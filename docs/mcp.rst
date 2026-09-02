@@ -188,6 +188,10 @@ content remains inert data and is bounded before it leaves the gateway.
    List persisted search runs.
 ``analyze_history``
    Return aggregate history analytics.
+``analyze_url_statistics``
+   Return domain or canonical-URL statistics across all persisted searches,
+   independent of the search query. Use ``scope=domains`` or ``scope=urls``;
+   optionally filter by ``domain`` and paginate with ``limit``/``offset``.
 ``list_engines``
    Return registry metadata, capabilities, readiness, and browser contracts.
 ``get_configuration``
@@ -199,6 +203,56 @@ content remains inert data and is bounded before it leaves the gateway.
    ``searxng_engines``.
 ``reset_configuration``
    Restore the default configuration.
+``list_topics``
+   List registered thematic source adapters and their transport, pagination,
+   locale, and readiness capabilities.
+``topic_search``
+   Run a bounded News or Shopping request through the shared TopicService.
+   Arguments include ``topic``, ``query``, optional ``sources``, ``country``,
+   ``language``, ``since``, and ``until``. The response is a versioned report
+   with results, source status, and structured errors.
+``get_topic_capabilities``
+   Return the registered capabilities, supported locales, transport,
+   pagination, readiness, and all source adapters for one topic.
+``list_topic_sources``
+   List the registered source adapters for a topic. Each source includes its
+   source ID, capabilities, and readiness metadata.
+``search_news``
+   Run a News-only request with optional source, country, language, and time
+   window filters.
+``group_news_events``
+   Run a News request and group near-identical normalized headlines into
+   source-aware events. The grouping is bounded and deterministic; it is not
+   a claim that articles describe the same real-world event.
+``search_products``
+   Run a Shopping-only request with optional source and marketplace filters.
+``compare_product_prices``
+   Run a Shopping request and group comparable offers by product identifier or
+   normalized title. Offers include a parsed ``price_value`` where the source
+   exposed a recognizable price; source-provided displayed price fields remain
+   preserved.
+``validate_topic_query``
+   Validate a topic request without fetching sources.
+``compare_topic_results``
+   Compare two bounded result lists by URL identity.
+``export_topic_results``
+   Export a bounded result list as JSON or CSV text.
+``compare_news_sources``
+   Compare News result counts and headlines by source.
+``track_news_topic`` / ``track_product_price``
+   Return a source-aware tracking snapshot. Persistent scheduling is outside
+   the MCP gateway and can consume these snapshots.
+``get_news_trends``
+   Summarize News result volume by publication day.
+``filter_products``
+   Filter Shopping offers by maximum price and availability.
+``find_product_alternatives``
+   Return products with more than one comparable offer.
+
+The specialized News and Shopping tools use the same ``TopicService`` as
+``topic_search``. Source failures remain in ``source_status`` and ``errors``;
+the tools do not bypass consent, robots, authentication, rate limits, or
+provider blocks.
 
 Example search call
 ===================

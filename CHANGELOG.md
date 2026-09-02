@@ -1,8 +1,87 @@
+- Added include_findings to URL/domain statistics with timestamp, search engine, query, rank, and URL details.
+
+- Added query-independent MCP URL/domain statistics across all persisted searches.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [2.0.0-alpha.3] - 2026-09-02
+
+- Hardened MCP Topic analysis: specialized schemas now match runtime
+  validation, Topic result comparison canonicalizes URLs, CSV export uses
+  standards-compliant quoting, and documentation reflects the complete
+  implemented tool set.
+
+- Added shared Topic validation, result comparison, and JSON/CSV export MCP
+  tools, plus News source comparison, trend summaries, tracking snapshots and
+  Shopping filtering, alternative detection, and price snapshots.
+
+- Added six MCP Topic Tools: ``get_topic_capabilities``,
+  ``list_topic_sources``, ``search_news``, ``group_news_events``,
+  ``search_products``, and ``compare_product_prices``. They reuse the shared
+  ``TopicService`` and expose bounded, deterministic News grouping and
+  Shopping offer comparison while preserving source status and errors.
+
+- Added `All` as the default Search mode. It runs Web, News, and Shopping;
+  `All` Search type runs all supported Web SERP types and merges their results
+  in the workspace. The configuration schema also exposes `All` as the topic
+  default.
+- Updated History `Inspect` to persist the selected `run` in the URL and scroll
+  to the inline run details. Closing the details clears the run parameter;
+  initial History loads without a run no longer trigger a scroll. History
+  snippets now render as normalized plain text without embedded HTML markup.
+- Moved the search form into the shared page layout so it is available at the
+  top of every UI page. The standard area now contains query, Search mode, and
+  submit controls; extended options are revealed by a text-link toggle below.
+- Replaced the multi-select Search mode control with a single dropdown and
+  removed the Search workspace settings overlay.
+- Fixed News source selection treating the configured source ID ``news`` as a
+  feed URL, which caused ``unknown url type: 'news'`` failures in the UI.
+- Added selectable European News RSS sources: ANSA, Deutsche Welle, Euronews,
+  France 24, Le Monde, and The Guardian. They use the shared feed parser and
+  source-status contract, are included in the default News source selection,
+  and have deterministic registry/parser coverage.
+- Unified the search UI mode selection in a multi-select beside the start
+  button. Web, News, and Shopping can now be selected together, with their
+  results and source failures rendered in one workspace response.
+- Extended the UI proxy timeout specifically for browser-backed Topic searches
+  so multi-source Shopping requests are not cancelled by the 30-second default.
+- Persisted HTTP API Topic searches as normal history runs, including topic
+  result kinds, source attribution, result counts, and source-level failures.
+- Hardened TopicService construction so each HTTP request owns its configured
+  browser transport while direct, CLI, and MCP calls reuse one transport per
+  execution consistently.
+- Added Shopping card excerpts and meta-description extraction, plus explicit
+  persisted failure rendering in History run details. Existing records use
+  price, merchant, and availability as a safe display fallback.
+
+- Implemented the Alpha 2.0.0 Topic Tools foundation: shared topic request,
+  result, report, capability, plugin, registry, normalization, and
+  deduplication contracts, plus deterministic News feed and Shopping MVP
+  adapters. Added the shared TopicService and CLI, HTTP API, and MCP entry
+  points with contract and parser regression tests.
+- Added English user and developer documentation for Topic Tools, including
+  CLI, HTTP API, MCP, extension, safety, and navigation guidance.
+- Integrated Topic Tools into the UI: configurable topic defaults and source
+  URLs, focused News/Shopping search controls, shared report rendering, and
+  source-level error display.
+- Added the first three open Shopping result-page sources: Geizhals, idealo,
+  and billiger.de, with source-specific URL builders, parser contracts,
+  source selection, metadata, partial-failure reporting, and regression tests.
+- Added open marketplace source plugins for Fruugo, Kaufland Marketplace,
+  Allegro, and Etsy, including localized public search URLs, country-aware
+  capability filtering, UI source selection, and regression coverage.
+- Routed TopicPlugins that load public result pages through the shared
+  Selenium/Chrome transport and the same browser, pacing, retry, blocking,
+  consent, and timeout configuration used by search engines. Feed-based news
+  sources remain on their feed transport. CLI, HTTP API, and MCP topic entry
+  points now initialize or refresh that shared configuration consistently.
+
+- Documented the planned `TopicPlugin` architecture for standardized News,
+  Shopping, and future thematic tools in `docs/alpaha-2.0.0-tools.md`.
 
 - Updated phase 4, 5, 7, and URL-scraping tests for the current 21-engine registry and 30-second URL read timeout.
 
@@ -527,4 +606,4 @@ All notable changes to this project will be documented in this file.
   validation, fixture contracts, migration slices, and acceptance criteria.
 - Diagnostic-Auswertung fÃ¼r `preisfehler` dokumentiert: Alt-Power und eTools liefern parsebare Treffer, Kiddle wird bei ausschlieÃŸlich gesponserten Treffern korrekt als leer gewertet und Marginalia als Provider-Block erkannt; Google/Qwant bleiben blockiert.
 - Regressionstests fÃ¼r deaktivierte Google-CSE-Wrapper und Ecosia-Consent-Metadaten korrigiert.
-- eTools-Parser auf table.result-Zeilen erweitert; Werbezeilen werden übersprungen und organische Treffer vollständig übernommen.
+- eTools-Parser auf table.result-Zeilen erweitert; Werbezeilen werden ï¿½bersprungen und organische Treffer vollstï¿½ndig ï¿½bernommen.

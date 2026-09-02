@@ -90,3 +90,17 @@ contacting a provider:
    serpscrap browser-check
    serpscrap browser-check --visible
 
+Topic search
+============
+
+The ``topic-search`` command runs the shared TopicService for the built-in
+``news`` and ``shopping`` topics and writes a versioned report to stdout:
+
+.. code-block:: bash
+
+   serpscrap topic-search news "artificial intelligence" --language en --since 24h
+   serpscrap topic-search shopping "noise cancelling headphones" --country DE
+
+Use ``--source`` to provide a feed URL or source identifier. ``--country``
+and ``--language`` are normalized before capability filtering. The command
+does not bypass provider consent, CAPTCHA, robots, or rate-limit controls.

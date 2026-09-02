@@ -4,6 +4,11 @@ import { renderTrend } from '../charts.js';
 const $ = selector => document.querySelector(selector);
 const number = value => new Intl.NumberFormat().format(Number(value || 0));
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+function plainText(value) {
+  const container = document.createElement('div');
+  container.innerHTML = String(value ?? '');
+  return (container.textContent || '').replace(/\s+/g, ' ').trim();
+}
 const labels = {from:'From', to:'To', query:'Query', provider:'Provider', status:'Status', result_kind:'Result kind', country:'Country', search_type:'Search type'};
 const statusTones = {completed:'success', failed:'danger', running:'warning', queued:'warning', healthy:'healthy', online:'healthy', offline:'offline', error:'danger', unused:'neutral', added:'success', removed:'danger', moved:'info'};
 let activeRequest;
@@ -77,14 +82,25 @@ function updateScope(scope) {
   const status = $('#history-live-status');
   if (status) status.textContent = scopeText(scope);
 }
-async function openRun(run, row) {
+function updateRunUrl(runId) {
+  const url = new URL(location.href);
+  if (runId) url.searchParams.set('run', runId);
+  else url.searchParams.delete('run');
+  history.pushState({}, '', url);
+}
+async function openRun(run, row, {updateUrl = true} = {}) {
+  if (!run || !row) return;
+  if (updateUrl) updateRunUrl(run.id);
   document.querySelectorAll('.history-detail-row').forEach(item => item.remove());
   const detail = document.createElement('tr'); detail.className = 'history-detail-row';
-  detail.innerHTML = `<td colspan="6"><div class="inline-run-detail"><div class="workspace-header"><div><p class="eyebrow">Selected run</p><h3>${esc(run.query)}</h3><p class="muted">${number(run.result_count)} results · ${number(run.failure_count)} failures</p></div><button class="button button-ghost" type="button">Close</button></div><div class="history-inline-results" aria-live="polite"></div></div></td>`;
-  row.after(detail); detail.querySelector('button').onclick = () => detail.remove();
-  const target = detail.querySelector('.history-inline-results'); state(target, 'Loading results', 'Reading the persisted normalized results.');
+  detail.innerHTML = `<td colspan="6"><div class="inline-run-detail"><div class="workspace-header"><div><p class="eyebrow">Selected run</p><h3>${esc(run.query)}</h3><p class="muted">${number(run.result_count)} results · ${number(run.failure_count)} failures</p></div><button class="button button-ghost" type="button">Close</button></div><div class="history-inline-failures" aria-live="polite"></div><div class="history-inline-results" aria-live="polite"></div></div></td>`;
+  row.after(detail); detail.querySelector('button').onclick = () => { detail.remove(); updateRunUrl(null); };
+  detail.scrollIntoView({behavior: 'smooth', block: 'start'});
+  const target = detail.querySelector('.history-inline-results'); const failureTarget = detail.querySelector('.history-inline-failures'); state(target, 'Loading results', 'Reading the persisted normalized results.');
   try {
-    const payload = await api.results(run.id);
+    const [payload, failurePayload] = await Promise.all([api.results(run.id), api.failures(run.id)]);
+    const failures = failurePayload.failures || [];
+    if (failures.length) failureTarget.innerHTML = `<div class="failure-list">${failures.map(failure => `<p>${esc(failure.search_engine || 'unknown')} · ${esc(failure.category || 'failure')}: ${esc(failure.message || 'No details')}</p>`).join('')}</div>`;
     const results = payload.results || [];
     const fallbackRanks = new Map();
     results.forEach(result => {
@@ -96,7 +112,8 @@ async function openRun(run, row) {
     target.innerHTML = results.length ? results.map((result, index) => {
       const url = result.canonical_url || result.serp_url || result.url || result.link || '';
       const title = result.serp_title || result.title || url || 'Untitled result';
-      const snippet = result.serp_snippet || result.snippet || result.description || result.summary || result.text || result.content || result.visible_link || 'No snippet available.';
+      const fallback = [result.price, result.merchant, result.availability].filter(Boolean).join(' · ');
+      const snippet = plainText(result.serp_snippet || result.snippet || result.description || result.summary || result.text || result.content || result.visible_link || fallback) || 'No snippet available.';
       const domain = result.serp_domain || (() => { try { return new URL(url).hostname; } catch { return 'Unknown domain'; } })();
       return `<article class="result-card"><span class="result-source">${esc(result.search_engine || 'unknown')} · ${esc(domain)}</span><h3>${esc(title)}</h3><a class="result-url" href="${esc(url)}" target="_blank" rel="noreferrer">${esc(url || 'Unavailable')}</a><p class="result-snippet">${esc(snippet)}</p><div class="result-footer"><span class="result-badge">Type ${esc(result.result_kind || 'organic')}</span><span class="result-badge">Rank ${esc(result.serp_rank ?? '—')}</span></div></article>`;
     }).join('') : '<p class="empty-cell">No results persisted for this run.</p>';
@@ -115,7 +132,7 @@ async function renderRuns(filters, signal) {
     const runs = (data.searches || []).filter(run => (!filters.from || run.created_at.slice(0,10) >= filters.from) && (!filters.to || run.created_at.slice(0,10) <= filters.to) && (!filters.status || run.status === filters.status) && (!filters.country || run.options?.country_code?.toLowerCase() === filters.country.toLowerCase()) && (!filters.search_type || run.options?.search_type === filters.search_type));
     root.innerHTML = runs.length ? runs.map(run => `<tr data-run-id="${esc(run.id)}"><td>${esc(new Date(run.created_at).toLocaleString())}</td><td>${esc(run.query)}</td><td><span class="status-badge ${esc(run.status)}">${esc(run.status)}</span></td><td>${number(run.result_count)}</td><td>${number(run.failure_count)}</td><td><span class="toolbar-actions"><button class="button button-ghost inspect-run" type="button">Inspect</button><a class="button button-ghost search-again" href="/search?q=${encodeURIComponent(run.query)}">Search again</a></span></td></tr>`).join('') : '<tr><td class="empty-cell" colspan="6">No matching searches. Try clearing a filter or run a search first.</td></tr>';
     root.querySelectorAll('.inspect-run').forEach(button => { const run = runs.find(item => item.id === button.closest('tr').dataset.runId); button.onclick = () => openRun(run, button.closest('tr')); });
-    const runId = new URLSearchParams(location.search).get('run'); if (runId) { const row = root.querySelector(`[data-run-id="${CSS.escape(runId)}"]`); const run = runs.find(item => item.id === runId); if (row && run) openRun(run, row); }
+    const runId = new URLSearchParams(location.search).get('run'); if (runId) { const row = root.querySelector(`[data-run-id="${CSS.escape(runId)}"]`); const run = runs.find(item => item.id === runId); if (row && run) openRun(run, row, {updateUrl: false}); }
   } catch (error) { if (error.name !== 'AbortError') state(root, 'Runs unavailable', error.message, {label:'Retry', run:() => refreshHistoryDashboard()}); }
 }
 async function renderTrends(filters, signal) {

@@ -26,6 +26,18 @@ def test_analytics_contract_and_provider_aggregation():
     assert store.timeseries()["semantics"]["run_count"] == "run-scoped"
 
 
+def test_url_statistics_aggregate_all_runs_by_domain_and_url():
+    store = _store()
+    assert {item["name"] for item in store.aggregates("domains")["items"]} == {"example.org"}
+    assert {item["name"] for item in store.aggregates("urls")["items"]} == {"https://example.org/a", "https://example.org/b"}
+
+
+def test_url_statistics_can_include_finding_details():
+    item = _store().aggregates("domains", {"include_findings": True})["items"][0]
+    assert item["findings"][0]["search_engine"] in {"bing", "google"}
+    assert {"found_at", "query", "rank", "url"}.issubset(item["findings"][0])
+
+
 def test_timeseries_compare_and_bounded_export():
     store = _store()
     assert store.timeseries()["points"][0]["searches"] == 2

@@ -10,13 +10,16 @@ import os
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from sqlalchemy import DateTime, Integer, String, Text, create_engine, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from serpscrap.models import SearchReport
+
+if TYPE_CHECKING:
+    from serpscrap.topics import TopicReport
 
 
 class _Base(DeclarativeBase):
@@ -197,6 +200,62 @@ class SearchHistoryStore:
                 progress["state"] = run.status
                 options["_progress"] = progress
                 run.options_json = json.dumps(options, ensure_ascii=False, default=str)
+
+    def store_topic_report(self, run_id: str, report: TopicReport) -> None:
+        """Persist a TopicReport using the shared history result contract."""
+        payload = report.to_dict()
+        results: list[dict[str, Any]] = []
+        for item in payload.get("results", []):
+            source = str(item.get("source") or f"topic:{payload.get('topic', 'unknown')}")
+            results.append(
+                {
+                    **item,
+                    "url": item.get("url"),
+                    "search_engine": f"topic:{source}",
+                    "result_kind": payload.get("topic", "topic"),
+                    "serp_title": item.get("title", ""),
+                    "serp_snippet": item.get("snippet"),
+                    "serp_source": source,
+                    "serp_domain": source,
+                    "serp_rank": item.get("rank", 0),
+                    "serp_date": item.get("published_at"),
+                }
+            )
+        failures = payload.get("errors", [])
+        with self.sessions.begin() as session:
+            run = session.get(SearchRun, run_id)
+            if not run:
+                raise KeyError(run_id)
+            for result in results:
+                session.add(
+                    SearchResult(
+                        run_id=run_id,
+                        search_engine=str(result["search_engine"]),
+                        payload_json=json.dumps(result, ensure_ascii=False, default=str),
+                    )
+                )
+            for failure in failures:
+                source = str(failure.get("source") or f"topic:{payload.get('topic', 'unknown')}")
+                failure_payload = {
+                    **failure,
+                    "query": payload.get("query"),
+                    "search_engine": f"topic:{source}",
+                    "page_number": 1,
+                    "url": None,
+                    "retryable": False,
+                }
+                session.add(
+                    SearchFailure(
+                        run_id=run_id,
+                        category=str(failure.get("category") or "topic"),
+                        payload_json=json.dumps(failure_payload, ensure_ascii=False, default=str),
+                    )
+                )
+            run.status = "failed" if failures and not results else "completed"
+            run.result_count = len(results)
+            run.failure_count = len(failures)
+            run.started_at = _utc_now()
+            run.stopped_at = _utc_now()
 
     def mark_failed(self, run_id: str, message: str) -> None:
         with self.sessions.begin() as session:
@@ -480,7 +539,8 @@ class SearchHistoryStore:
 
     def aggregates(self, kind: str, filters: dict[str, Any] | None = None, limit: int = 1000, offset: int = 0) -> dict[str, Any]:
         runs, results = self._filtered(filters)
-        rows = defaultdict(lambda: {"runs": set(), "results": 0, "failures": 0, "providers": set(), "ranks": []})
+        rows = defaultdict(lambda: {"runs": set(), "results": 0, "failures": 0, "providers": set(), "ranks": [], "findings": []})
+        run_by_id = {run["id"]: run for run in runs}
         if kind == "providers":
             for run in runs:
                 for provider in run.get("options", {}).get("search_engines", []):
@@ -498,19 +558,30 @@ class SearchHistoryStore:
             if kind == "providers":
                 key = str(result.get("search_engine") or "unknown")
             elif kind == "domains":
-                key = urlparse(str(result.get("url") or result.get("link") or "")).netloc.lower() or "unknown"
+                parsed_url = urlparse(str(result.get("canonical_url") or result.get("url") or result.get("link") or ""))
+                key = parsed_url.hostname.lower() if parsed_url.hostname else "unknown"
+            elif kind == "urls":
+                key = str(result.get("canonical_url") or result.get("url") or result.get("link") or "").strip() or "unknown"
             else:
                 key = next(run["query"] for run in runs if run["id"] == result["run_id"])
+            domain_filter = str((filters or {}).get("domain") or "").lower().strip()
+            if domain_filter and domain_filter not in key.lower() and kind in {"domains", "urls"}:
+                continue
             rows[key]["runs"].add(result["run_id"])
             rows[key]["results"] += 1
             rows[key]["providers"].add(result.get("search_engine", "unknown"))
             if result.get("serp_rank") is not None:
                 rows[key]["ranks"].append(result["serp_rank"])
+            if kind in {"domains", "urls"} and (filters or {}).get("include_findings"):
+                rows[key]["findings"].append({"found_at": run_by_id[result["run_id"]].get("created_at"), "search_engine": result.get("search_engine"), "query": run_by_id[result["run_id"]].get("query"), "rank": result.get("serp_rank"), "url": result.get("canonical_url") or result.get("url") or result.get("link")})
         items = []
         for key, value in rows.items():
             state = "successful" if value["results"] else ("failed" if value["failures"] else "empty")
             run_count = len(value["runs"])
-            items.append({"name": key, "run_count": run_count, "result_count": value["results"], "failure_count": value["failures"], "failure_rate": round(value["failures"] / max(1, run_count), 4), "provider_count": len(value["providers"]), "best_rank": min(value["ranks"]) if value["ranks"] else None, "selected": kind == "providers", "state": state, "reason": "results available" if value["results"] else ("provider failure" if value["failures"] else "no results")})
+            item = {"name": key, "run_count": run_count, "result_count": value["results"], "failure_count": value["failures"], "failure_rate": round(value["failures"] / max(1, run_count), 4), "provider_count": len(value["providers"]), "best_rank": min(value["ranks"]) if value["ranks"] else None, "selected": kind == "providers", "state": state, "reason": "results available" if value["results"] else ("provider failure" if value["failures"] else "no results")}
+            if kind in {"domains", "urls"} and (filters or {}).get("include_findings"):
+                item["findings"] = value["findings"]
+            items.append(item)
         items.sort(key=lambda item: (-item["result_count"], item["name"]))
         bounded_limit = min(max(int(limit), 1), 1000)
         bounded_offset = min(max(int(offset), 0), 10000)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -11,6 +12,8 @@ from urllib.parse import parse_qs, urlparse
 
 from serpscrap.api_service import SearchJobService
 from serpscrap.models import SearchRequest
+from serpscrap.topic_service import TopicService
+from serpscrap.topics import TopicRequest
 
 MAX_REQUEST_BYTES = max(1024, int(os.getenv("API_MAX_REQUEST_BYTES", "1048576")))
 
@@ -21,13 +24,16 @@ def _json_bytes(value: Any) -> bytes:
 
 class ApiHandler(BaseHTTPRequestHandler):
     service: SearchJobService
+    topic_service = TopicService()
 
     def _send(self, status: int, payload: Any) -> None:
         body = _json_bytes(payload)
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", os.getenv("CORS_ORIGIN", "http://localhost:8080"))
+        self.send_header(
+            "Access-Control-Allow-Origin", os.getenv("CORS_ORIGIN", "http://localhost:8080")
+        )
         self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -63,6 +69,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             )
         if path == "/api/v1/engines":
             return self._send(HTTPStatus.OK, {"engines": self.service.configuration.engines()})
+        if path == "/api/v1/topics":
+            return self._send(HTTPStatus.OK, {"topics": self.topic_service.registry.metadata()})
         if path == "/api/v1/configuration":
             return self._send(HTTPStatus.OK, self.service.configuration.get())
         if path == "/api/v1/proxies":
@@ -75,33 +83,52 @@ class ApiHandler(BaseHTTPRequestHandler):
             offset = max(int((query.get("offset") or [0])[0]), 0)
             return self._send(
                 HTTPStatus.OK,
-                {"results": self.service.store.list_results(
-                    run_id=(query.get("run_id") or [None])[0],
-                    engine=(query.get("engine") or [None])[0],
-                    limit=limit,
-                    offset=offset,
-                    result_kind=(query.get("kind") or [None])[0],
-                )},
+                {
+                    "results": self.service.store.list_results(
+                        run_id=(query.get("run_id") or [None])[0],
+                        engine=(query.get("engine") or [None])[0],
+                        limit=limit,
+                        offset=offset,
+                        result_kind=(query.get("kind") or [None])[0],
+                    )
+                },
             )
         if path == "/api/v1/history/searches":
             return self._send(
                 HTTPStatus.OK,
-                {"searches": self.service.store.list_runs(
-                    limit=min(int((query.get("limit") or [50])[0]), 1000),
-                    query=(query.get("query") or [None])[0],
-                )},
+                {
+                    "searches": self.service.store.list_runs(
+                        limit=min(int((query.get("limit") or [50])[0]), 1000),
+                        query=(query.get("query") or [None])[0],
+                    )
+                },
             )
         if path == "/api/v1/history/analytics":
             filters = {key: (values[0] if values else None) for key, values in query.items()}
             return self._send(HTTPStatus.OK, self.service.store.analytics(filters=filters))
         if path == "/api/v1/history/timeseries":
-            filters = {key: values[0] for key, values in query.items() if key not in {"interval", "metric"}}
-            return self._send(HTTPStatus.OK, self.service.store.timeseries(filters, (query.get("metric") or ["results"])[0]))
-        if path in {"/api/v1/history/providers", "/api/v1/history/queries", "/api/v1/history/domains"}:
-            filters = {key: values[0] for key, values in query.items() if key not in {"limit", "offset"}}
+            filters = {
+                key: values[0] for key, values in query.items() if key not in {"interval", "metric"}
+            }
+            return self._send(
+                HTTPStatus.OK,
+                self.service.store.timeseries(filters, (query.get("metric") or ["results"])[0]),
+            )
+        if path in {
+            "/api/v1/history/providers",
+            "/api/v1/history/queries",
+            "/api/v1/history/domains",
+            "/api/v1/history/urls",
+        }:
+            filters = {
+                key: values[0] for key, values in query.items() if key not in {"limit", "offset"}
+            }
             limit = min(max(int((query.get("limit") or [1000])[0]), 1), 1000)
             offset = min(max(int((query.get("offset") or [0])[0]), 0), 10000)
-            return self._send(HTTPStatus.OK, self.service.store.aggregates(path.rsplit("/", 1)[-1], filters, limit, offset))
+            return self._send(
+                HTTPStatus.OK,
+                self.service.store.aggregates(path.rsplit("/", 1)[-1], filters, limit, offset),
+            )
         if path == "/api/v1/history/compare":
             left, right = tuple((query.get(key) or [None])[0] for key in ("left", "right"))
             if not left or not right:
@@ -109,17 +136,28 @@ class ApiHandler(BaseHTTPRequestHandler):
             try:
                 limit = min(max(int((query.get("limit") or [500])[0]), 1), 500)
                 offset = min(max(int((query.get("offset") or [0])[0]), 0), 5000)
-                return self._send(HTTPStatus.OK, self.service.store.compare(left, right, limit, offset))
+                return self._send(
+                    HTTPStatus.OK, self.service.store.compare(left, right, limit, offset)
+                )
             except KeyError:
-                return self._send(HTTPStatus.NOT_FOUND, {"error": "both comparison runs must exist"})
+                return self._send(
+                    HTTPStatus.NOT_FOUND, {"error": "both comparison runs must exist"}
+                )
             except ValueError as exc:
                 return self._send(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         if path == "/api/v1/history/export/preflight":
-            filters = {key: values[0] for key, values in query.items() if key not in {"format", "limit"}}
+            filters = {
+                key: values[0] for key, values in query.items() if key not in {"format", "limit"}
+            }
             fmt = (query.get("format") or ["json"])[0].lower()
             if fmt not in {"csv", "json"}:
                 return self._send(HTTPStatus.BAD_REQUEST, {"error": "format must be csv or json"})
-            return self._send(HTTPStatus.OK, self.service.store.export_preflight(filters, fmt, (query.get("limit") or [5000])[0]))
+            return self._send(
+                HTTPStatus.OK,
+                self.service.store.export_preflight(
+                    filters, fmt, (query.get("limit") or [5000])[0]
+                ),
+            )
         if path == "/api/v1/history/export":
             filters = {key: values[0] for key, values in query.items() if key != "format"}
             fmt = (query.get("format") or ["json"])[0].lower()
@@ -131,21 +169,29 @@ class ApiHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(encoded)))
             extension = "csv" if content_type == "text/csv" else "json"
-            self.send_header("Content-Disposition", f"attachment; filename=history-export.{extension}")
+            self.send_header(
+                "Content-Disposition", f"attachment; filename=history-export.{extension}"
+            )
             self.end_headers()
             self.wfile.write(encoded)
             return
         prefix = "/api/v1/searches/"
         if path.startswith(prefix):
-            remainder = path[len(prefix):]
+            remainder = path[len(prefix) :]
             run_id, _, suffix = remainder.partition("/")
             if suffix == "events":
                 events = self.service.events(run_id)
-                return self._send(HTTPStatus.OK if events else HTTPStatus.NOT_FOUND, {"events": events})
+                return self._send(
+                    HTTPStatus.OK if events else HTTPStatus.NOT_FOUND, {"events": events}
+                )
             if suffix == "failures":
-                return self._send(HTTPStatus.OK, {"failures": self.service.store.list_failures(run_id)})
+                return self._send(
+                    HTTPStatus.OK, {"failures": self.service.store.list_failures(run_id)}
+                )
             status = self.service.status(run_id)
-            return self._send(HTTPStatus.OK if status else HTTPStatus.NOT_FOUND, status or {"error": "not found"})
+            return self._send(
+                HTTPStatus.OK if status else HTTPStatus.NOT_FOUND, status or {"error": "not found"}
+            )
         return self._send(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
@@ -162,6 +208,54 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self._send(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         if path == "/api/v1/configuration/reset":
             return self._send(HTTPStatus.OK, self.service.configuration.reset())
+        if path == "/api/v1/topics/search":
+            try:
+                payload = self._read_payload()
+                query = payload.get("query")
+                if not isinstance(query, str):
+                    raise ValueError("query is required")
+                topic = str(payload.get("topic", "news"))
+                configured_sources = self.service.configuration.get()["configuration"].get(
+                    "topic_sources", {}
+                ).get(topic, ())
+                request = TopicRequest.create(
+                    query,
+                    topic=topic,
+                    sources=payload.get("sources") or configured_sources,
+                    country=payload.get("country"),
+                    language=payload.get("language"),
+                    since=payload.get("since"),
+                    until=payload.get("until"),
+                    filters=payload.get("filters"),
+                )
+                topic_service = TopicService(
+                    registry=self.topic_service.registry,
+                    config=self.service.configuration.get(include_sensitive=True)["configuration"],
+                )
+                run_id = uuid.uuid4().hex
+                self.service.store.create_run(
+                    run_id,
+                    request.query,
+                    {
+                        "topic": request.topic,
+                        "topic_sources": list(request.sources),
+                        "country_code": request.country,
+                        "language": request.language,
+                        "result_kind": request.topic,
+                    },
+                )
+                self.service.store.mark_running(run_id)
+                try:
+                    report = topic_service.execute(request)
+                    self.service.store.store_topic_report(run_id, report)
+                except Exception as exc:
+                    self.service.store.mark_failed(run_id, str(exc))
+                    raise
+                response = report.to_dict()
+                response["run_id"] = run_id
+                return self._send(HTTPStatus.OK, response)
+            except Exception as exc:
+                return self._send(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         if path != "/api/v1/searches":
             return self._send(HTTPStatus.NOT_FOUND, {"error": "not found"})
         try:
@@ -171,7 +265,11 @@ class ApiHandler(BaseHTTPRequestHandler):
             request = SearchRequest.create(queries, options)
             run_id = self.service.submit(request, configuration)
         except Exception as exc:
-            status = HTTPStatus.SERVICE_UNAVAILABLE if "capacity" in str(exc) or "shutting down" in str(exc) else HTTPStatus.BAD_REQUEST
+            status = (
+                HTTPStatus.SERVICE_UNAVAILABLE
+                if "capacity" in str(exc) or "shutting down" in str(exc)
+                else HTTPStatus.BAD_REQUEST
+            )
             return self._send(status, {"error": str(exc)})
         return self._send(
             HTTPStatus.ACCEPTED,
@@ -197,7 +295,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             return self._send(HTTPStatus.OK, {"deleted": self.service.store.delete_all_runs()})
         prefix = "/api/v1/searches/"
         if path.startswith(prefix):
-            run_id = path[len(prefix):].split("/", 1)[0]
+            run_id = path[len(prefix) :].split("/", 1)[0]
             if self.service.store.delete_run(run_id):
                 return self._send(HTTPStatus.OK, {"id": run_id, "deleted": True})
             return self._send(HTTPStatus.NOT_FOUND, {"error": "search not found"})
@@ -207,7 +305,9 @@ class ApiHandler(BaseHTTPRequestHandler):
         return
 
 
-def serve(host: str | None = None, port: int | None = None, service: SearchJobService | None = None) -> None:
+def serve(
+    host: str | None = None, port: int | None = None, service: SearchJobService | None = None
+) -> None:
     configured_service = service or SearchJobService()
     handler = type("ConfiguredApiHandler", (ApiHandler,), {"service": configured_service})
     server = ThreadingHTTPServer(

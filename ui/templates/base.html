@@ -22,8 +22,23 @@
     <main id="main-content" class="main-content">
       <header class="topbar">
         <div><p class="eyebrow">Search intelligence workspace</p><h1>Explore your search data</h1></div>
-        <div class="topbar-actions"><form class="header-search" id="global-search-form" action="{{ url_for('search_page') }}" method="get"><label class="sr-only" for="global-query">Search</label><input id="global-query" name="q" placeholder="Search the web…" autocomplete="off"><button class="button button-primary" type="submit">Search</button></form><button class="icon-button" id="search-settings-toggle" type="button" title="Search settings" aria-label="Open search settings" hidden>⚙</button><button class="icon-button" id="refresh-all" type="button" title="Refresh data" aria-label="Refresh data">↻</button></div>
+        <div class="topbar-actions"><button class="icon-button" id="refresh-all" type="button" title="Refresh data" aria-label="Refresh data">↻</button></div>
       </header>
+      <section class="site-search panel" aria-label="Search">
+        <form id="search-form" class="site-search-form" action="{{ url_for('search_page') }}" method="get">
+          <div class="search-standard-row">
+            <label class="field search-query-field"><span class="sr-only">Search query</span><input id="query" name="q" required maxlength="1000" placeholder="e.g. sustainable web design" autocomplete="off"></label>
+            <label class="field search-mode-field"><span class="sr-only">Search mode</span><select id="search-modes" name="mode" aria-label="Search mode"><option value="all">All</option><option value="web">Web</option><option value="news">News</option><option value="shopping">Shopping</option></select></label>
+            <button class="button button-primary search-submit" type="submit">Search <span aria-hidden="true">→</span></button>
+          </div>
+          <button class="text-link search-advanced-toggle" id="search-advanced-toggle" type="button" aria-expanded="false" aria-controls="search-extended-options">Extended search options</button>
+          <div id="search-extended-options" class="search-extended-options" hidden>
+            <div class="form-row"><label class="field web-search-control">Country<input id="country" name="country" maxlength="2" value="DE"></label><label class="field web-search-control">Search type<select id="search-type" name="search_type"><option value="all">All</option><option value="normal">Web</option><option value="image">Images</option><option value="news">News</option><option value="shopping">Shopping</option><option value="videos">Videos</option></select></label><label class="field web-search-control">Pages<input id="pages" name="pages" type="number" min="1" max="10" value="1"></label></div>
+            <div id="topic-options" class="topic-options" hidden><div class="form-row"><label class="field">Language<input id="topic-language" maxlength="16" placeholder="de"></label><label class="field news-topic-control">Since<input id="topic-since" maxlength="40" placeholder="24h"></label><label class="field shopping-topic-control">Currency<select id="topic-currency"><option>EUR</option><option>USD</option><option>GBP</option></select></label></div><fieldset><legend>Topic sources</legend><div id="topic-source-options" class="engine-grid" aria-live="polite"></div></fieldset><label class="field field-wide">Additional source URLs <small class="muted">Optional comma-separated public feed or search URLs</small><input id="topic-sources" maxlength="4000" placeholder="https://example.test/feed.xml"></label></div>
+            <fieldset class="web-search-control"><legend>Search engines</legend><div id="search-engines" class="engine-grid" aria-live="polite"></div></fieldset>
+          </div>
+        </form>
+      </section>
       <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
       {% block content %}{% endblock %}
     </main>

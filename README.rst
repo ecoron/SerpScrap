@@ -2,9 +2,9 @@
 SerpScrap
 =========
 
-.. image:: https://img.shields.io/badge/version-2.0.0--alpha.2-orange.svg
+.. image:: https://img.shields.io/badge/version-2.0.0--alpha.3-orange.svg
    :target: https://github.com/ecoron/SerpScrap/releases
-   :alt: Version 2.0.0-alpha.2
+   :alt: Version 2.0.0-alpha.3
 
 .. image:: https://readthedocs.org/projects/serpscrap/badge/?version=latest
    :target: https://serpscrap.readthedocs.io/en/latest/
@@ -20,7 +20,7 @@ and an MCP-compatible server. Results are JSON-compatible and preserve the
 fusion rank, provider rank, source engine, URL, title, snippets, result type,
 and typed failures.
 
-Version 2.0.0-alpha.2
+Version 2.0.0-alpha.3
 =====================
 
 This is an alpha release for evaluation and development. Provider pages are
@@ -33,7 +33,7 @@ Install the package
 
 .. code-block:: bash
 
-   python -m pip install SerpScrap==2.0.0a2
+   python -m pip install SerpScrap==2.0.0a3
 
 For a source checkout:
 
